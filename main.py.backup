@@ -1,0 +1,163 @@
+#!/usr/bin/env python
+"""
+EvoGenesis Framework - Main Entry Point
+
+This script provides the main entry point for the EvoGenesis framework,
+initializing the kernel and all required modules.
+"""
+
+import os
+import sys
+import argparse
+import logging
+import json
+from dotenv import load_dotenv
+
+from evogenesis_core.kernel import EvoGenesisKernel
+
+
+def parse_arguments():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(description="EvoGenesis Framework")
+    
+    parser.add_argument(
+        "--config", 
+        type=str, 
+        default="config/default.json", 
+        help="Path to configuration file"
+    )
+    
+    parser.add_argument(
+        "--log-level", 
+        type=str, 
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], 
+        default="INFO", 
+        help="Set the logging level"
+    )
+    
+    parser.add_argument(
+        "--mode", 
+        type=str, 
+        choices=["interactive", "service", "development"], 
+        default="interactive", 
+        help="Execution mode"
+    )
+    
+    return parser.parse_args()
+
+
+def setup_logging(log_level):
+    """Configure logging."""
+    logging.basicConfig(
+        level=getattr(logging, log_level),
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        handlers=[
+            logging.StreamHandler(),
+            logging.FileHandler("evogenesis.log")
+        ]
+    )
+
+
+def load_config(config_path):
+    """Load configuration from file."""
+    try:
+        with open(config_path, 'r') as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        logging.error(f"Error loading configuration from {config_path}: {str(e)}")
+        logging.info("Using default configuration")
+        return {}
+
+
+def main():
+    """Main entry point for EvoGenesis."""
+    # Load environment variables from .env file
+    load_dotenv()
+    
+    # Parse command line arguments
+    args = parse_arguments()
+    
+    # Set up logging
+    setup_logging(args.log_level)
+    
+    # Load configuration
+    config = load_config(args.config)
+    
+    # Initialize the kernel
+    logging.info("Initializing EvoGenesis kernel")
+    kernel = EvoGenesisKernel(config)
+    
+    try:
+        # Start the kernel
+        kernel.start()
+        
+        if args.mode == "interactive":
+            # Start the Human-in-the-Loop interface
+            logging.info("Starting interactive session")
+            kernel.hitl_interface.start_cli()
+            
+            # This will keep the main thread running
+            # The CLI interface runs in its own thread
+            import time            try:
+                while True:
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                logging.info("Received keyboard interrupt, shutting down")
+        elif args.mode == "service":
+            # Run as a background service
+            logging.info("Starting in service mode")
+            
+            # Start the Web UI
+            web_ui_port = config.get("web_ui", {}).get("port", 5000)
+            logging.info(f"Starting Web UI on http://localhost:{web_ui_port}")
+            success = kernel.start_web_ui(port=web_ui_port)
+            
+            if success:
+                logging.info(f"Web UI started successfully on http://localhost:{web_ui_port}")
+                
+                # Keep the process running
+                import threading
+                shutdown_event = threading.Event()
+                
+                try:
+                    shutdown_event.wait()
+                except KeyboardInterrupt:
+                    logging.info("Received keyboard interrupt, shutting down")
+            else:
+                logging.error("Failed to start Web UI")
+        
+        elif args.mode == "development":
+            # Development mode with debugging and hot-reloading
+            logging.info("Starting in development mode")
+            
+            # Start the Web UI in development mode
+            web_ui_port = config.get("web_ui", {}).get("port", 5000)
+            logging.info(f"Starting development Web UI on http://localhost:{web_ui_port}")
+            success = kernel.start_web_ui(port=web_ui_port, dev_mode=True)
+            
+            if success:
+                logging.info(f"Development Web UI started successfully on http://localhost:{web_ui_port}")
+                logging.info("Changes to web UI files will be hot-reloaded")
+                
+                try:
+                    import time
+                    while True:
+                        time.sleep(1)
+                except KeyboardInterrupt:
+                    logging.info("Received keyboard interrupt, shutting down")
+            else:
+                logging.error("Failed to start development Web UI")
+    
+    except Exception as e:
+        logging.error(f"Error during EvoGenesis execution: {str(e)}")
+        import traceback
+        traceback.print_exc()
+    
+    finally:
+        # Ensure clean shutdown
+        logging.info("Shutting down EvoGenesis")
+        kernel.stop()
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,47 @@
+# Core dependencies
+pydantic>=2.0.0
+python-dotenv>=1.0.0
+loguru>=0.6.0
+
+# LLM Integrations
+openai>=1.0.0
+anthropic>=0.5.0
+google-generativeai>=0.3.0
+llama-cpp-python>=0.2.0
+semantic-kernel>=0.3.0
+pyautogen
+semantic-kernel
+
+# Memory and Storage
+chromadb>=0.4.0
+langchain-community>=0.0.10  # For vector store integrations
+
+# Tool Management
+docker>=6.1.0  # For sandboxed tool execution
+gitpython>=3.1.30  # For version management
+
+# Utility
+numpy>=1.24.0
+rich>=13.0.0  # For better console output
+
+# Web UI
+fastapi>=0.104.0
+uvicorn>=0.23.2
+websockets>=11.0.3
+jinja2>=3.1.2
+aiofiles>=23.2.1
+
+# Frontend
+plotly>=5.18.0  # For visualizations
+pyvis>=0.3.2    # For interactive network graphs
+dash>=2.13.0    # For dashboard components
+
+# Testing
+pytest>=7.3.1
+pytest-asyncio>=0.21.0
+
+# Optional integrations
+# uncomment as needed
+# autogen>=0.2.0
+# crewai>=0.1.0
+# langgraph>=0.0.15

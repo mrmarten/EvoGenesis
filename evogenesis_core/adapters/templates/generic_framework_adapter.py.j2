@@ -1,0 +1,386 @@
+"""
+Generic Agent Framework Adapter Template
+
+This template provides a starting point for generating new framework adapters.
+It will be populated with framework-specific details by the adapter factory.
+"""
+
+import asyncio
+import logging
+import json
+from typing import Dict, Any, List, Optional, Union, Callable
+import uuid
+import os
+
+# Conditionally import {{ framework.name }}
+try:
+    import {{ module_name }}
+    {% if framework.classes %}
+    from {{ module_name }} import {% for class_name in framework.classes|sort %}{{ class_name }}{% if not loop.last %}, {% endif %}{% endfor %}
+    {% endif %}
+    {{ framework.name|upper }}_AVAILABLE = True
+except ImportError:
+    {{ framework.name|upper }}_AVAILABLE = False
+
+from evogenesis_core.adapters.base_adapter import AgentExecutionAdapter
+
+
+class {{ framework.name|capitalize }}Adapter(AgentExecutionAdapter):
+    """
+    Adapter for {{ framework.name|capitalize }} framework.
+    
+    Maps EvoGenesis agents and tasks to {{ framework.name }} concepts.
+    """
+    
+    def __init__(self):
+        """Initialize the {{ framework.name }} adapter."""
+        if not {{ framework.name|upper }}_AVAILABLE:
+            raise ImportError("{{ framework.name|capitalize }} is not available. Install with 'pip install {{ framework.name.lower() }}'")
+        
+        self.agents = {}  # agent_id -> framework agent
+        self.teams = {}   # team_id -> Dict with team info
+        self.agent_configs = {}  # agent_id -> config
+        self.active_tasks = {}  # task_id -> task_info
+        self.agent_status = {}  # agent_id -> status
+    
+    def initialize(self, config: Dict[str, Any]) -> bool:
+        """
+        Initialize the {{ framework.name }} adapter with configuration.
+        
+        Args:
+            config: Configuration dictionary
+            
+        Returns:
+            True if initialization successful, False otherwise
+        """
+        try:
+            self.global_config = config
+            
+            # Framework-specific initialization
+            # Add your framework-specific initialization here
+            
+            logging.info("{{ framework.name|capitalize }} adapter initialized successfully")
+            return True
+        except Exception as e:
+            logging.error(f"Failed to initialize {{ framework.name }} adapter: {str(e)}")
+            return False
+    
+    async def create_agent(self, agent_spec: Dict[str, Any]) -> str:
+        """
+        Create an agent using {{ framework.name }}.
+        
+        Args:
+            agent_spec: Specification of the agent to create
+            
+        Returns:
+            Agent ID
+        """
+        try:
+            # Generate an ID for this agent
+            agent_id = str(uuid.uuid4())
+            
+            # Extract agent configuration
+            agent_name = agent_spec.get("name", f"Agent-{agent_id[:8]}")
+            agent_type = agent_spec.get("type", "default")
+            agent_description = agent_spec.get("description", "A helpful assistant")
+            
+            # Get LLM config
+            llm_config = agent_spec.get("llm_config", {})
+            
+            # Framework-specific agent creation
+            # Replace this with actual framework agent creation
+            framework_agent = None  # This should create a framework-specific agent
+            
+            # Store the agent
+            self.agents[agent_id] = framework_agent
+            self.agent_configs[agent_id] = agent_spec
+            self.agent_status[agent_id] = {
+                "status": "initialized",
+                "tasks_completed": 0,
+                "current_task": None,
+                "last_active": asyncio.get_event_loop().time()
+            }
+            
+            logging.info(f"Created {{ framework.name }} agent {agent_id} of type {agent_type}")
+            return agent_id
+            
+        except Exception as e:
+            logging.error(f"Failed to create {{ framework.name }} agent: {str(e)}")
+            raise
+    
+    async def run_agent_task(self, agent_id: str, task: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Execute a task using {{ framework.name }}.
+        
+        Args:
+            agent_id: ID of the agent to use
+            task: Task specification
+            
+        Returns:
+            Task execution results
+        """
+        if agent_id not in self.agents:
+            raise ValueError(f"Agent {agent_id} not found")
+        
+        agent = self.agents[agent_id]
+        task_id = task.get("task_id", str(uuid.uuid4()))
+        
+        try:
+            # Update agent status
+            self.agent_status[agent_id]["status"] = "running"
+            self.agent_status[agent_id]["current_task"] = task_id
+            self.agent_status[agent_id]["last_active"] = asyncio.get_event_loop().time()
+            
+            # Store task information
+            self.active_tasks[task_id] = {
+                "agent_id": agent_id,
+                "task": task,
+                "status": "running",
+                "start_time": asyncio.get_event_loop().time()
+            }
+            
+            # Extract task information
+            task_type = task.get("type", "general")
+            task_content = task.get("content", "")
+            
+            # Framework-specific task execution
+            # Replace this with actual framework task execution
+            result = "Task execution not implemented"
+            
+            # Update task and agent status
+            self.active_tasks[task_id]["status"] = "completed"
+            self.active_tasks[task_id]["end_time"] = asyncio.get_event_loop().time()
+            self.active_tasks[task_id]["result"] = result
+            
+            self.agent_status[agent_id]["status"] = "idle"
+            self.agent_status[agent_id]["current_task"] = None
+            self.agent_status[agent_id]["tasks_completed"] += 1
+            self.agent_status[agent_id]["last_active"] = asyncio.get_event_loop().time()
+            
+            # Return result
+            return {
+                "task_id": task_id,
+                "agent_id": agent_id,
+                "status": "completed",
+                "result": result,
+                "execution_time": self.active_tasks[task_id]["end_time"] - self.active_tasks[task_id]["start_time"]
+            }
+            
+        except Exception as e:
+            # Update task and agent status on error
+            if task_id in self.active_tasks:
+                self.active_tasks[task_id]["status"] = "failed"
+                self.active_tasks[task_id]["error"] = str(e)
+                self.active_tasks[task_id]["end_time"] = asyncio.get_event_loop().time()
+            
+            self.agent_status[agent_id]["status"] = "error"
+            self.agent_status[agent_id]["current_task"] = None
+            self.agent_status[agent_id]["last_active"] = asyncio.get_event_loop().time()
+            
+            logging.error(f"Failed to execute task {task_id} with agent {agent_id}: {str(e)}")
+            
+            return {
+                "task_id": task_id,
+                "agent_id": agent_id,
+                "status": "failed",
+                "error": str(e)
+            }
+    
+    async def get_agent_status(self, agent_id: str) -> Dict[str, Any]:
+        """
+        Get the current status of a {{ framework.name }} agent.
+        
+        Args:
+            agent_id: ID of the agent
+            
+        Returns:
+            Dictionary with agent status information
+        """
+        if agent_id not in self.agent_status:
+            raise ValueError(f"Agent {agent_id} not found")
+        
+        status_info = self.agent_status[agent_id].copy()
+        
+        # Add framework-specific information
+        # Replace with actual framework-specific status information
+        
+        return status_info
+    
+    async def terminate_agent(self, agent_id: str) -> bool:
+        """
+        Terminate a {{ framework.name }} agent.
+        
+        Args:
+            agent_id: ID of the agent to terminate
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        if agent_id not in self.agents:
+            return False
+        
+        try:
+            # Framework-specific cleanup
+            # Replace with actual framework cleanup
+            
+            # Remove from our records
+            del self.agents[agent_id]
+            del self.agent_configs[agent_id]
+            self.agent_status[agent_id] = {"status": "terminated"}
+            
+            # Remove from any teams
+            for team_id, team in self.teams.items():
+                if agent_id in team.get("agents", []):
+                    team["agents"].remove(agent_id)
+            
+            return True
+        except Exception as e:
+            logging.error(f"Failed to terminate agent {agent_id}: {str(e)}")
+            return False
+    
+    async def pause_agent(self, agent_id: str) -> bool:
+        """
+        Pause a {{ framework.name }} agent.
+        
+        Args:
+            agent_id: ID of the agent to pause
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        if agent_id not in self.agent_status:
+            return False
+        
+        # Framework may not support pause/resume directly
+        self.agent_status[agent_id]["status"] = "paused"
+        return True
+    
+    async def resume_agent(self, agent_id: str) -> bool:
+        """
+        Resume a paused {{ framework.name }} agent.
+        
+        Args:
+            agent_id: ID of the agent to resume
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        if agent_id not in self.agent_status:
+            return False
+        
+        if self.agent_status[agent_id]["status"] == "paused":
+            self.agent_status[agent_id]["status"] = "idle"
+            return True
+        
+        return False
+    
+    async def update_agent(self, agent_id: str, updates: Dict[str, Any]) -> bool:
+        """
+        Update a {{ framework.name }} agent's configuration.
+        
+        Args:
+            agent_id: ID of the agent to update
+            updates: Dictionary of updates to apply
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        if agent_id not in self.agents:
+            return False
+        
+        try:
+            # Update the agent configuration
+            self.agent_configs[agent_id].update(updates)
+            
+            # Framework-specific update logic
+            # Replace with actual framework update logic
+            
+            return True
+        except Exception as e:
+            logging.error(f"Failed to update agent {agent_id}: {str(e)}")
+            return False
+    
+    async def create_team(self, team_spec: Dict[str, Any]) -> str:
+        """
+        Create a team of {{ framework.name }} agents.
+        
+        Args:
+            team_spec: Specification of the team to create
+            
+        Returns:
+            Team ID
+        """
+        team_id = str(uuid.uuid4())
+        
+        try:
+            # Create a team configuration
+            team_name = team_spec.get("name", f"Team-{team_id[:8]}")
+            member_specs = team_spec.get("members", [])
+            
+            # Create or use existing agents
+            team_agents = []
+            for member_spec in member_specs:
+                if "agent_id" in member_spec and member_spec["agent_id"] in self.agents:
+                    # Use existing agent
+                    team_agents.append(member_spec["agent_id"])
+                else:
+                    # Create a new agent
+                    agent_id = await self.create_agent(member_spec)
+                    team_agents.append(agent_id)
+            
+            # Store team information
+            self.teams[team_id] = {
+                "id": team_id,
+                "name": team_name,
+                "agents": team_agents,
+                "creation_time": asyncio.get_event_loop().time(),
+                "description": team_spec.get("description", "")
+            }
+            
+            logging.info(f"Created {{ framework.name }} team {team_id} with {len(team_agents)} agents")
+            return team_id
+            
+        except Exception as e:
+            logging.error(f"Failed to create team: {str(e)}")
+            raise
+    
+    async def get_framework_capabilities(self) -> Dict[str, Any]:
+        """
+        Get the capabilities of {{ framework.name }}.
+        
+        Returns:
+            Dictionary describing {{ framework.name }}'s capabilities
+        """
+        capabilities = {
+            "name": "{{ framework.name }}",
+            "version": getattr({{ module_name }}, "__version__", "unknown"),
+            "features": {
+                # Framework-specific features
+                # Replace with actual framework capabilities
+            }
+        }
+        
+        return capabilities
+    
+    async def shutdown(self) -> bool:
+        """
+        Shut down the {{ framework.name }} adapter cleanly.
+        
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Framework-specific cleanup
+            # Replace with actual framework cleanup
+            
+            # Clear all data structures
+            self.agents.clear()
+            self.teams.clear()
+            self.agent_configs.clear()
+            self.agent_status.clear()
+            self.active_tasks.clear()
+            
+            return True
+        except Exception as e:
+            logging.error(f"Error shutting down {{ framework.name }} adapter: {str(e)}")
+            return False

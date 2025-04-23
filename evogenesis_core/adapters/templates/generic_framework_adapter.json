@@ -1,0 +1,29 @@
+{
+  "name": "generic_framework_adapter",
+  "description": "Generic template for creating adapters for agent frameworks",
+  "version": "1.0.0",
+  "framework_requirements": {
+    "min_version": "0.0.0"
+  },
+  "template_variables": {
+    "framework": {
+      "description": "Framework information object containing name, version, classes, etc."
+    },
+    "module_name": {
+      "description": "Name of the framework's main module to import"
+    }
+  },
+  "adapter_methods": {
+    "initialize": "Sets up the framework with configuration",
+    "create_agent": "Creates a new agent instance",
+    "run_agent_task": "Executes a task using an agent",
+    "get_agent_status": "Gets the current status of an agent",
+    "terminate_agent": "Terminates an agent instance",
+    "pause_agent": "Pauses an agent's execution",
+    "resume_agent": "Resumes a paused agent",
+    "update_agent": "Updates an agent's configuration",
+    "create_team": "Creates a team of agents",
+    "get_framework_capabilities": "Gets information about framework capabilities",
+    "shutdown": "Performs clean shutdown of the adapter"
+  }
+}

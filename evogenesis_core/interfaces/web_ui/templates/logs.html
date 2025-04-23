@@ -1,0 +1,432 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="logs-view">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-title">System Logs</h1>
+        <div>
+            <button id="refresh-logs-btn" class="btn btn-outline-primary">
+                <i class='bx bx-refresh'></i> Refresh
+            </button>
+            <button id="clear-logs-btn" class="btn btn-outline-danger">
+                <i class='bx bx-trash'></i> Clear Logs
+            </button>
+            <button id="download-logs-btn" class="btn btn-outline-secondary">
+                <i class='bx bx-download'></i> Download
+            </button>
+        </div>
+    </div>
+    
+    <!-- Log Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-end">
+                <div class="col-md-3">
+                    <label for="log-level-filter" class="form-label">Log Level</label>
+                    <select class="form-select" id="log-level-filter">
+                        <option value="all">All Levels</option>
+                        <option value="debug">Debug & Above</option>
+                        <option value="info" selected>Info & Above</option>
+                        <option value="warning">Warning & Above</option>
+                        <option value="error">Error Only</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="log-module-filter" class="form-label">Module</label>
+                    <select class="form-select" id="log-module-filter">
+                        <option value="all" selected>All Modules</option>
+                        <option value="kernel">Kernel</option>
+                        <option value="agent_manager">Agent Manager</option>
+                        <option value="llm_orchestrator">LLM Orchestrator</option>
+                        <option value="tooling_system">Tooling System</option>
+                        <option value="memory_manager">Memory Manager</option>
+                        <option value="task_planner">Task Planner</option>
+                        <option value="hitl_interface">HITL Interface</option>
+                        <option value="self_evolution">Self Evolution</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="log-search" class="form-label">Search</label>
+                    <input type="text" class="form-control" id="log-search" placeholder="Search in logs...">
+                </div>
+                <div class="col-md-2">
+                    <button id="apply-filters-btn" class="btn btn-primary w-100">
+                        Apply Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Logs Table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="logs-container mb-3">
+                <div class="table-responsive">
+                    <table class="table table-hover log-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 180px;">Timestamp</th>
+                                <th style="width: 100px;">Level</th>
+                                <th style="width: 150px;">Module</th>
+                                <th>Message</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logs-body">
+                            <!-- Log entries will be populated dynamically -->
+                            <tr>
+                                <td>2025-04-18 09:35:22</td>
+                                <td><span class="badge bg-info">INFO</span></td>
+                                <td>Kernel</td>
+                                <td>System initialization complete</td>
+                            </tr>
+                            <tr>
+                                <td>2025-04-18 09:35:23</td>
+                                <td><span class="badge bg-info">INFO</span></td>
+                                <td>Agent Manager</td>
+                                <td>Starting system agents</td>
+                            </tr>
+                            <tr>
+                                <td>2025-04-18 09:35:25</td>
+                                <td><span class="badge bg-warning">WARNING</span></td>
+                                <td>LLM Orchestrator</td>
+                                <td>Could not initialize local LLM provider, falling back to cloud API</td>
+                            </tr>
+                            <tr>
+                                <td>2025-04-18 09:36:10</td>
+                                <td><span class="badge bg-danger">ERROR</span></td>
+                                <td>Tooling System</td>
+                                <td>Tool execution failed: web_search - Connection timeout after 30 seconds</td>
+                            </tr>
+                            <tr>
+                                <td>2025-04-18 09:36:15</td>
+                                <td><span class="badge bg-secondary">DEBUG</span></td>
+                                <td>Memory Manager</td>
+                                <td>Inserting 3 new memory chunks into vector store</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Pagination -->
+            <nav>
+                <ul class="pagination justify-content-center">
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
+                    </li>
+                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                    <li class="page-item"><a class="page-link" href="#">2</a></li>
+                    <li class="page-item"><a class="page-link" href="#">3</a></li>
+                    <li class="page-item">
+                        <a class="page-link" href="#">Next</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+    
+    <!-- Log Details Modal -->
+    <div class="modal fade" id="logDetailModal" tabindex="-1" aria-labelledby="logDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="logDetailModalLabel">Log Entry Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Timestamp</dt>
+                                <dd class="col-sm-8" id="log-detail-timestamp">2025-04-18 09:36:10</dd>
+                                
+                                <dt class="col-sm-4">Level</dt>
+                                <dd class="col-sm-8" id="log-detail-level">ERROR</dd>
+                                
+                                <dt class="col-sm-4">Module</dt>
+                                <dd class="col-sm-8" id="log-detail-module">Tooling System</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Logger</dt>
+                                <dd class="col-sm-8" id="log-detail-logger">evogenesis_core.modules.tooling_system</dd>
+                                
+                                <dt class="col-sm-4">Process</dt>
+                                <dd class="col-sm-8" id="log-detail-process">MainProcess</dd>
+                                
+                                <dt class="col-sm-4">Thread</dt>
+                                <dd class="col-sm-8" id="log-detail-thread">ToolExecutionThread</dd>
+                            </dl>
+                        </div>
+                    </div>
+                    
+                    <h6>Message</h6>
+                    <div class="log-message-box p-3 bg-light rounded" id="log-detail-message">
+                        Tool execution failed: web_search - Connection timeout after 30 seconds
+                    </div>
+                    
+                    <h6 class="mt-3">Stack Trace</h6>
+                    <div class="log-trace-box p-3 bg-light rounded" id="log-detail-trace">
+                        <pre>Traceback (most recent call last):
+  File "C:\dev\evoorg\evogenesis_core\modules\tooling_system.py", line 423, in execute_tool
+    result = await self._execute_tool_with_timeout(tool, args, timeout)
+  File "C:\dev\evoorg\evogenesis_core\modules\tooling_system.py", line 456, in _execute_tool_with_timeout
+    return await asyncio.wait_for(self._execute_tool_internal(tool, args), timeout)
+  File "C:\Python310\lib\asyncio\tasks.py", line 408, in wait_for
+    raise asyncio.TimeoutError()
+asyncio.TimeoutError
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\dev\evoorg\evogenesis_core\modules\tooling_system.py", line 463, in _handle_tool_error
+    raise ToolExecutionError(f"Tool execution failed: {tool_name} - {str(e)}")
+evogenesis_core.exceptions.ToolExecutionError: Tool execution failed: web_search - Connection timeout after 30 seconds</pre>
+                    </div>
+                    
+                    <h6 class="mt-3">Context Data</h6>
+                    <div class="log-context-box p-3 bg-light rounded" id="log-detail-context">
+                        <pre>{
+  "tool_name": "web_search",
+  "tool_args": {
+    "query": "latest advancements in AI research 2025",
+    "num_results": 5
+  },
+  "agent_id": "agent-research-01",
+  "execution_id": "tool-exec-12345",
+  "attempt": 1
+}</pre>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Load logs
+        loadLogs();
+        
+        // Setup auto-refresh
+        let autoRefreshInterval;
+        
+        // Setup event listeners
+        document.getElementById('refresh-logs-btn').addEventListener('click', function() {
+            loadLogs();
+        });
+        
+        document.getElementById('clear-logs-btn').addEventListener('click', function() {
+            if (confirm('Are you sure you want to clear all logs? This cannot be undone.')) {
+                clearLogs();
+            }
+        });
+        
+        document.getElementById('download-logs-btn').addEventListener('click', function() {
+            downloadLogs();
+        });
+        
+        document.getElementById('apply-filters-btn').addEventListener('click', function() {
+            loadLogs();
+        });
+        
+        // Log row click for details
+        document.getElementById('logs-body').addEventListener('click', function(e) {
+            const row = e.target.closest('tr');
+            if (row) {
+                showLogDetails(row);
+            }
+        });
+        
+        // For demo, automatically show the error log details when page loads
+        setTimeout(() => {
+            const errorRow = document.querySelector('#logs-body tr:nth-child(4)');
+            if (errorRow) {
+                showLogDetails(errorRow);
+            }
+        }, 1000);
+    });
+    
+    async function loadLogs() {
+        try {
+            // Get filter values
+            const level = document.getElementById('log-level-filter').value;
+            const module = document.getElementById('log-module-filter').value;
+            const search = document.getElementById('log-search').value;
+            
+            // Prepare query parameters
+            const params = new URLSearchParams();
+            if (level !== 'all') params.append('level', level);
+            if (module !== 'all') params.append('module', module);
+            if (search) params.append('search', search);
+            
+            const logs = await EvoGenesis.api.fetch(`/api/logs?${params.toString()}`);
+            if (!logs) return;
+            
+            renderLogs(logs.entries || []);
+        } catch (error) {
+            console.error('Error loading logs:', error);
+            EvoGenesis.ui.showNotification('Failed to load logs', 'error');
+        }
+    }
+    
+    function renderLogs(logs) {
+        const logsBody = document.getElementById('logs-body');
+        logsBody.innerHTML = '';
+        
+        if (logs.length === 0) {
+            const row = document.createElement('tr');
+            row.innerHTML = '<td colspan="4" class="text-center">No log entries found matching your criteria.</td>';
+            logsBody.appendChild(row);
+            return;
+        }
+        
+        logs.forEach(log => {
+            const row = document.createElement('tr');
+            row.dataset.logId = log.id;
+            
+            // Determine badge color based on log level
+            let badgeClass;
+            switch (log.level.toLowerCase()) {
+                case 'debug':
+                    badgeClass = 'bg-secondary';
+                    break;
+                case 'info':
+                    badgeClass = 'bg-info';
+                    break;
+                case 'warning':
+                    badgeClass = 'bg-warning';
+                    break;
+                case 'error':
+                    badgeClass = 'bg-danger';
+                    break;
+                case 'critical':
+                    badgeClass = 'bg-dark';
+                    break;
+                default:
+                    badgeClass = 'bg-secondary';
+            }
+            
+            row.innerHTML = `
+                <td>${formatTimestamp(log.timestamp)}</td>
+                <td><span class="badge ${badgeClass}">${log.level.toUpperCase()}</span></td>
+                <td>${log.module}</td>
+                <td>${log.message}</td>
+            `;
+            
+            // Add extra data for detail view
+            row.dataset.logger = log.logger || '';
+            row.dataset.process = log.process || '';
+            row.dataset.thread = log.thread || '';
+            row.dataset.trace = log.traceback || '';
+            row.dataset.context = JSON.stringify(log.context || {});
+            
+            logsBody.appendChild(row);
+        });
+    }
+    
+    function formatTimestamp(timestamp) {
+        return new Date(timestamp).toLocaleString();
+    }
+    
+    function showLogDetails(row) {
+        // Fill in modal with log details
+        document.getElementById('log-detail-timestamp').textContent = row.cells[0].textContent;
+        document.getElementById('log-detail-level').textContent = row.cells[1].textContent.trim();
+        document.getElementById('log-detail-module').textContent = row.cells[2].textContent;
+        document.getElementById('log-detail-message').textContent = row.cells[3].textContent;
+        
+        // Additional details from data attributes
+        document.getElementById('log-detail-logger').textContent = row.dataset.logger || 'N/A';
+        document.getElementById('log-detail-process').textContent = row.dataset.process || 'N/A';
+        document.getElementById('log-detail-thread').textContent = row.dataset.thread || 'N/A';
+        
+        // Format traceback if available
+        const traceElement = document.getElementById('log-detail-trace');
+        if (row.dataset.trace) {
+            traceElement.innerHTML = `<pre>${row.dataset.trace}</pre>`;
+            traceElement.parentElement.style.display = '';
+        } else {
+            traceElement.innerHTML = '<p class="text-muted">No stack trace available</p>';
+            traceElement.parentElement.style.display = 'none';
+        }
+        
+        // Format context data if available
+        const contextElement = document.getElementById('log-detail-context');
+        try {
+            const contextData = JSON.parse(row.dataset.context);
+            if (Object.keys(contextData).length > 0) {
+                contextElement.innerHTML = `<pre>${JSON.stringify(contextData, null, 2)}</pre>`;
+                contextElement.parentElement.style.display = '';
+            } else {
+                contextElement.innerHTML = '<p class="text-muted">No context data available</p>';
+                contextElement.parentElement.style.display = 'none';
+            }
+        } catch (e) {
+            contextElement.innerHTML = '<p class="text-muted">No context data available</p>';
+            contextElement.parentElement.style.display = 'none';
+        }
+        
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('logDetailModal'));
+        modal.show();
+    }
+    
+    async function clearLogs() {
+        try {
+            const result = await EvoGenesis.api.fetch('/api/logs/clear', {
+                method: 'POST'
+            });
+            
+            if (result && result.success) {
+                EvoGenesis.ui.showNotification('Logs cleared successfully', 'success');
+                loadLogs(); // Reload logs (should be empty now)
+            } else {
+                throw new Error(result?.message || 'Unknown error clearing logs');
+            }
+        } catch (error) {
+            console.error('Error clearing logs:', error);
+            EvoGenesis.ui.showNotification(`Failed to clear logs: ${error.message}`, 'error');
+        }
+    }
+    
+    function downloadLogs() {
+        try {
+            // Get filter values
+            const level = document.getElementById('log-level-filter').value;
+            const module = document.getElementById('log-module-filter').value;
+            const search = document.getElementById('log-search').value;
+            
+            // Prepare query parameters
+            const params = new URLSearchParams();
+            if (level !== 'all') params.append('level', level);
+            if (module !== 'all') params.append('module', module);
+            if (search) params.append('search', search);
+            params.append('format', 'csv');
+            
+            // Generate download URL with current filters
+            const downloadUrl = `/api/logs/download?${params.toString()}`;
+            
+            // Create a temporary link and trigger download
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = `evogenesis_logs_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            
+            EvoGenesis.ui.showNotification('Downloading logs...', 'info');
+        } catch (error) {
+            console.error('Error downloading logs:', error);
+            EvoGenesis.ui.showNotification('Failed to download logs', 'error');
+        }
+    }
+</script>
+{% endblock %}

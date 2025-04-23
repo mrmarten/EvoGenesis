@@ -1,0 +1,54 @@
+    def start_web_ui(self, host: Optional[str] = None, port: Optional[int] = None, dev_mode: bool = False) -> bool:
+        """
+        Start the Web UI for the EvoGenesis Control Panel.
+        
+        Args:
+            host: Host to bind to (default: from config or 0.0.0.0)
+            port: Port to listen on (default: from config or 5000)
+            dev_mode: Whether to start in development mode
+            
+        Returns:
+            True if started successfully, False otherwise
+        """
+        if not hasattr(self, 'web_ui'):
+            self.logger.error("Web UI not initialized")
+            return False
+            
+        # Get configuration from config file
+        web_ui_config = self.config.get("web_ui", {})
+        
+        # Use parameters or config values
+        host = host or web_ui_config.get("host", "0.0.0.0")
+        port = port or web_ui_config.get("port", 5000)
+        
+        # If in dev mode, override debug setting
+        if dev_mode:
+            web_ui_config["debug"] = True
+            
+        self.logger.info(f"Starting Web UI on http://{host}:{port}")
+        return self.web_ui.start(host=host, port=port)
+        
+    def stop_web_ui(self) -> bool:
+        """
+        Stop the Web UI if it's running.
+        
+        Returns:
+            True if stopped successfully, False otherwise
+        """
+        if not hasattr(self, 'web_ui'):
+            self.logger.error("Web UI not initialized")
+            return False
+            
+        return self.web_ui.stop()
+        
+    def get_web_ui_url(self) -> Optional[str]:
+        """
+        Get the URL for the Web UI.
+        
+        Returns:
+            URL string for the Web UI if running, None otherwise
+        """
+        if not hasattr(self, 'web_ui') or not self.web_ui.is_running:
+            return None
+            
+        return self.web_ui.get_url()

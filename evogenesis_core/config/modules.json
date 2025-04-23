@@ -1,0 +1,58 @@
+{
+  "llm_orchestrator": {
+    "default_model": "gpt-4",
+    "models": {
+      "gpt-4": {
+        "api_type": "openai",
+        "max_tokens": 8192,
+        "temperature": 0.7,
+        "top_p": 0.95,
+        "frequency_penalty": 0.0,
+        "presence_penalty": 0.0
+      },
+      "gpt-3.5-turbo": {
+        "api_type": "openai",
+        "max_tokens": 4096,
+        "temperature": 0.7,
+        "top_p": 0.95,
+        "frequency_penalty": 0.0,
+        "presence_penalty": 0.0
+      },
+      "llama-2-70b": {
+        "api_type": "locally_hosted",
+        "endpoint": "http://localhost:8080/v1",
+        "max_tokens": 4096,
+        "temperature": 0.7,
+        "top_p": 0.95
+      }
+    },
+    "fallback_order": ["gpt-3.5-turbo", "llama-2-70b"],
+    "rate_limiting": {
+      "enabled": true,
+      "requests_per_minute": 20
+    }
+  },
+  "agent_manager": {
+    "max_concurrent_agents": 10,
+    "agent_timeout_seconds": 300,
+    "default_prompt_template": "system_default",
+    "prompt_templates": {
+      "system_default": "You are an AI assistant built with EvoGenesis. Answer the user's questions helpfully and accurately."
+    }
+  },
+  "memory_manager": {
+    "vector_db": {
+      "type": "chroma",
+      "path": "./data/vector_db"
+    },
+    "ttl_days": 30,
+    "chunk_size": 1000,
+    "chunk_overlap": 200
+  },
+  "tooling_system": {
+    "max_concurrent_tools": 5,
+    "tool_timeout_seconds": 60,
+    "auto_reload_tools": true,
+    "tool_directories": ["./tools", "./custom_tools"]
+  }
+}

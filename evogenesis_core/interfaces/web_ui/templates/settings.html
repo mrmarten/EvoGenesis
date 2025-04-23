@@ -1,0 +1,767 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="settings-view">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-title">Settings</h1>
+        <div>
+            <button id="save-settings-btn" class="btn btn-primary">
+                <i class='bx bx-save'></i> Save Settings
+            </button>
+            <button id="reset-settings-btn" class="btn btn-outline-secondary">
+                <i class='bx bx-reset'></i> Reset
+            </button>
+        </div>
+    </div>
+    
+    <!-- Settings Content -->
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card settings-nav">
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush" id="settings-tab-list" role="tablist">
+                        <a class="list-group-item list-group-item-action active" id="general-settings-tab" data-bs-toggle="list" href="#general-settings" role="tab">
+                            <i class='bx bx-cog'></i> General
+                        </a>
+                        <a class="list-group-item list-group-item-action" id="llm-settings-tab" data-bs-toggle="list" href="#llm-settings" role="tab">
+                            <i class='bx bx-brain'></i> LLM Models
+                        </a>
+                        <a class="list-group-item list-group-item-action" id="agent-settings-tab" data-bs-toggle="list" href="#agent-settings" role="tab">
+                            <i class='bx bx-bot'></i> Agents
+                        </a>
+                        <a class="list-group-item list-group-item-action" id="memory-settings-tab" data-bs-toggle="list" href="#memory-settings" role="tab">
+                            <i class='bx bx-memory-card'></i> Memory
+                        </a>
+                        <a class="list-group-item list-group-item-action" id="tool-settings-tab" data-bs-toggle="list" href="#tool-settings" role="tab">
+                            <i class='bx bx-wrench'></i> Tools
+                        </a>
+                        <a class="list-group-item list-group-item-action" id="api-settings-tab" data-bs-toggle="list" href="#api-settings" role="tab">
+                            <i class='bx bx-code-curly'></i> API Keys
+                        </a>
+                        <a class="list-group-item list-group-item-action" id="hitl-settings-tab" data-bs-toggle="list" href="#hitl-settings" role="tab">
+                            <i class='bx bx-user'></i> Human-in-the-Loop
+                        </a>
+                        <a class="list-group-item list-group-item-action" id="system-settings-tab" data-bs-toggle="list" href="#system-settings" role="tab">
+                            <i class='bx bx-server'></i> System
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-body">
+                    <div class="tab-content">
+                        <!-- General Settings -->
+                        <div class="tab-pane fade show active" id="general-settings" role="tabpanel">
+                            <h5 class="card-title">General Settings</h5>
+                            <form id="general-settings-form">
+                                <div class="mb-3">
+                                    <label for="system-name" class="form-label">System Name</label>
+                                    <input type="text" class="form-control" id="system-name" value="EvoGenesis">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="ui-theme" class="form-label">UI Theme</label>
+                                    <select class="form-select" id="ui-theme">
+                                        <option value="light">Light</option>
+                                        <option value="dark">Dark</option>
+                                        <option value="auto">System Default</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="log-level" class="form-label">Log Level</label>
+                                    <select class="form-select" id="log-level">
+                                        <option value="debug">Debug</option>
+                                        <option value="info" selected>Info</option>
+                                        <option value="warning">Warning</option>
+                                        <option value="error">Error</option>
+                                    </select>
+                                </div>
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="enable-telemetry" checked>
+                                    <label class="form-check-label" for="enable-telemetry">
+                                        Enable Anonymous Usage Telemetry
+                                    </label>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <!-- LLM Models Settings -->
+                        <div class="tab-pane fade" id="llm-settings" role="tabpanel">
+                            <h5 class="card-title">LLM Models</h5>
+                            <div class="mb-3">
+                                <label for="default-model" class="form-label">Default Model</label>
+                                <select class="form-select" id="default-model">
+                                    <option value="gpt-4">GPT-4</option>
+                                    <option value="gpt-3.5-turbo" selected>GPT-3.5 Turbo</option>
+                                    <option value="claude-2">Claude 2</option>
+                                    <option value="llama-2-70b">Llama 2 70B</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="fallback-model" class="form-label">Fallback Model</label>
+                                <select class="form-select" id="fallback-model">
+                                    <option value="gpt-4">GPT-4</option>
+                                    <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                                    <option value="claude-2">Claude 2</option>
+                                    <option value="llama-2-70b" selected>Llama 2 70B</option>
+                                </select>
+                            </div>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="enable-rate-limiting" checked>
+                                <label class="form-check-label" for="enable-rate-limiting">
+                                    Enable Rate Limiting
+                                </label>
+                            </div>
+                            <div class="mb-3">
+                                <label for="requests-per-minute" class="form-label">Requests Per Minute</label>
+                                <input type="number" class="form-control" id="requests-per-minute" value="20">
+                            </div>
+                            <h6 class="mt-4">Available Models</h6>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Model</th>
+                                            <th>Provider</th>
+                                            <th>Context Size</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="models-list">
+                                        <tr>
+                                            <td>GPT-4</td>
+                                            <td>OpenAI</td>
+                                            <td>8K</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary">Edit</button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>GPT-3.5 Turbo</td>
+                                            <td>OpenAI</td>
+                                            <td>4K</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary">Edit</button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Llama 2 70B</td>
+                                            <td>Local</td>
+                                            <td>4K</td>
+                                            <td><span class="badge bg-danger">Unavailable</span></td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary">Edit</button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <button class="btn btn-primary mt-2">
+                                <i class='bx bx-plus'></i> Add Model
+                            </button>
+                        </div>
+                        
+                        <!-- Agent Settings -->
+                        <div class="tab-pane fade" id="agent-settings" role="tabpanel">
+                            <h5 class="card-title">Agent Settings</h5>
+                            <div class="mb-3">
+                                <label for="max-concurrent-agents" class="form-label">Max Concurrent Agents</label>
+                                <input type="number" class="form-control" id="max-concurrent-agents" value="10">
+                            </div>
+                            <div class="mb-3">
+                                <label for="agent-timeout" class="form-label">Agent Timeout (seconds)</label>
+                                <input type="number" class="form-control" id="agent-timeout" value="300">
+                            </div>
+                            <div class="mb-3">
+                                <label for="default-prompt-template" class="form-label">Default Prompt Template</label>
+                                <select class="form-select" id="default-prompt-template">
+                                    <option value="system_default" selected>System Default</option>
+                                    <option value="assistant">Assistant</option>
+                                    <option value="researcher">Researcher</option>
+                                    <option value="custom">Custom</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="default-prompt-text" class="form-label">Default Prompt</label>
+                                <textarea class="form-control" id="default-prompt-text" rows="5">You are an AI assistant built with EvoGenesis. Answer the user's questions helpfully and accurately.</textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- Memory Settings -->
+                        <div class="tab-pane fade" id="memory-settings" role="tabpanel">
+                            <h5 class="card-title">Memory Settings</h5>
+                            <div class="mb-3">
+                                <label for="vector-db-type" class="form-label">Vector Database</label>
+                                <select class="form-select" id="vector-db-type">
+                                    <option value="chroma" selected>Chroma</option>
+                                    <option value="pinecone">Pinecone</option>
+                                    <option value="qdrant">Qdrant</option>
+                                    <option value="faiss">FAISS</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="vector-db-path" class="form-label">Database Path</label>
+                                <input type="text" class="form-control" id="vector-db-path" value="./data/vector_db">
+                            </div>
+                            <div class="mb-3">
+                                <label for="memory-ttl" class="form-label">Memory TTL (days)</label>
+                                <input type="number" class="form-control" id="memory-ttl" value="30">
+                                <div class="form-text">Set to 0 for no expiration</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="chunk-size" class="form-label">Chunk Size</label>
+                                <input type="number" class="form-control" id="chunk-size" value="1000">
+                            </div>
+                            <div class="mb-3">
+                                <label for="chunk-overlap" class="form-label">Chunk Overlap</label>
+                                <input type="number" class="form-control" id="chunk-overlap" value="200">
+                            </div>
+                        </div>
+                        
+                        <!-- Tool Settings -->
+                        <div class="tab-pane fade" id="tool-settings" role="tabpanel">
+                            <h5 class="card-title">Tool Settings</h5>
+                            <div class="mb-3">
+                                <label for="max-concurrent-tools" class="form-label">Max Concurrent Tools</label>
+                                <input type="number" class="form-control" id="max-concurrent-tools" value="5">
+                            </div>
+                            <div class="mb-3">
+                                <label for="tool-timeout" class="form-label">Tool Timeout (seconds)</label>
+                                <input type="number" class="form-control" id="tool-timeout" value="60">
+                            </div>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="auto-reload-tools" checked>
+                                <label class="form-check-label" for="auto-reload-tools">
+                                    Auto-reload Tools
+                                </label>
+                            </div>
+                            <div class="mb-3">
+                                <label for="tool-directories" class="form-label">Tool Directories</label>
+                                <textarea class="form-control" id="tool-directories" rows="2">./tools
+./custom_tools</textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- API Settings -->
+                        <div class="tab-pane fade" id="api-settings" role="tabpanel">
+                            <h5 class="card-title">API Keys</h5>
+                            <div class="alert alert-info">
+                                <i class='bx bx-info-circle'></i>
+                                API keys are encrypted before storage and are never exposed in logs or API responses.
+                            </div>
+                            <div class="mb-3">
+                                <label for="openai-api-key" class="form-label">OpenAI API Key</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="openai-api-key" value="••••••••••••••••••••••••">
+                                    <button class="btn btn-outline-secondary toggle-password" type="button">
+                                        <i class='bx bx-show'></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="anthropic-api-key" class="form-label">Anthropic API Key</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="anthropic-api-key" value="">
+                                    <button class="btn btn-outline-secondary toggle-password" type="button">
+                                        <i class='bx bx-show'></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="pinecone-api-key" class="form-label">Pinecone API Key</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="pinecone-api-key" value="">
+                                    <button class="btn btn-outline-secondary toggle-password" type="button">
+                                        <i class='bx bx-show'></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary mt-2">
+                                <i class='bx bx-plus'></i> Add API Key
+                            </button>
+                        </div>
+                        
+                        <!-- HITL Settings -->
+                        <div class="tab-pane fade" id="hitl-settings" role="tabpanel">
+                            <h5 class="card-title">Human-in-the-Loop Settings</h5>
+                            <div class="mb-3">
+                                <label for="risk-approval-threshold" class="form-label">Risk Approval Threshold</label>
+                                <select class="form-select" id="risk-approval-threshold">
+                                    <option value="low">Low</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="high">High</option>
+                                </select>
+                                <div class="form-text">Actions with this risk level or higher require human approval</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="cost-alert-threshold" class="form-label">Cost Alert Threshold (USD)</label>
+                                <input type="number" class="form-control" id="cost-alert-threshold" value="5.0" step="0.1">
+                            </div>
+                            <div class="mb-3">
+                                <label for="auto-pause-threshold" class="form-label">Auto-Pause Threshold (USD)</label>
+                                <input type="number" class="form-control" id="auto-pause-threshold" value="10.0" step="0.1">
+                            </div>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="enable-urgent-notifications">
+                                <label class="form-check-label" for="enable-urgent-notifications">
+                                    Enable Urgent Notifications
+                                </label>
+                            </div>
+                            <h6 class="mt-4">Notification Methods</h6>
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="enable-email-notifications">
+                                        <label class="form-check-label" for="enable-email-notifications">
+                                            Email Notifications
+                                        </label>
+                                    </div>
+                                    <div class="mt-2" id="email-notification-settings">
+                                        <input type="email" class="form-control" placeholder="Email address">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="enable-slack-notifications">
+                                        <label class="form-check-label" for="enable-slack-notifications">
+                                            Slack Notifications
+                                        </label>
+                                    </div>
+                                    <div class="mt-2" id="slack-notification-settings">
+                                        <input type="text" class="form-control" placeholder="Webhook URL">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- System Settings -->
+                        <div class="tab-pane fade" id="system-settings" role="tabpanel">
+                            <h5 class="card-title">System Settings</h5>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="enable-debug-mode">
+                                <label class="form-check-label" for="enable-debug-mode">
+                                    Enable Debug Mode
+                                </label>
+                            </div>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="enable-backup-kernel">
+                                <label class="form-check-label" for="enable-backup-kernel">
+                                    Enable Backup Kernel
+                                </label>
+                            </div>
+                            <div class="mb-3">
+                                <label for="heartbeat-interval" class="form-label">Heartbeat Interval (seconds)</label>
+                                <input type="number" class="form-control" id="heartbeat-interval" value="5">
+                            </div>
+                            <div class="mb-3">
+                                <label for="heartbeat-timeout" class="form-label">Heartbeat Timeout (seconds)</label>
+                                <input type="number" class="form-control" id="heartbeat-timeout" value="15">
+                            </div>
+                            <h6 class="mt-4">Database Maintenance</h6>
+                            <div class="d-grid gap-2 d-md-flex">
+                                <button class="btn btn-warning" id="optimize-db-btn">
+                                    <i class='bx bx-analyse'></i> Optimize Database
+                                </button>
+                                <button class="btn btn-danger" id="clear-db-btn">
+                                    <i class='bx bx-trash'></i> Clear Database
+                                </button>
+                            </div>
+                            <h6 class="mt-4">System Backups</h6>
+                            <div class="d-grid gap-2 d-md-flex">
+                                <button class="btn btn-primary" id="create-backup-btn">
+                                    <i class='bx bx-save'></i> Create Backup
+                                </button>
+                                <button class="btn btn-outline-primary" id="restore-backup-btn">
+                                    <i class='bx bx-reset'></i> Restore from Backup
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Load settings
+        loadSettings();
+        
+        // Setup event listeners
+        document.getElementById('save-settings-btn').addEventListener('click', saveSettings);
+        document.getElementById('reset-settings-btn').addEventListener('click', resetSettings);
+        
+        // Toggle password visibility
+        document.querySelectorAll('.toggle-password').forEach(button => {
+            button.addEventListener('click', function() {
+                const input = this.closest('.input-group').querySelector('input');
+                const icon = this.querySelector('i');
+                
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.remove('bx-show');
+                    icon.classList.add('bx-hide');
+                } else {
+                    input.type = 'password';
+                    icon.classList.remove('bx-hide');
+                    icon.classList.add('bx-show');
+                }
+            });
+        });
+        
+        // Email notification toggle
+        document.getElementById('enable-email-notifications').addEventListener('change', function() {
+            const emailSettings = document.getElementById('email-notification-settings');
+            emailSettings.style.display = this.checked ? 'block' : 'none';
+        });
+        
+        // Slack notification toggle
+        document.getElementById('enable-slack-notifications').addEventListener('change', function() {
+            const slackSettings = document.getElementById('slack-notification-settings');
+            slackSettings.style.display = this.checked ? 'block' : 'none';
+        });
+        
+        // Database maintenance buttons
+        document.getElementById('optimize-db-btn').addEventListener('click', optimizeDatabase);
+        document.getElementById('clear-db-btn').addEventListener('click', confirmClearDatabase);
+        
+        // Backup buttons
+        document.getElementById('create-backup-btn').addEventListener('click', createBackup);
+        document.getElementById('restore-backup-btn').addEventListener('click', showRestoreBackupDialog);
+        
+        // Initialize display of notification settings
+        document.getElementById('email-notification-settings').style.display = 
+            document.getElementById('enable-email-notifications').checked ? 'block' : 'none';
+        document.getElementById('slack-notification-settings').style.display = 
+            document.getElementById('enable-slack-notifications').checked ? 'block' : 'none';
+    });
+    
+    async function loadSettings() {
+        try {
+            const settings = await EvoGenesis.api.fetch('/api/settings');
+            if (!settings) return;
+            
+            // General settings
+            document.getElementById('system-name').value = settings.general?.system_name || 'EvoGenesis';
+            document.getElementById('ui-theme').value = settings.general?.ui_theme || 'light';
+            document.getElementById('log-level').value = settings.general?.log_level || 'info';
+            document.getElementById('enable-telemetry').checked = settings.general?.enable_telemetry ?? true;
+            
+            // LLM settings
+            if (settings.llm_orchestrator) {
+                document.getElementById('default-model').value = settings.llm_orchestrator.default_model || 'gpt-3.5-turbo';
+                document.getElementById('fallback-model').value = settings.llm_orchestrator.fallback_model || 'llama-2-70b';
+                document.getElementById('enable-rate-limiting').checked = settings.llm_orchestrator.rate_limiting?.enabled ?? true;
+                document.getElementById('requests-per-minute').value = settings.llm_orchestrator.rate_limiting?.requests_per_minute || 20;
+                
+                // Populate models list
+                if (settings.llm_orchestrator.models) {
+                    const modelsList = document.getElementById('models-list');
+                    modelsList.innerHTML = '';
+                    
+                    Object.entries(settings.llm_orchestrator.models).forEach(([modelName, modelInfo]) => {
+                        const row = document.createElement('tr');
+                        const statusClass = modelInfo.available ? 'success' : 'danger';
+                        const statusText = modelInfo.available ? 'Active' : 'Unavailable';
+                        
+                        row.innerHTML = `
+                            <td>${modelName}</td>
+                            <td>${modelInfo.provider || 'Unknown'}</td>
+                            <td>${modelInfo.context_window || 'Unknown'}</td>
+                            <td><span class="badge bg-${statusClass}">${statusText}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary">Edit</button>
+                            </td>
+                        `;
+                        
+                        modelsList.appendChild(row);
+                    });
+                }
+            }
+            
+            // Agent settings
+            if (settings.agent_manager) {
+                document.getElementById('max-concurrent-agents').value = settings.agent_manager.max_concurrent_agents || 10;
+                document.getElementById('agent-timeout').value = settings.agent_manager.agent_timeout_seconds || 300;
+                document.getElementById('default-prompt-template').value = settings.agent_manager.default_prompt_template || 'system_default';
+                
+                // Try to get the prompt template text
+                const templateName = settings.agent_manager.default_prompt_template || 'system_default';
+                const templateText = settings.agent_manager.prompt_templates?.[templateName];
+                if (templateText) {
+                    document.getElementById('default-prompt-text').value = templateText;
+                }
+            }
+            
+            // Memory settings
+            if (settings.memory_manager) {
+                document.getElementById('vector-db-type').value = settings.memory_manager.vector_db?.type || 'chroma';
+                document.getElementById('vector-db-path').value = settings.memory_manager.vector_db?.path || './data/vector_db';
+                document.getElementById('memory-ttl').value = settings.memory_manager.ttl_days || 30;
+                document.getElementById('chunk-size').value = settings.memory_manager.chunk_size || 1000;
+                document.getElementById('chunk-overlap').value = settings.memory_manager.chunk_overlap || 200;
+            }
+            
+            // Tool settings
+            if (settings.tooling_system) {
+                document.getElementById('max-concurrent-tools').value = settings.tooling_system.max_concurrent_tools || 5;
+                document.getElementById('tool-timeout').value = settings.tooling_system.tool_timeout_seconds || 60;
+                document.getElementById('auto-reload-tools').checked = settings.tooling_system.auto_reload_tools ?? true;
+                
+                if (settings.tooling_system.tool_directories) {
+                    document.getElementById('tool-directories').value = settings.tooling_system.tool_directories.join('\n');
+                }
+            }
+            
+            // API keys - Just show placeholders, don't expose actual keys
+            if (settings.api_keys) {
+                Object.entries(settings.api_keys).forEach(([provider, hasKey]) => {
+                    if (hasKey && provider === 'openai') {
+                        document.getElementById('openai-api-key').value = '••••••••••••••••••••••••';
+                    } else if (hasKey && provider === 'anthropic') {
+                        document.getElementById('anthropic-api-key').value = '••••••••••••••••••••••••';
+                    } else if (hasKey && provider === 'pinecone') {
+                        document.getElementById('pinecone-api-key').value = '••••••••••••••••••••••••';
+                    }
+                });
+            }
+            
+            // HITL settings
+            if (settings.hitl_interface) {
+                const control = settings.hitl_interface.control_thresholds || {};
+                document.getElementById('risk-approval-threshold').value = control.risk_approval_threshold || 'medium';
+                document.getElementById('cost-alert-threshold').value = control.cost_alert_threshold || 5.0;
+                document.getElementById('auto-pause-threshold').value = control.auto_pause_threshold || 10.0;
+                
+                // Urgent notifications
+                const notifications = settings.hitl_interface.urgent_notifications || {};
+                document.getElementById('enable-urgent-notifications').checked = notifications.enabled || false;
+                
+                if (notifications.methods) {
+                    notifications.methods.forEach(method => {
+                        if (method.type === 'email') {
+                            document.getElementById('enable-email-notifications').checked = method.enabled || false;
+                            document.querySelector('#email-notification-settings input').value = method.address || '';
+                        } else if (method.type === 'slack') {
+                            document.getElementById('enable-slack-notifications').checked = method.enabled || false;
+                            document.querySelector('#slack-notification-settings input').value = method.webhook_url || '';
+                        }
+                    });
+                }
+            }
+            
+            // System settings
+            if (settings.system) {
+                document.getElementById('enable-debug-mode').checked = settings.system.debug_mode || false;
+                document.getElementById('enable-backup-kernel').checked = settings.system.enable_backup_kernel || false;
+                document.getElementById('heartbeat-interval').value = settings.system.heartbeat_interval || 5;
+                document.getElementById('heartbeat-timeout').value = settings.system.heartbeat_timeout || 15;
+            }
+            
+        } catch (error) {
+            console.error('Error loading settings:', error);
+            EvoGenesis.ui.showNotification('Failed to load settings', 'error');
+        }
+    }
+    
+    async function saveSettings() {
+        try {
+            // Build settings object
+            const settings = {
+                general: {
+                    system_name: document.getElementById('system-name').value,
+                    ui_theme: document.getElementById('ui-theme').value,
+                    log_level: document.getElementById('log-level').value,
+                    enable_telemetry: document.getElementById('enable-telemetry').checked
+                },
+                llm_orchestrator: {
+                    default_model: document.getElementById('default-model').value,
+                    fallback_model: document.getElementById('fallback-model').value,
+                    rate_limiting: {
+                        enabled: document.getElementById('enable-rate-limiting').checked,
+                        requests_per_minute: parseInt(document.getElementById('requests-per-minute').value)
+                    }
+                },
+                agent_manager: {
+                    max_concurrent_agents: parseInt(document.getElementById('max-concurrent-agents').value),
+                    agent_timeout_seconds: parseInt(document.getElementById('agent-timeout').value),
+                    default_prompt_template: document.getElementById('default-prompt-template').value,
+                    prompt_templates: {
+                        [document.getElementById('default-prompt-template').value]: document.getElementById('default-prompt-text').value
+                    }
+                },
+                memory_manager: {
+                    vector_db: {
+                        type: document.getElementById('vector-db-type').value,
+                        path: document.getElementById('vector-db-path').value
+                    },
+                    ttl_days: parseInt(document.getElementById('memory-ttl').value),
+                    chunk_size: parseInt(document.getElementById('chunk-size').value),
+                    chunk_overlap: parseInt(document.getElementById('chunk-overlap').value)
+                },
+                tooling_system: {
+                    max_concurrent_tools: parseInt(document.getElementById('max-concurrent-tools').value),
+                    tool_timeout_seconds: parseInt(document.getElementById('tool-timeout').value),
+                    auto_reload_tools: document.getElementById('auto-reload-tools').checked,
+                    tool_directories: document.getElementById('tool-directories').value.split('\n').map(d => d.trim()).filter(d => d)
+                },
+                hitl_interface: {
+                    control_thresholds: {
+                        risk_approval_threshold: document.getElementById('risk-approval-threshold').value,
+                        cost_alert_threshold: parseFloat(document.getElementById('cost-alert-threshold').value),
+                        auto_pause_threshold: parseFloat(document.getElementById('auto-pause-threshold').value)
+                    },
+                    urgent_notifications: {
+                        enabled: document.getElementById('enable-urgent-notifications').checked,
+                        methods: []
+                    }
+                },
+                system: {
+                    debug_mode: document.getElementById('enable-debug-mode').checked,
+                    enable_backup_kernel: document.getElementById('enable-backup-kernel').checked,
+                    heartbeat_interval: parseInt(document.getElementById('heartbeat-interval').value),
+                    heartbeat_timeout: parseInt(document.getElementById('heartbeat-timeout').value)
+                }
+            };
+            
+            // Add notification methods
+            if (document.getElementById('enable-email-notifications').checked) {
+                settings.hitl_interface.urgent_notifications.methods.push({
+                    type: 'email',
+                    enabled: true,
+                    address: document.querySelector('#email-notification-settings input').value
+                });
+            }
+            
+            if (document.getElementById('enable-slack-notifications').checked) {
+                settings.hitl_interface.urgent_notifications.methods.push({
+                    type: 'slack',
+                    enabled: true,
+                    webhook_url: document.querySelector('#slack-notification-settings input').value
+                });
+            }
+            
+            // Add API keys if changed (not placeholder)
+            const openaiKey = document.getElementById('openai-api-key').value;
+            const anthropicKey = document.getElementById('anthropic-api-key').value;
+            const pineconeKey = document.getElementById('pinecone-api-key').value;
+            
+            settings.api_keys = {};
+            
+            if (openaiKey && !openaiKey.includes('•')) {
+                settings.api_keys.openai = openaiKey;
+            }
+            
+            if (anthropicKey && !anthropicKey.includes('•')) {
+                settings.api_keys.anthropic = anthropicKey;
+            }
+            
+            if (pineconeKey && !pineconeKey.includes('•')) {
+                settings.api_keys.pinecone = pineconeKey;
+            }
+            
+            // Save settings via API
+            const result = await EvoGenesis.api.fetch('/api/settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(settings)
+            });
+            
+            if (result && result.success) {
+                EvoGenesis.ui.showNotification('Settings saved successfully', 'success');
+            } else {
+                throw new Error(result?.message || 'Unknown error saving settings');
+            }
+        } catch (error) {
+            console.error('Error saving settings:', error);
+            EvoGenesis.ui.showNotification(`Failed to save settings: ${error.message}`, 'error');
+        }
+    }
+    
+    function resetSettings() {
+        if (confirm('Are you sure you want to reset all settings to default values? This cannot be undone.')) {
+            loadSettings(); // Reload current settings as a quick way to reset the form
+            EvoGenesis.ui.showNotification('Settings reset to current values', 'info');
+        }
+    }
+    
+    async function optimizeDatabase() {
+        try {
+            EvoGenesis.ui.showNotification('Optimizing database...', 'info');
+            
+            const result = await EvoGenesis.api.fetch('/api/settings/optimize-db', {
+                method: 'POST'
+            });
+            
+            if (result && result.success) {
+                EvoGenesis.ui.showNotification('Database optimized successfully', 'success');
+            } else {
+                throw new Error(result?.message || 'Unknown error optimizing database');
+            }
+        } catch (error) {
+            console.error('Error optimizing database:', error);
+            EvoGenesis.ui.showNotification(`Failed to optimize database: ${error.message}`, 'error');
+        }
+    }
+    
+    function confirmClearDatabase() {
+        if (confirm('WARNING: This will delete all memories, agent data, and other stored information. This action cannot be undone. Are you absolutely sure?')) {
+            clearDatabase();
+        }
+    }
+    
+    async function clearDatabase() {
+        try {
+            EvoGenesis.ui.showNotification('Clearing database...', 'info');
+            
+            const result = await EvoGenesis.api.fetch('/api/settings/clear-db', {
+                method: 'POST'
+            });
+            
+            if (result && result.success) {
+                EvoGenesis.ui.showNotification('Database cleared successfully', 'success');
+            } else {
+                throw new Error(result?.message || 'Unknown error clearing database');
+            }
+        } catch (error) {
+            console.error('Error clearing database:', error);
+            EvoGenesis.ui.showNotification(`Failed to clear database: ${error.message}`, 'error');
+        }
+    }
+    
+    async function createBackup() {
+        try {
+            EvoGenesis.ui.showNotification('Creating backup...', 'info');
+            
+            const result = await EvoGenesis.api.fetch('/api/settings/create-backup', {
+                method: 'POST'
+            });
+            
+            if (result && result.success) {
+                EvoGenesis.ui.showNotification(`Backup created successfully: ${result.backup_path}`, 'success');
+            } else {
+                throw new Error(result?.message || 'Unknown error creating backup');
+            }
+        } catch (error) {
+            console.error('Error creating backup:', error);
+            EvoGenesis.ui.showNotification(`Failed to create backup: ${error.message}`, 'error');
+        }
+    }
+    
+    function showRestoreBackupDialog() {
+        alert('This feature would open a dialog to select a backup to restore from.');
+        // In a real implementation, this would open a dialog showing available backups
+    }
+</script>
+{% endblock %}

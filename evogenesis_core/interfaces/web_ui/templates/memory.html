@@ -1,0 +1,490 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="memory-view">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-title">Memory Management</h1>
+    </div>
+    
+    <!-- Memory Overview Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Total Memories</h5>
+                    <div class="metric-display">
+                        <i class='bx bx-brain'></i>
+                        <h2 id="total-memories">0</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Memory Usage</h5>
+                    <div class="metric-display">
+                        <i class='bx bx-hdd'></i>
+                        <h2 id="memory-usage">0 MB</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Agent Memories</h5>
+                    <div class="metric-display">
+                        <i class='bx bx-user'></i>
+                        <h2 id="agent-memories">0</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">System Memories</h5>
+                    <div class="metric-display">
+                        <i class='bx bx-cog'></i>
+                        <h2 id="system-memories">0</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Memory Explorer -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="card-title">Memory Explorer</h5>
+                <div class="input-group w-25">
+                    <input type="text" class="form-control" placeholder="Search memories..." id="memory-search">
+                    <button class="btn btn-outline-secondary" type="button">
+                        <i class='bx bx-search'></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <select class="form-select" id="memory-owner-filter">
+                        <option value="all">All Owners</option>
+                        <option value="system">System</option>
+                        <option value="agents">Agents</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <select class="form-select" id="memory-type-filter">
+                        <option value="all">All Memory Types</option>
+                        <option value="episodic">Episodic</option>
+                        <option value="semantic">Semantic</option>
+                        <option value="procedural">Procedural</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Type</th>
+                            <th>Owner</th>
+                            <th>Created At</th>
+                            <th>Content Preview</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="memory-list">
+                        <!-- Memory entries will be populated dynamically -->
+                        <tr>
+                            <td>mem-12345</td>
+                            <td>Episodic</td>
+                            <td>System</td>
+                            <td>2023-04-18 14:32:10</td>
+                            <td>User requested information about AI governance models...</td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-primary">
+                                        <i class='bx bx-info-circle'></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger">
+                                        <i class='bx bx-trash'></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <nav>
+                <ul class="pagination justify-content-center">
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
+                    </li>
+                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                    <li class="page-item"><a class="page-link" href="#">2</a></li>
+                    <li class="page-item"><a class="page-link" href="#">3</a></li>
+                    <li class="page-item">
+                        <a class="page-link" href="#">Next</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+    
+    <!-- Vector Store Status -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="card-title">Vector Store Status</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-subtitle mb-2 text-muted">Vector Store Type</h6>
+                            <p class="card-text" id="vector-store-type">Chroma</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-subtitle mb-2 text-muted">Storage Path</h6>
+                            <p class="card-text" id="vector-store-path">./data/vector_db</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-subtitle mb-2 text-muted">Collections</h6>
+                            <p class="card-text" id="vector-store-collections">3</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-subtitle mb-2 text-muted">Embedding Dimensions</h6>
+                            <p class="card-text" id="vector-store-dimensions">1536</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-subtitle mb-2 text-muted">Status</h6>
+                            <p class="card-text" id="vector-store-status">Active</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Memory Detail Modal -->
+<div class="modal fade" id="memoryDetailModal" tabindex="-1" aria-labelledby="memoryDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="memoryDetailModalLabel">Memory Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Basic Information</h6>
+                        <dl class="row">
+                            <dt class="col-sm-4">ID</dt>
+                            <dd class="col-sm-8" id="memory-detail-id">mem-12345</dd>
+                            
+                            <dt class="col-sm-4">Type</dt>
+                            <dd class="col-sm-8" id="memory-detail-type">Episodic</dd>
+                            
+                            <dt class="col-sm-4">Owner</dt>
+                            <dd class="col-sm-8" id="memory-detail-owner">System</dd>
+                            
+                            <dt class="col-sm-4">Created At</dt>
+                            <dd class="col-sm-8" id="memory-detail-created">2023-04-18 14:32:10</dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Metadata</h6>
+                        <dl class="row">
+                            <dt class="col-sm-4">Source</dt>
+                            <dd class="col-sm-8" id="memory-detail-source">User Interaction</dd>
+                            
+                            <dt class="col-sm-4">Context</dt>
+                            <dd class="col-sm-8" id="memory-detail-context">Task #123</dd>
+                            
+                            <dt class="col-sm-4">Tags</dt>
+                            <dd class="col-sm-8" id="memory-detail-tags">
+                                <span class="badge bg-secondary">conversation</span>
+                                <span class="badge bg-secondary">user-preference</span>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+                
+                <h6>Content</h6>
+                <div class="memory-content-box p-3 bg-light rounded" id="memory-detail-content">
+                    User requested information about AI governance models and expressed particular interest in EU regulations. They mentioned they were preparing a presentation for a corporate board meeting next week.
+                </div>
+                
+                <h6 class="mt-3">Vector Embedding Visualization</h6>
+                <div class="memory-embedding-viz p-3 bg-light rounded text-center">
+                    <p class="text-muted">Visualization would be shown here</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-danger" id="memory-delete-btn">Delete Memory</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Load memory data
+        loadMemoryData();
+        
+        // Setup event listeners
+        document.getElementById('memory-search').addEventListener('input', function() {
+            filterMemories(this.value);
+        });
+        
+        document.getElementById('memory-owner-filter').addEventListener('change', function() {
+            applyMemoryFilters();
+        });
+        
+        document.getElementById('memory-type-filter').addEventListener('change', function() {
+            applyMemoryFilters();
+        });
+        
+        // Memory detail view event delegation
+        document.getElementById('memory-list').addEventListener('click', function(e) {
+            const infoButton = e.target.closest('.btn-outline-primary');
+            if (infoButton) {
+                const row = infoButton.closest('tr');
+                const memoryId = row.querySelector('td:first-child').textContent;
+                showMemoryDetail(memoryId);
+            }
+            
+            const deleteButton = e.target.closest('.btn-outline-danger');
+            if (deleteButton) {
+                const row = deleteButton.closest('tr');
+                const memoryId = row.querySelector('td:first-child').textContent;
+                confirmDeleteMemory(memoryId);
+            }
+        });
+    });
+    
+    async function loadMemoryData() {
+        try {
+            const memoryData = await EvoGenesis.api.fetch('/api/memory');
+            if (!memoryData) return;
+            
+            updateMemoryCounters(memoryData);
+            renderMemoryList(memoryData.items || []);
+            updateVectorStoreInfo(memoryData.vector_store || {});
+        } catch (error) {
+            console.error('Error loading memory data:', error);
+            EvoGenesis.ui.showNotification('Failed to load memory data', 'error');
+        }
+    }
+    
+    function updateMemoryCounters(data) {
+        document.getElementById('total-memories').textContent = data.total || 0;
+        document.getElementById('memory-usage').textContent = formatSize(data.usage_bytes || 0);
+        document.getElementById('agent-memories').textContent = data.agent_memories || 0;
+        document.getElementById('system-memories').textContent = data.system_memories || 0;
+    }
+    
+    function formatSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
+    }
+    
+    function updateVectorStoreInfo(info) {
+        document.getElementById('vector-store-type').textContent = info.type || 'Unknown';
+        document.getElementById('vector-store-path').textContent = info.path || 'Unknown';
+        document.getElementById('vector-store-collections').textContent = info.collection_count || 0;
+        document.getElementById('vector-store-dimensions').textContent = info.dimensions || 0;
+        document.getElementById('vector-store-status').textContent = info.status || 'Unknown';
+    }
+    
+    function renderMemoryList(memories) {
+        const memoryList = document.getElementById('memory-list');
+        memoryList.innerHTML = '';
+        
+        if (memories.length === 0) {
+            const row = document.createElement('tr');
+            row.innerHTML = '<td colspan="6" class="text-center">No memories found.</td>';
+            memoryList.appendChild(row);
+            return;
+        }
+        
+        memories.forEach(memory => {
+            const row = document.createElement('tr');
+            
+            // Limit content preview to 50 characters
+            const contentPreview = memory.content.length > 50 ? 
+                memory.content.substring(0, 50) + '...' : memory.content;
+            
+            row.innerHTML = `
+                <td>${memory.id}</td>
+                <td>${memory.type}</td>
+                <td>${memory.owner}</td>
+                <td>${new Date(memory.created_at).toLocaleString()}</td>
+                <td>${contentPreview}</td>
+                <td>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-primary">
+                            <i class='bx bx-info-circle'></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger">
+                            <i class='bx bx-trash'></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            
+            memoryList.appendChild(row);
+        });
+    }
+    
+    function filterMemories(query) {
+        query = query.toLowerCase();
+        const rows = document.querySelectorAll('#memory-list tr');
+        
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            if (cells.length <= 1) return; // Skip "no memories found" row
+            
+            const id = cells[0].textContent.toLowerCase();
+            const type = cells[1].textContent.toLowerCase();
+            const owner = cells[2].textContent.toLowerCase();
+            const content = cells[4].textContent.toLowerCase();
+            
+            if (id.includes(query) || type.includes(query) || 
+                owner.includes(query) || content.includes(query)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+    
+    function applyMemoryFilters() {
+        const ownerFilter = document.getElementById('memory-owner-filter').value;
+        const typeFilter = document.getElementById('memory-type-filter').value;
+        const rows = document.querySelectorAll('#memory-list tr');
+        
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            if (cells.length <= 1) return; // Skip "no memories found" row
+            
+            const type = cells[1].textContent.toLowerCase();
+            const owner = cells[2].textContent.toLowerCase();
+            
+            const matchesOwner = ownerFilter === 'all' || 
+                                (ownerFilter === 'system' && owner === 'system') ||
+                                (ownerFilter === 'agents' && owner !== 'system');
+                                
+            const matchesType = typeFilter === 'all' || type === typeFilter.toLowerCase();
+            
+            row.style.display = (matchesOwner && matchesType) ? '' : 'none';
+        });
+    }
+    
+    async function showMemoryDetail(memoryId) {
+        try {
+            const memory = await EvoGenesis.api.fetch(`/api/memory/${memoryId}`);
+            if (!memory) {
+                EvoGenesis.ui.showNotification('Memory not found', 'error');
+                return;
+            }
+            
+            // Update modal with memory details
+            document.getElementById('memory-detail-id').textContent = memory.id;
+            document.getElementById('memory-detail-type').textContent = memory.type;
+            document.getElementById('memory-detail-owner').textContent = memory.owner;
+            document.getElementById('memory-detail-created').textContent = 
+                new Date(memory.created_at).toLocaleString();
+            
+            document.getElementById('memory-detail-source').textContent = memory.metadata?.source || 'Unknown';
+            document.getElementById('memory-detail-context').textContent = memory.metadata?.context || 'None';
+            
+            // Update tags
+            const tagsContainer = document.getElementById('memory-detail-tags');
+            tagsContainer.innerHTML = '';
+            if (memory.metadata?.tags && memory.metadata.tags.length > 0) {
+                memory.metadata.tags.forEach(tag => {
+                    const badge = document.createElement('span');
+                    badge.className = 'badge bg-secondary me-1';
+                    badge.textContent = tag;
+                    tagsContainer.appendChild(badge);
+                });
+            } else {
+                tagsContainer.textContent = 'None';
+            }
+            
+            document.getElementById('memory-detail-content').textContent = memory.content;
+            
+            // Setup delete button
+            document.getElementById('memory-delete-btn').onclick = () => confirmDeleteMemory(memory.id);
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('memoryDetailModal'));
+            modal.show();
+        } catch (error) {
+            console.error('Error loading memory details:', error);
+            EvoGenesis.ui.showNotification('Failed to load memory details', 'error');
+        }
+    }
+    
+    function confirmDeleteMemory(memoryId) {
+        if (confirm(`Are you sure you want to delete memory ${memoryId}? This action cannot be undone.`)) {
+            deleteMemory(memoryId);
+        }
+    }
+    
+    async function deleteMemory(memoryId) {
+        try {
+            const result = await EvoGenesis.api.fetch(`/api/memory/${memoryId}`, {
+                method: 'DELETE'
+            });
+            
+            if (result && result.success) {
+                EvoGenesis.ui.showNotification('Memory deleted successfully', 'success');
+                
+                // Close modal if open
+                const modal = bootstrap.Modal.getInstance(document.getElementById('memoryDetailModal'));
+                if (modal) modal.hide();
+                
+                // Reload memories
+                loadMemoryData();
+            } else {
+                throw new Error(result?.message || 'Failed to delete memory');
+            }
+        } catch (error) {
+            console.error('Error deleting memory:', error);
+            EvoGenesis.ui.showNotification(`Failed to delete memory: ${error.message}`, 'error');
+        }
+    }
+</script>
+{% endblock %}

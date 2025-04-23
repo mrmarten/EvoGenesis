@@ -1,0 +1,33 @@
+{
+  "name": "langchain_adapter",
+  "description": "Specialized template for creating LangChain adapters",
+  "version": "1.0.0",
+  "framework_requirements": {
+    "name": "langchain",
+    "min_version": "0.0.100"
+  },
+  "template_variables": {
+    "framework": {
+      "description": "Framework information object containing name, version, classes, etc."
+    },
+    "module_name": {
+      "description": "Name of the framework's main module to import"
+    }
+  },
+  "framework_specialization": {
+    "agent_types": [
+      "zero-shot-react-description",
+      "react-docstore",
+      "self-ask-with-search",
+      "conversational-react-description",
+      "chat-zero-shot-react-description"
+    ],
+    "key_features": [
+      "agents",
+      "tools",
+      "chains",
+      "memory",
+      "retrievers"
+    ]
+  }
+}

@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  evogenesis:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/app/data
+      - ./output:/app/output
+      - ./config:/app/config
+    environment:
+      - PYTHONPATH=/app
+      - LOG_LEVEL=INFO
+    command: python main.py --mode service --config config/default.json
+    restart: unless-stopped
+
+  evogenesis-dev:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5000"
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONPATH=/app
+      - LOG_LEVEL=DEBUG
+    command: python main.py --mode development --config config/default.json
+    profiles:
+      - dev

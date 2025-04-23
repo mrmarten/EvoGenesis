@@ -1,0 +1,552 @@
+"""
+LangChain Framework Adapter Template
+
+This template provides specialized implementation for LangChain framework adapters.
+It will be populated with LangChain-specific details by the adapter factory.
+"""
+
+import asyncio
+import logging
+import json
+from typing import Dict, Any, List, Optional, Union, Callable
+import uuid
+import os
+
+# Conditionally import LangChain
+try:
+    import langchain
+    from langchain.llms import BaseLLM
+    from langchain.agents import AgentType, initialize_agent, Tool
+    from langchain.chains import LLMChain
+    from langchain.memory import ConversationBufferMemory
+    from langchain.prompts import PromptTemplate
+    LANGCHAIN_AVAILABLE = True
+except ImportError:
+    LANGCHAIN_AVAILABLE = False
+
+from evogenesis_core.adapters.base_adapter import AgentExecutionAdapter
+
+
+class LangChainAdapter(AgentExecutionAdapter):
+    """
+    Adapter for LangChain framework.
+    
+    Maps EvoGenesis agents and tasks to LangChain concepts:
+    - Agents → LangChain Agent with tools
+    - Tasks → LangChain Chains or direct Agent invocations
+    """
+    
+    def __init__(self):
+        """Initialize the LangChain adapter."""
+        if not LANGCHAIN_AVAILABLE:
+            raise ImportError("LangChain is not available. Install with 'pip install langchain'")
+        
+        self.agents = {}  # agent_id -> LangChain agent
+        self.llms = {}    # llm_id -> LangChain LLM
+        self.tools = {}   # tool_id -> LangChain Tool
+        self.chains = {}  # chain_id -> LangChain Chain
+        self.agent_configs = {}  # agent_id -> config
+        self.active_tasks = {}  # task_id -> task_info
+        self.agent_status = {}  # agent_id -> status
+    
+    def initialize(self, config: Dict[str, Any]) -> bool:
+        """
+        Initialize the LangChain adapter with configuration.
+        
+        Args:
+            config: Configuration dictionary
+            
+        Returns:
+            True if initialization successful, False otherwise
+        """
+        try:
+            self.global_config = config
+            
+            # Configure LangChain settings if provided
+            langchain_config = config.get("langchain", {})
+            
+            # Set up default LLMs if configured
+            for llm_name, llm_config in langchain_config.get("llms", {}).items():
+                self._create_llm(llm_name, llm_config)
+            
+            # Set up default tools if configured
+            for tool_name, tool_config in langchain_config.get("tools", {}).items():
+                self._create_tool(tool_name, tool_config)
+            
+            logging.info("LangChain adapter initialized successfully")
+            return True
+        except Exception as e:
+            logging.error(f"Failed to initialize LangChain adapter: {str(e)}")
+            return False
+    
+    def _create_llm(self, llm_name: str, llm_config: Dict[str, Any]) -> BaseLLM:
+        """Create a LangChain LLM based on configuration."""
+        try:
+            llm_type = llm_config.get("type", "openai")
+            
+            if llm_type == "openai":
+                from langchain.llms import OpenAI
+                llm = OpenAI(
+                    model_name=llm_config.get("model", "gpt-3.5-turbo"),
+                    temperature=llm_config.get("temperature", 0.7),
+                    openai_api_key=llm_config.get("api_key")
+                )
+            elif llm_type == "anthropic":
+                from langchain.llms import Anthropic
+                llm = Anthropic(
+                    model=llm_config.get("model", "claude-3-opus-20240229"),
+                    temperature=llm_config.get("temperature", 0.7),
+                    anthropic_api_key=llm_config.get("api_key")
+                )
+            else:
+                raise ValueError(f"Unsupported LLM type: {llm_type}")
+            
+            self.llms[llm_name] = llm
+            return llm
+        except Exception as e:
+            logging.error(f"Error creating LLM {llm_name}: {str(e)}")
+            raise
+    
+    def _create_tool(self, tool_name: str, tool_config: Dict[str, Any]) -> Tool:
+        """Create a LangChain Tool based on configuration."""
+        try:
+            def tool_func(input_str: str) -> str:
+                # Default implementation just returns a placeholder
+                return f"Tool {tool_name} executed with input: {input_str}"
+            
+            tool = Tool(
+                name=tool_name,
+                description=tool_config.get("description", f"Tool {tool_name}"),
+                func=tool_func,
+            )
+            
+            self.tools[tool_name] = tool
+            return tool
+        except Exception as e:
+            logging.error(f"Error creating tool {tool_name}: {str(e)}")
+            raise
+    
+    async def create_agent(self, agent_spec: Dict[str, Any]) -> str:
+        """
+        Create an agent using LangChain.
+        
+        Args:
+            agent_spec: Specification of the agent to create
+            
+        Returns:
+            Agent ID
+        """
+        try:
+            # Generate an ID for this agent
+            agent_id = str(uuid.uuid4())
+            
+            # Extract agent configuration
+            agent_name = agent_spec.get("name", f"Agent-{agent_id[:8]}")
+            agent_type_str = agent_spec.get("type", "zero-shot-react-description")
+            agent_description = agent_spec.get("description", "A helpful assistant")
+            
+            # Get LLM config
+            llm_config = agent_spec.get("llm_config", {})
+            llm_name = llm_config.get("llm_name")
+            
+            # Get or create LLM
+            if llm_name and llm_name in self.llms:
+                llm = self.llms[llm_name]
+            else:
+                llm = self._create_llm(f"llm-{agent_id[:8]}", llm_config)
+            
+            # Get tools for this agent
+            tool_names = agent_spec.get("tools", [])
+            tools = []
+            
+            for tool_name in tool_names:
+                if tool_name in self.tools:
+                    tools.append(self.tools[tool_name])
+                else:
+                    logging.warning(f"Tool {tool_name} not found for agent {agent_id}")
+            
+            # Map agent type string to LangChain AgentType
+            agent_type_map = {
+                "zero-shot-react-description": AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+                "react-docstore": AgentType.REACT_DOCSTORE,
+                "self-ask-with-search": AgentType.SELF_ASK_WITH_SEARCH,
+                "conversational-react-description": AgentType.CONVERSATIONAL_REACT_DESCRIPTION,
+                "chat-zero-shot-react-description": AgentType.CHAT_ZERO_SHOT_REACT_DESCRIPTION,
+                "chat-conversational-react-description": AgentType.CHAT_CONVERSATIONAL_REACT_DESCRIPTION,
+                "structured-chat-zero-shot-react-description": AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION
+            }
+            
+            agent_type = agent_type_map.get(agent_type_str, AgentType.ZERO_SHOT_REACT_DESCRIPTION)
+            
+            # Create memory if needed
+            memory = None
+            if "conversational" in agent_type_str:
+                memory = ConversationBufferMemory(memory_key="chat_history")
+            
+            # Create the agent
+            agent = initialize_agent(
+                tools=tools,
+                llm=llm,
+                agent=agent_type,
+                verbose=True,
+                memory=memory
+            )
+            
+            # Store the agent
+            self.agents[agent_id] = agent
+            self.agent_configs[agent_id] = agent_spec
+            self.agent_status[agent_id] = {
+                "status": "initialized",
+                "tasks_completed": 0,
+                "current_task": None,
+                "last_active": asyncio.get_event_loop().time()
+            }
+            
+            logging.info(f"Created LangChain agent {agent_id} of type {agent_type_str}")
+            return agent_id
+            
+        except Exception as e:
+            logging.error(f"Failed to create LangChain agent: {str(e)}")
+            raise
+    
+    async def run_agent_task(self, agent_id: str, task: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Execute a task using LangChain.
+        
+        Args:
+            agent_id: ID of the agent to use
+            task: Task specification
+            
+        Returns:
+            Task execution results
+        """
+        if agent_id not in self.agents:
+            raise ValueError(f"Agent {agent_id} not found")
+        
+        agent = self.agents[agent_id]
+        task_id = task.get("task_id", str(uuid.uuid4()))
+        
+        try:
+            # Update agent status
+            self.agent_status[agent_id]["status"] = "running"
+            self.agent_status[agent_id]["current_task"] = task_id
+            self.agent_status[agent_id]["last_active"] = asyncio.get_event_loop().time()
+            
+            # Store task information
+            self.active_tasks[task_id] = {
+                "agent_id": agent_id,
+                "task": task,
+                "status": "running",
+                "start_time": asyncio.get_event_loop().time()
+            }
+            
+            # Extract task information
+            task_content = task.get("content", "")
+            
+            # Execute the agent (running in a thread to avoid blocking)
+            result = await asyncio.to_thread(lambda: agent.run(task_content))
+            
+            # Update task and agent status
+            self.active_tasks[task_id]["status"] = "completed"
+            self.active_tasks[task_id]["end_time"] = asyncio.get_event_loop().time()
+            self.active_tasks[task_id]["result"] = result
+            
+            self.agent_status[agent_id]["status"] = "idle"
+            self.agent_status[agent_id]["current_task"] = None
+            self.agent_status[agent_id]["tasks_completed"] += 1
+            self.agent_status[agent_id]["last_active"] = asyncio.get_event_loop().time()
+            
+            # Return result
+            return {
+                "task_id": task_id,
+                "agent_id": agent_id,
+                "status": "completed",
+                "result": result,
+                "execution_time": self.active_tasks[task_id]["end_time"] - self.active_tasks[task_id]["start_time"]
+            }
+            
+        except Exception as e:
+            # Update task and agent status on error
+            if task_id in self.active_tasks:
+                self.active_tasks[task_id]["status"] = "failed"
+                self.active_tasks[task_id]["error"] = str(e)
+                self.active_tasks[task_id]["end_time"] = asyncio.get_event_loop().time()
+            
+            self.agent_status[agent_id]["status"] = "error"
+            self.agent_status[agent_id]["current_task"] = None
+            self.agent_status[agent_id]["last_active"] = asyncio.get_event_loop().time()
+            
+            logging.error(f"Failed to execute task {task_id} with agent {agent_id}: {str(e)}")
+            
+            return {
+                "task_id": task_id,
+                "agent_id": agent_id,
+                "status": "failed",
+                "error": str(e)
+            }
+    
+    async def get_agent_status(self, agent_id: str) -> Dict[str, Any]:
+        """
+        Get the current status of a LangChain agent.
+        
+        Args:
+            agent_id: ID of the agent
+            
+        Returns:
+            Dictionary with agent status information
+        """
+        if agent_id not in self.agent_status:
+            raise ValueError(f"Agent {agent_id} not found")
+        
+        status_info = self.agent_status[agent_id].copy()
+        
+        # Add LangChain-specific information
+        agent_config = self.agent_configs.get(agent_id, {})
+        status_info["agent_type"] = agent_config.get("type", "unknown")
+        status_info["tools"] = agent_config.get("tools", [])
+        
+        return status_info
+    
+    async def terminate_agent(self, agent_id: str) -> bool:
+        """
+        Terminate a LangChain agent.
+        
+        Args:
+            agent_id: ID of the agent to terminate
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        if agent_id not in self.agents:
+            return False
+        
+        try:
+            # LangChain doesn't have a specific cleanup method for agents
+            # Just remove from our tracking
+            del self.agents[agent_id]
+            del self.agent_configs[agent_id]
+            self.agent_status[agent_id] = {"status": "terminated"}
+            
+            return True
+        except Exception as e:
+            logging.error(f"Failed to terminate agent {agent_id}: {str(e)}")
+            return False
+    
+    async def pause_agent(self, agent_id: str) -> bool:
+        """
+        Pause a LangChain agent.
+        
+        Args:
+            agent_id: ID of the agent to pause
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        if agent_id not in self.agent_status:
+            return False
+        
+        # LangChain doesn't have native pause/resume, but we can track status
+        self.agent_status[agent_id]["status"] = "paused"
+        return True
+    
+    async def resume_agent(self, agent_id: str) -> bool:
+        """
+        Resume a paused LangChain agent.
+        
+        Args:
+            agent_id: ID of the agent to resume
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        if agent_id not in self.agent_status:
+            return False
+        
+        if self.agent_status[agent_id]["status"] == "paused":
+            self.agent_status[agent_id]["status"] = "idle"
+            return True
+        
+        return False
+    
+    async def update_agent(self, agent_id: str, updates: Dict[str, Any]) -> bool:
+        """
+        Update a LangChain agent's configuration.
+        
+        Args:
+            agent_id: ID of the agent to update
+            updates: Dictionary of updates to apply
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        if agent_id not in self.agents:
+            return False
+        
+        try:
+            # Store updated config
+            self.agent_configs[agent_id].update(updates)
+            
+            # For LangChain, most updates require recreating the agent
+            if any(key in updates for key in ["type", "tools", "llm_config"]):
+                # Create a new agent with the updated config
+                new_agent_spec = self.agent_configs[agent_id]
+                
+                # Recreate the agent
+                agent_type_str = new_agent_spec.get("type", "zero-shot-react-description")
+                
+                # Get LLM config
+                llm_config = new_agent_spec.get("llm_config", {})
+                llm_name = llm_config.get("llm_name")
+                
+                # Get or create LLM
+                if llm_name and llm_name in self.llms:
+                    llm = self.llms[llm_name]
+                else:
+                    llm = self._create_llm(f"llm-{agent_id[:8]}", llm_config)
+                
+                # Get tools for this agent
+                tool_names = new_agent_spec.get("tools", [])
+                tools = []
+                
+                for tool_name in tool_names:
+                    if tool_name in self.tools:
+                        tools.append(self.tools[tool_name])
+                
+                # Map agent type string to LangChain AgentType
+                agent_type_map = {
+                    "zero-shot-react-description": AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+                    "react-docstore": AgentType.REACT_DOCSTORE,
+                    "self-ask-with-search": AgentType.SELF_ASK_WITH_SEARCH,
+                    "conversational-react-description": AgentType.CONVERSATIONAL_REACT_DESCRIPTION,
+                    "chat-zero-shot-react-description": AgentType.CHAT_ZERO_SHOT_REACT_DESCRIPTION,
+                    "chat-conversational-react-description": AgentType.CHAT_CONVERSATIONAL_REACT_DESCRIPTION,
+                    "structured-chat-zero-shot-react-description": AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION
+                }
+                
+                agent_type = agent_type_map.get(agent_type_str, AgentType.ZERO_SHOT_REACT_DESCRIPTION)
+                
+                # Create memory if needed
+                memory = None
+                if "conversational" in agent_type_str:
+                    memory = ConversationBufferMemory(memory_key="chat_history")
+                
+                # Create the agent
+                agent = initialize_agent(
+                    tools=tools,
+                    llm=llm,
+                    agent=agent_type,
+                    verbose=True,
+                    memory=memory
+                )
+                
+                # Replace the agent
+                self.agents[agent_id] = agent
+            
+            return True
+        except Exception as e:
+            logging.error(f"Failed to update agent {agent_id}: {str(e)}")
+            return False
+    
+    async def create_team(self, team_spec: Dict[str, Any]) -> str:
+        """
+        Create a team of LangChain agents.
+        
+        Note: LangChain doesn't have native team concepts, this is a custom implementation.
+        
+        Args:
+            team_spec: Specification of the team to create
+            
+        Returns:
+            Team ID
+        """
+        team_id = str(uuid.uuid4())
+        
+        try:
+            # Create individual agents for team members
+            team_agents = []
+            for member_spec in team_spec.get("members", []):
+                agent_id = await self.create_agent(member_spec)
+                team_agents.append(agent_id)
+            
+            # Create a router chain to coordinate between agents if needed
+            # This would be a custom implementation as LangChain doesn't have
+            # native team coordination built in
+            
+            # Store team information as a convenience
+            self.teams = getattr(self, "teams", {})
+            self.teams[team_id] = {
+                "id": team_id,
+                "name": team_spec.get("name", f"Team-{team_id[:8]}"),
+                "agents": team_agents,
+                "creation_time": asyncio.get_event_loop().time(),
+                "description": team_spec.get("description", "")
+            }
+            
+            logging.info(f"Created LangChain team {team_id} with {len(team_agents)} agents")
+            return team_id
+            
+        except Exception as e:
+            logging.error(f"Failed to create team: {str(e)}")
+            raise
+    
+    async def get_framework_capabilities(self) -> Dict[str, Any]:
+        """
+        Get the capabilities of LangChain.
+        
+        Returns:
+            Dictionary describing LangChain's capabilities
+        """
+        return {
+            "name": "langchain",
+            "version": langchain.__version__,
+            "features": {
+                "agents": True,
+                "tools": True,
+                "chains": True,
+                "memory": True,
+                "retrievers": True,
+                "document_loaders": True,
+                "embeddings": True,
+                "vector_stores": True
+            },
+            "agent_types": [
+                "zero-shot-react-description",
+                "react-docstore",
+                "self-ask-with-search",
+                "conversational-react-description",
+                "chat-zero-shot-react-description",
+                "chat-conversational-react-description",
+                "structured-chat-zero-shot-react-description"
+            ],
+            "supported_models": [
+                "gpt-4", "gpt-4o", "gpt-3.5-turbo", 
+                "claude-3-opus", "claude-3-sonnet", "claude-3-haiku",
+                "llama-2", "mistral", "gemini-pro"
+            ]
+        }
+    
+    async def shutdown(self) -> bool:
+        """
+        Shut down the LangChain adapter cleanly.
+        
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # LangChain doesn't have specific cleanup requirements
+            # Just clear our tracked objects
+            self.agents.clear()
+            self.llms.clear()
+            self.tools.clear()
+            self.chains.clear()
+            self.agent_configs.clear()
+            self.agent_status.clear()
+            self.active_tasks.clear()
+            
+            if hasattr(self, "teams"):
+                self.teams.clear()
+            
+            return True
+        except Exception as e:
+            logging.error(f"Error shutting down LangChain adapter: {str(e)}")
+            return False

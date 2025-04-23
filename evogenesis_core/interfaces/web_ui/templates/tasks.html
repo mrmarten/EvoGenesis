@@ -1,0 +1,362 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="tasks-view">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-title">Tasks</h1>
+        <button id="create-task-btn" class="btn btn-primary">
+            <i class='bx bx-plus'></i> Create Task
+        </button>
+    </div>
+    
+    <!-- Task Overview Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Total Tasks</h5>
+                    <div class="metric-display">
+                        <i class='bx bx-task'></i>
+                        <h2 id="total-tasks">0</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Active Tasks</h5>
+                    <div class="metric-display">
+                        <i class='bx bx-run'></i>
+                        <h2 id="active-tasks">0</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Completed Tasks</h5>
+                    <div class="metric-display">
+                        <i class='bx bx-check-circle'></i>
+                        <h2 id="completed-tasks">0</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Pending Tasks</h5>
+                    <div class="metric-display">
+                        <i class='bx bx-time'></i>
+                        <h2 id="pending-tasks">0</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Task List -->
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="card-title">Task List</h5>
+                <div class="input-group w-25">
+                    <input type="text" class="form-control" placeholder="Search tasks..." id="task-search">
+                    <button class="btn btn-outline-secondary" type="button">
+                        <i class='bx bx-search'></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Task Name</th>
+                            <th>Status</th>
+                            <th>Assigned To</th>
+                            <th>Priority</th>
+                            <th>Progress</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="task-list">
+                        <!-- Task list will be populated dynamically -->
+                        <tr>
+                            <td>Research latest AI developments</td>
+                            <td><span class="badge bg-warning">In Progress</span></td>
+                            <td>Research Agent</td>
+                            <td><span class="badge bg-danger">High</span></td>
+                            <td>
+                                <div class="progress">
+                                    <div class="progress-bar" role="progressbar" style="width: 60%;" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100">60%</div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-primary">
+                                        <i class='bx bx-info-circle'></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary">
+                                        <i class='bx bx-message-square-detail'></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger">
+                                        <i class='bx bx-x'></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Task Modal -->
+<div class="modal fade" id="createTaskModal" tabindex="-1" aria-labelledby="createTaskModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createTaskModalLabel">Create New Task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="create-task-form">
+                    <div class="mb-3">
+                        <label for="task-name-input" class="form-label">Task Name</label>
+                        <input type="text" class="form-control" id="task-name-input" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="task-description-input" class="form-label">Description</label>
+                        <textarea class="form-control" id="task-description-input" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="task-priority-select" class="form-label">Priority</label>
+                        <select class="form-select" id="task-priority-select">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="task-assign-select" class="form-label">Assign To</label>
+                        <select class="form-select" id="task-assign-select">
+                            <option value="">Auto-assign</option>
+                            <!-- Agent options will be loaded dynamically -->
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="create-task-submit">Create Task</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Load tasks data
+        loadTasks();
+        
+        // Subscribe to task-related WebSocket events
+        EvoGenesis.ws.subscribe(['tasks', 'tasks.status']);
+        
+        // Setup event listeners
+        document.getElementById('create-task-btn').addEventListener('click', function() {
+            // Load agents for assignment dropdown
+            loadAgentsForAssignment();
+            
+            const modal = new bootstrap.Modal(document.getElementById('createTaskModal'));
+            modal.show();
+        });
+        
+        document.getElementById('create-task-submit').addEventListener('click', createTask);
+        
+        document.getElementById('task-search').addEventListener('input', function() {
+            filterTasks(this.value);
+        });
+    });
+    
+    async function loadTasks() {
+        try {
+            const tasks = await EvoGenesis.api.fetch('/api/tasks');
+            if (!tasks) return;
+            
+            updateTaskCounters(tasks);
+            renderTaskList(tasks);
+        } catch (error) {
+            console.error('Error loading tasks:', error);
+            EvoGenesis.ui.showNotification('Failed to load tasks', 'error');
+        }
+    }
+    
+    async function loadAgentsForAssignment() {
+        try {
+            const agents = await EvoGenesis.api.fetch('/api/agents');
+            if (!agents) return;
+            
+            const selectElement = document.getElementById('task-assign-select');
+            // Keep the first option (auto-assign)
+            selectElement.innerHTML = '<option value="">Auto-assign</option>';
+            
+            agents.forEach(agent => {
+                if (agent.status === 'active' || agent.status === 'idle') {
+                    const option = document.createElement('option');
+                    option.value = agent.id;
+                    option.textContent = agent.name;
+                    selectElement.appendChild(option);
+                }
+            });
+        } catch (error) {
+            console.error('Error loading agents for assignment:', error);
+        }
+    }
+    
+    function updateTaskCounters(tasks) {
+        const totalTasks = tasks.length;
+        const activeTasks = tasks.filter(t => t.status === 'in_progress').length;
+        const completedTasks = tasks.filter(t => t.status === 'completed').length;
+        const pendingTasks = tasks.filter(t => t.status === 'pending').length;
+        
+        document.getElementById('total-tasks').textContent = totalTasks;
+        document.getElementById('active-tasks').textContent = activeTasks;
+        document.getElementById('completed-tasks').textContent = completedTasks;
+        document.getElementById('pending-tasks').textContent = pendingTasks;
+    }
+    
+    function renderTaskList(tasks) {
+        const taskList = document.getElementById('task-list');
+        taskList.innerHTML = '';
+        
+        if (tasks.length === 0) {
+            const row = document.createElement('tr');
+            row.innerHTML = '<td colspan="6" class="text-center">No tasks found. Create a new task to get started.</td>';
+            taskList.appendChild(row);
+            return;
+        }
+        
+        tasks.forEach(task => {
+            const row = document.createElement('tr');
+            
+            // Status class
+            const statusClass = task.status === 'completed' ? 'success' : 
+                             task.status === 'in_progress' ? 'warning' : 
+                             task.status === 'failed' ? 'danger' : 'secondary';
+            
+            // Priority class
+            const priorityClass = task.priority === 'high' ? 'danger' : 
+                               task.priority === 'medium' ? 'warning' : 'info';
+            
+            row.innerHTML = `
+                <td>${task.name}</td>
+                <td><span class="badge bg-${statusClass}">${task.status.replace('_', ' ')}</span></td>
+                <td>${task.assigned_agent_name || 'Unassigned'}</td>
+                <td><span class="badge bg-${priorityClass}">${task.priority}</span></td>
+                <td>
+                    <div class="progress">
+                        <div class="progress-bar" role="progressbar" 
+                            style="width: ${task.progress || 0}%;" 
+                            aria-valuenow="${task.progress || 0}" 
+                            aria-valuemin="0" 
+                            aria-valuemax="100">${task.progress || 0}%</div>
+                    </div>
+                </td>
+                <td>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-primary" data-task-id="${task.id}">
+                            <i class='bx bx-info-circle'></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" data-task-id="${task.id}">
+                            <i class='bx bx-message-square-detail'></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" data-task-id="${task.id}">
+                            <i class='bx bx-x'></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            
+            taskList.appendChild(row);
+        });
+    }
+    
+    function filterTasks(query) {
+        const rows = document.querySelectorAll('#task-list tr');
+        query = query.toLowerCase();
+        
+        rows.forEach(row => {
+            const name = row.querySelector('td:first-child')?.textContent.toLowerCase() || '';
+            const status = row.querySelector('td:nth-child(2)')?.textContent.toLowerCase() || '';
+            const assignee = row.querySelector('td:nth-child(3)')?.textContent.toLowerCase() || '';
+            
+            if (name.includes(query) || status.includes(query) || assignee.includes(query)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+    
+    async function createTask() {
+        try {
+            const name = document.getElementById('task-name-input').value;
+            const description = document.getElementById('task-description-input').value;
+            const priority = document.getElementById('task-priority-select').value;
+            const assignedAgentId = document.getElementById('task-assign-select').value;
+            
+            if (!name) {
+                EvoGenesis.ui.showNotification('Task name is required', 'warning');
+                return;
+            }
+            
+            try {
+                // Call the API to create task
+                const result = await EvoGenesis.api.fetch('/api/tasks', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        name, 
+                        description, 
+                        priority,
+                        assigned_agent_id: assignedAgentId || null
+                    })
+                });
+                
+                if (result && result.success) {
+                    EvoGenesis.ui.showNotification(`Task "${name}" created successfully`, 'success');
+                } else {
+                    throw new Error(result?.message || 'Unknown error creating task');
+                }
+            } catch (apiError) {
+                console.error('API error creating task:', apiError);
+                EvoGenesis.ui.showNotification(`Failed to create task: ${apiError.message}`, 'error');
+                return;
+            }
+            
+            // Close modal and reload tasks
+            const modal = bootstrap.Modal.getInstance(document.getElementById('createTaskModal'));
+            modal.hide();
+            
+            // Clear form
+            document.getElementById('create-task-form').reset();
+            
+            // Reload tasks
+            loadTasks();
+            
+        } catch (error) {
+            console.error('Error creating task:', error);
+            EvoGenesis.ui.showNotification('Failed to create task', 'error');
+        }
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,588 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="agents-view">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-title">Agents</h1>
+        <button id="create-agent-btn" class="btn btn-primary">
+            <i class='bx bx-plus'></i> Create Agent
+        </button>
+    </div>
+    
+    <!-- Agent Overview Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Total Agents</h5>
+                    <div class="metric-display">
+                        <i class='bx bx-bot'></i>
+                        <h2 id="total-agents">8</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Active Agents</h5>
+                    <div class="metric-display">
+                        <i class='bx bx-run'></i>
+                        <h2 id="active-agents">5</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">System Agents</h5>
+                    <div class="metric-display">
+                        <i class='bx bx-cog'></i>
+                        <h2 id="system-agents">3</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">User Agents</h5>
+                    <div class="metric-display">
+                        <i class='bx bx-user'></i>
+                        <h2 id="user-agents">5</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Agent List -->
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="card-title">Agent List</h5>
+                <div class="input-group w-25">
+                    <input type="text" class="form-control" placeholder="Search agents..." id="agent-search">
+                    <button class="btn btn-outline-secondary" type="button">
+                        <i class='bx bx-search'></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Agent Name</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Team</th>
+                            <th>Capabilities</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="agent-list">
+                        <!-- Agent list will be populated dynamically -->
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="status-indicator active me-2"></div>
+                                    <div>System Coordinator</div>
+                                </div>
+                            </td>
+                            <td><span class="badge bg-info">coordinator</span></td>
+                            <td><span class="badge bg-success">active</span></td>
+                            <td>System Core Team</td>
+                            <td>
+                                <span class="badge bg-secondary">system_coordination</span>
+                                <span class="badge bg-secondary">agent_management</span>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-primary">
+                                        <i class='bx bx-info-circle'></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary">
+                                        <i class='bx bx-message-square-detail'></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger">
+                                        <i class='bx bx-power-off'></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="status-indicator active me-2"></div>
+                                    <div>System Planner</div>
+                                </div>
+                            </td>
+                            <td><span class="badge bg-info">planner</span></td>
+                            <td><span class="badge bg-success">active</span></td>
+                            <td>System Core Team</td>
+                            <td>
+                                <span class="badge bg-secondary">strategic_planning</span>
+                                <span class="badge bg-secondary">task_decomposition</span>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-primary">
+                                        <i class='bx bx-info-circle'></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary">
+                                        <i class='bx bx-message-square-detail'></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger">
+                                        <i class='bx bx-power-off'></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="status-indicator active me-2"></div>
+                                    <div>Research Agent</div>
+                                </div>
+                            </td>
+                            <td><span class="badge bg-primary">assistant</span></td>
+                            <td><span class="badge bg-success">active</span></td>
+                            <td>Research Team</td>
+                            <td>
+                                <span class="badge bg-secondary">web_research</span>
+                                <span class="badge bg-secondary">data_analysis</span>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-primary">
+                                        <i class='bx bx-info-circle'></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary">
+                                        <i class='bx bx-message-square-detail'></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger">
+                                        <i class='bx bx-power-off'></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Agent Details Modal -->
+    <div class="modal fade" id="agentDetailsModal" tabindex="-1" aria-labelledby="agentDetailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="agentDetailsModalLabel">Agent Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Basic Information</h6>
+                            <dl class="row">
+                                <dt class="col-sm-4">ID</dt>
+                                <dd class="col-sm-8" id="agent-id">a1b2c3d4</dd>
+                                
+                                <dt class="col-sm-4">Name</dt>
+                                <dd class="col-sm-8" id="agent-name">Research Agent</dd>
+                                
+                                <dt class="col-sm-4">Type</dt>
+                                <dd class="col-sm-8" id="agent-type">assistant</dd>
+                                
+                                <dt class="col-sm-4">Status</dt>
+                                <dd class="col-sm-8" id="agent-status">active</dd>
+                                
+                                <dt class="col-sm-4">Created</dt>
+                                <dd class="col-sm-8" id="agent-created">2025-04-17 12:34:56</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Capabilities</h6>
+                            <div id="agent-capabilities" class="mb-3">
+                                <span class="badge bg-secondary">web_research</span>
+                                <span class="badge bg-secondary">data_analysis</span>
+                                <span class="badge bg-secondary">text_summarization</span>
+                            </div>
+                            
+                            <h6>Team Assignment</h6>
+                            <p id="agent-team">Research Team</p>
+                        </div>
+                    </div>
+                    
+                    <h6>Current Tasks</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Task ID</th>
+                                    <th>Description</th>
+                                    <th>Status</th>
+                                    <th>Progress</th>
+                                </tr>
+                            </thead>
+                            <tbody id="agent-tasks">
+                                <tr>
+                                    <td>t1234</td>
+                                    <td>Research latest LLM advancements</td>
+                                    <td><span class="badge bg-warning">in progress</span></td>
+                                    <td>
+                                        <div class="progress">
+                                            <div class="progress-bar" role="progressbar" style="width: 75%;" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100">75%</div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <h6>Recent Activity</h6>
+                    <div id="agent-activity-log" class="activity-log">
+                        <div class="activity-item">
+                            <div class="activity-time">10:45 AM</div>
+                            <div class="activity-content">Started researching latest LLM papers</div>
+                        </div>
+                        <div class="activity-item">
+                            <div class="activity-time">10:30 AM</div>
+                            <div class="activity-content">Initialized with capabilities: web_research, data_analysis</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary">Message Agent</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Create Agent Modal -->
+    <div class="modal fade" id="createAgentModal" tabindex="-1" aria-labelledby="createAgentModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createAgentModalLabel">Create New Agent</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="create-agent-form">
+                        <div class="mb-3">
+                            <label for="agent-name-input" class="form-label">Agent Name</label>
+                            <input type="text" class="form-control" id="agent-name-input" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="agent-type-select" class="form-label">Agent Type</label>
+                            <select class="form-select" id="agent-type-select" required>
+                                <option value="">Select a type</option>
+                                <option value="assistant">Assistant</option>
+                                <option value="user_proxy">User Proxy</option>
+                                <option value="coordinator">Coordinator</option>
+                                <option value="planner">Planner</option>
+                                <option value="critic">Critic</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="agent-description-input" class="form-label">Description</label>
+                            <textarea class="form-control" id="agent-description-input" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="agent-capabilities-input" class="form-label">Capabilities (comma-separated)</label>
+                            <input type="text" class="form-control" id="agent-capabilities-input">
+                        </div>
+                        <div class="mb-3">
+                            <label for="agent-team-select" class="form-label">Assign to Team</label>
+                            <select class="form-select" id="agent-team-select">
+                                <option value="">None</option>
+                                <option value="research">Research Team</option>
+                                <option value="development">Development Team</option>
+                                <option value="system">System Core Team</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="create-agent-submit">Create Agent</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Load agents data
+        loadAgents();
+        
+        // Subscribe to agent-related WebSocket events
+        EvoGenesis.ws.subscribe(['agents', 'agents.status', 'teams']);
+        
+        // Setup event listeners
+        document.getElementById('create-agent-btn').addEventListener('click', function() {
+            const modal = new bootstrap.Modal(document.getElementById('createAgentModal'));
+            modal.show();
+        });
+        
+        document.getElementById('create-agent-submit').addEventListener('click', createAgent);
+        
+        document.getElementById('agent-search').addEventListener('input', function() {
+            filterAgents(this.value);
+        });
+        
+        // Set up click handlers for agent details
+        const agentList = document.getElementById('agent-list');
+        agentList.addEventListener('click', function(e) {
+            const infoButton = e.target.closest('.btn-outline-primary');
+            if (infoButton) {
+                const row = infoButton.closest('tr');
+                const agentName = row.querySelector('td:first-child div div').textContent;
+                showAgentDetails(agentName);
+            }
+        });
+        
+        // Listen for WebSocket messages
+        document.addEventListener('ws-message', function(e) {
+            const data = e.detail;
+            
+            if (data.topic === 'agents' || data.topic === 'agents.status') {
+                loadAgents();
+            }
+        });
+    });
+    
+    async function loadAgents() {
+        try {
+            const agents = await EvoGenesis.api.fetch('/api/agents');
+            if (!agents) return;
+            
+            updateAgentCounters(agents);
+            renderAgentList(agents);
+        } catch (error) {
+            console.error('Error loading agents:', error);
+            EvoGenesis.ui.showNotification('Failed to load agents', 'error');
+        }
+    }
+    
+    function updateAgentCounters(agents) {
+        const totalAgents = agents.length;
+        const activeAgents = agents.filter(a => a.status === 'active').length;
+        const systemAgents = agents.filter(a => a.type === 'coordinator' || a.type === 'planner' || a.type === 'critic').length;
+        const userAgents = totalAgents - systemAgents;
+        
+        document.getElementById('total-agents').textContent = totalAgents;
+        document.getElementById('active-agents').textContent = activeAgents;
+        document.getElementById('system-agents').textContent = systemAgents;
+        document.getElementById('user-agents').textContent = userAgents;
+    }
+    
+    function renderAgentList(agents) {
+        const agentList = document.getElementById('agent-list');
+        agentList.innerHTML = '';
+        
+        agents.forEach(agent => {
+            const row = document.createElement('tr');
+            
+            // Status class
+            const statusClass = agent.status === 'active' ? 'active' : 
+                              agent.status === 'idle' ? 'warning' : 'error';
+            
+            // Type class
+            const typeClass = agent.type === 'coordinator' || agent.type === 'planner' || agent.type === 'critic' ? 
+                            'info' : 'primary';
+            
+            row.innerHTML = `
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="status-indicator ${statusClass} me-2"></div>
+                        <div>${agent.name}</div>
+                    </div>
+                </td>
+                <td><span class="badge bg-${typeClass}">${agent.type}</span></td>
+                <td><span class="badge bg-${agent.status === 'active' ? 'success' : 
+                                         agent.status === 'idle' ? 'warning' : 'secondary'}">${agent.status}</span></td>
+                <td>${agent.team_id ? agent.team_id : '-'}</td>
+                <td>
+                    ${agent.capabilities.map(cap => `<span class="badge bg-secondary">${cap}</span>`).join(' ')}
+                </td>
+                <td>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-primary">
+                            <i class='bx bx-info-circle'></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary">
+                            <i class='bx bx-message-square-detail'></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger">
+                            <i class='bx bx-power-off'></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            
+            agentList.appendChild(row);
+        });
+    }
+    
+    function filterAgents(query) {
+        const rows = document.querySelectorAll('#agent-list tr');
+        query = query.toLowerCase();
+        
+        rows.forEach(row => {
+            const name = row.querySelector('td:first-child div div').textContent.toLowerCase();
+            const type = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+            const capabilities = row.querySelector('td:nth-child(5)').textContent.toLowerCase();
+            
+            if (name.includes(query) || type.includes(query) || capabilities.includes(query)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+      async function showAgentDetails(agentName) {
+        try {
+            // First, find the agent's ID based on the name
+            const agents = await EvoGenesis.api.fetch('/api/agents');
+            const agent = agents.find(a => a.name === agentName);
+            
+            if (!agent) {
+                EvoGenesis.ui.showNotification(`Agent "${agentName}" not found`, 'error');
+                return;
+            }
+            
+            // Show the modal first for better UX
+            const modal = new bootstrap.Modal(document.getElementById('agentDetailsModal'));
+            modal.show();
+            
+            // Fetch detailed agent info by id
+            const agentDetails = await EvoGenesis.api.fetch(`/api/agents/${agent.id}`);
+            
+            // Update the modal with agent details
+            document.getElementById('agent-id').textContent = agentDetails.id;
+            document.getElementById('agent-name').textContent = agentDetails.name;
+            document.getElementById('agent-type').textContent = agentDetails.type;
+            document.getElementById('agent-status').textContent = agentDetails.status;
+            document.getElementById('agent-created').textContent = agentDetails.created_at;
+            
+            // Update capabilities
+            const capabilitiesContainer = document.getElementById('agent-capabilities');
+            capabilitiesContainer.innerHTML = agentDetails.capabilities
+                .map(cap => `<span class="badge bg-secondary">${cap}</span>`)
+                .join(' ');
+            
+            // Update team assignment
+            document.getElementById('agent-team').textContent = agentDetails.team_id || 'Not Assigned';
+            
+            // Update tasks
+            const tasksList = document.getElementById('agent-tasks');
+            tasksList.innerHTML = '';
+            
+            if (agentDetails.tasks && agentDetails.tasks.length > 0) {
+                agentDetails.tasks.forEach(task => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${task.id}</td>
+                        <td>${task.description}</td>
+                        <td><span class="badge bg-${task.status === 'completed' ? 'success' : 
+                                              task.status === 'in progress' ? 'warning' : 'secondary'}">${task.status}</span></td>
+                        <td>
+                            <div class="progress">
+                                <div class="progress-bar" role="progressbar" 
+                                    style="width: ${task.progress}%;" 
+                                    aria-valuenow="${task.progress}" 
+                                    aria-valuemin="0" 
+                                    aria-valuemax="100">${task.progress}%</div>
+                            </div>
+                        </td>
+                    `;
+                    tasksList.appendChild(row);
+                });
+            } else {
+                tasksList.innerHTML = '<tr><td colspan="4" class="text-center">No active tasks</td></tr>';
+            }
+            
+            // Update activity log
+            const activityLog = document.getElementById('agent-activity-log');
+            activityLog.innerHTML = '';
+            
+            if (agentDetails.activities && agentDetails.activities.length > 0) {
+                agentDetails.activities.forEach(activity => {
+                    const activityItem = document.createElement('div');
+                    activityItem.className = 'activity-item';
+                    activityItem.innerHTML = `
+                        <div class="activity-time">${new Date(activity.timestamp).toLocaleTimeString()}</div>
+                        <div class="activity-content">${activity.description}</div>
+                    `;
+                    activityLog.appendChild(activityItem);
+                });
+            } else {
+                activityLog.innerHTML = '<div class="text-center">No recent activity</div>';
+            }
+        } catch (error) {
+            console.error('Error loading agent details:', error);
+            EvoGenesis.ui.showNotification('Failed to load agent details', 'error');
+        }
+    }
+    
+    async function createAgent() {
+        try {
+            const name = document.getElementById('agent-name-input').value;
+            const type = document.getElementById('agent-type-select').value;
+            const description = document.getElementById('agent-description-input').value;
+            const capabilities = document.getElementById('agent-capabilities-input').value
+                              .split(',')
+                              .map(cap => cap.trim())
+                              .filter(cap => cap !== '');
+            const teamId = document.getElementById('agent-team-select').value || null;
+              if (!name || !type) {
+                EvoGenesis.ui.showNotification('Name and type are required', 'warning');
+                return;
+            }
+            
+            try {
+                // Call the API to create agent
+                const result = await EvoGenesis.api.fetch('/api/agents', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, type, description, capabilities, team_id: teamId })
+                });
+                
+                if (result && result.success) {
+                    EvoGenesis.ui.showNotification(`Agent "${name}" created successfully`, 'success');
+                } else {
+                    throw new Error(result?.message || 'Unknown error creating agent');
+                }
+            } catch (apiError) {
+                console.error('API error creating agent:', apiError);
+                EvoGenesis.ui.showNotification(`Failed to create agent: ${apiError.message}`, 'error');
+                return;
+            }
+            
+            // Close modal and reload agents
+            const modal = bootstrap.Modal.getInstance(document.getElementById('createAgentModal'));
+            modal.hide();
+            
+            // Clear form
+            document.getElementById('create-agent-form').reset();
+            
+            // Reload agents
+            loadAgents();
+            
+        } catch (error) {
+            console.error('Error creating agent:', error);
+            EvoGenesis.ui.showNotification('Failed to create agent', 'error');
+        }
+    }
+</script>
+{% endblock %}

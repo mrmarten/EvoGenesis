@@ -1,0 +1,42 @@
+{
+    "system": {
+        "name": "EvoGenesis",
+        "version": "0.1.0",
+        "log_level": "INFO",
+        "debug": false
+    },
+    "llm": {
+        "default_provider": "openai",
+        "default_model": "gpt-4o",
+        "temperature": 0.7,
+        "max_tokens": 2000
+    },
+    "web_ui": {
+        "enabled": true,
+        "host": "0.0.0.0",
+        "port": 5000,
+        "debug": false,
+        "theme": "light"
+    },
+    "agent_manager": {
+        "max_agents": 20,
+        "max_teams": 5,
+        "default_agent_timeout": 300
+    },
+    "memory_manager": {
+        "vector_db": "chromadb",
+        "vector_db_path": "./data/vectordb",
+        "cache_size": 1000
+    },
+    "tooling_system": {
+        "enable_code_execution": true,
+        "sandbox_mode": "docker",
+        "allowed_tools": ["web_search", "file_operations", "code_execution", "data_analysis"],
+        "max_execution_time": 60
+    },
+    "security": {
+        "enable_authentication": false,
+        "session_expiry": 3600,
+        "admin_username": "admin"
+    }
+}
