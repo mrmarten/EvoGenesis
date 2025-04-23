@@ -24,7 +24,7 @@ This project is currently in early development.
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/evogenesis.git
+git clone https://github.com/mrmarten/EvoGenesis.git
 
 # Install dependencies
 pip install -r requirements.txt
