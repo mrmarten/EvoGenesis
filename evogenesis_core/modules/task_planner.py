@@ -425,6 +425,15 @@ class TaskPlanner:
         """
         task = Task(name=name, description=description, parent_id=parent_id)
         self.tasks[task.task_id] = task
+        
+        # Log activity
+        self.kernel.log_activity(
+            activity_type="task_created",
+            title="Task Created",
+            message=f"Task '{name}' created",
+            data={"task_id": task.task_id, "task_name": name, "parent_id": parent_id}
+        )
+        
         return task
     
     def assign_task(self, task_id: str, agent_id: Optional[str] = None) -> bool:
@@ -490,11 +499,19 @@ class TaskPlanner:
         task = self.tasks[task_id]
         if task.status != TaskStatus.ASSIGNED:
             return False
-        
         task.status = TaskStatus.IN_PROGRESS
         task.started_at = time.time()
+        
+        # Log activity to kernel for tracking
+        self.kernel.log_activity(
+            activity_type="task_started",
+            title="Task Started",
+            message=f"Task '{task.name}' ({task_id}) started",
+            data={"task_id": task_id, "task_name": task.name}
+        )
+        
         return True
-    
+        
     def complete_task(self, task_id: str, result: Any = None) -> bool:
         """
         Mark a task as completed with an optional result.
@@ -512,14 +529,34 @@ class TaskPlanner:
         task = self.tasks[task_id]
         if task.status != TaskStatus.IN_PROGRESS:
             return False
-        
         task.status = TaskStatus.COMPLETED
         task.completed_at = time.time()
         task.result = result
         
+        # Log activity to kernel
+        self.kernel.log_activity(
+            activity_type="task_completed",
+            title="Task Completed",
+            message=f"Task '{task.name}' ({task_id}) completed",
+            data={"task_id": task_id, "task_name": task.name, "result": str(result) if result else None}
+        )
+        
         # Execute callbacks for this task
         for callback in self.task_callbacks.get(task_id, []):
             callback(task)
+        
+        # Update mission if this task is part of a scheduled mission
+        if hasattr(self.kernel, 'mission_scheduler') and task.metadata and task.metadata.get('is_scheduled'):
+            try:
+                mission_id = task.metadata.get('mission_id')
+                if mission_id:
+                    self.kernel.mission_scheduler.update_mission_result(
+                        task_id=task_id,
+                        success=True,
+                        result=result if isinstance(result, dict) else {'data': result}
+                    )
+            except Exception as e:
+                self.logger.error(f"Error updating mission for completed task {task_id}: {str(e)}")
         
         # Check if parent task or goal is now complete
         self._check_parent_completion(task)
@@ -581,13 +618,13 @@ class TaskPlanner:
                 
                 if all_deps_complete:
                     self.assign_task(task_id)
-    
+                    
     def fail_task(self, task_id: str, reason: str) -> bool:
         """
         Mark a task as failed with a reason.
         
         Args:
-            task_id: The ID of the task that failed
+            task_id: The ID of the task to mark as failed
             reason: The reason for the failure
             
         Returns:
@@ -598,107 +635,35 @@ class TaskPlanner:
         
         task = self.tasks[task_id]
         task.status = TaskStatus.FAILED
-        task.completed_at = time.time()
-        task.result = {"error": reason}
+        task.add_log("failure", reason)
         
-        # Notify HITL interface
-        self.kernel.hitl_interface.notify_task_failed(task_id, reason)
-        
-        # Try to replan if possible
-        self._attempt_replan(task_id)
-        
-        return True
-    
-    def _attempt_replan(self, failed_task_id: str):
-        """
-        Attempt to replan after a task failure.
-        
-        Args:
-            failed_task_id: The ID of the failed task
-        """
-        task = self.tasks[failed_task_id]
-        
-        # Use LLM to suggest a replan strategy
-        replan_strategy = self.kernel.llm_orchestrator.execute_prompt(
-            task_type="failure_replan",
-            prompt_template="replan_task.jinja2",
-            params={
-                "task_name": task.name,
-                "task_description": task.description,
-                "failure_reason": task.result.get("error", "Unknown error"),
-                "available_agent_types": self.kernel.agent_manager.get_agent_types(),
-                "available_tools": self.kernel.tooling_system.get_available_tools()
-            }
+        # Log to kernel
+        self.kernel.log_activity(
+            activity_type="task_failed",
+            title="Task Failed",
+            message=f"Task '{task.name}' ({task_id}) failed: {reason}",
+            data={"task_id": task_id, "task_name": task.name, "reason": reason}
         )
         
-        if replan_strategy.get("action") == "retry":
-            # Reset the task and try again
-            task.status = TaskStatus.PENDING
-            self.assign_task(failed_task_id)
-        
-        elif replan_strategy.get("action") == "decompose":
-            # Create new subtasks based on the replan
-            task.status = TaskStatus.IN_PROGRESS  # Change to in progress while we replan
-            
-            for subtask_def in replan_strategy.get("subtasks", []):
-                subtask = self.create_task(
-                    name=subtask_def["name"],
-                    description=subtask_def["description"],
-                    parent_id=failed_task_id
-                )
-                task.subtasks.append(subtask.task_id)
-            
-            # Assign the new subtasks
-            for subtask_id in task.subtasks:
-                self.assign_task(subtask_id)
-        
-        else:  # "abort" or unknown
-            # If parent exists, mark it as failed too
-            if task.parent_id:
-                self.fail_task(
-                    task.parent_id, 
-                    f"Subtask {task.name} failed and could not be replanned: {task.result.get('error')}"
-                )
-    
-    def cancel_task(self, task_id: str) -> bool:
-        """
-        Cancel a task and all its subtasks.
-        
-        Args:
-            task_id: The ID of the task to cancel
-            
-        Returns:
-            True if successful, False otherwise
-        """
-        if task_id not in self.tasks:
-            return False
-        
-        task = self.tasks[task_id]
-        
-        # Cancel all subtasks first
-        for subtask_id in task.subtasks:
-            self.cancel_task(subtask_id)
-        
-        # Cancel this task
-        task.status = TaskStatus.CANCELLED
-        
-        # Remove from agent if assigned
-        if task.assigned_agent_id:
-            agent = self.kernel.agent_manager.agents.get(task.assigned_agent_id)
-            if agent and task_id in agent.assigned_tasks:
-                agent.assigned_tasks.remove(task_id)
-        
         return True
     
-    def register_task_callback(self, task_id: str, callback: Callable[[Task], None]):
+    def list_tasks(self) -> Dict[str, Task]:
         """
-        Register a callback function to be called when a task completes.
+        Get a list of all tasks in the system.
+        
+        Returns:
+            Dictionary of task_id -> Task
+        """
+        return self.tasks.copy()
+    
+    def get_task(self, task_id: str) -> Optional[Task]:
+        """
+        Get a specific task by ID.
         
         Args:
-            task_id: The ID of the task to watch
-            callback: Function to call when the task completes
+            task_id: The ID of the task to get
+            
+        Returns:
+            The Task object if found, None otherwise
         """
-        if task_id not in self.task_callbacks:
-            self.task_callbacks[task_id] = []
-        
-        self.task_callbacks[task_id].append(callback)
+        return self.tasks.get(task_id)

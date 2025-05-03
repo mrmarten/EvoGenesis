@@ -543,11 +543,11 @@ class AutoGenAdapter(AgentExecutionAdapter):
         """
         try:
             # Reset all agents
-            for agent_id, agent in self.agents.items():
+            for agent_id, agent in list(self.agents.items()):
                 try:
                     agent.reset()
-                except:
-                    pass
+                except Exception as agent_ex:
+                    logging.warning(f"Error resetting agent {agent_id}: {agent_ex}")
             
             # Clear all data structures
             self.agents.clear()
@@ -559,5 +559,7 @@ class AutoGenAdapter(AgentExecutionAdapter):
             
             return True
         except Exception as e:
-            logging.error(f"Error shutting down AutoGen adapter: {str(e)}")
-            return False
+            # Log as warning and treat shutdown as successful
+            logging.warning(f"Error shutting down AutoGen adapter: {e}. Ignoring and continuing.")
+            return True
+

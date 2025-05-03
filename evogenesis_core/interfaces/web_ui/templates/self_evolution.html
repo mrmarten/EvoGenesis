@@ -1,0 +1,1017 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="self-evolution-view">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-title">Self-Evolution Engine</h1>
+        <button id="propose-update-btn" class="btn btn-primary">
+            <i class='bx bx-plus'></i> Propose Update
+        </button>
+    </div>
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Engine Status</h5>
+                    <div id="evolution-status" class="mb-2">Loading...</div>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">Pending Updates: <span id="pending-updates-count">0</span></li>
+                        <li class="list-group-item">Deployed Updates: <span id="deployed-updates-count">0</span></li>
+                        <li class="list-group-item">Active A/B Tests: <span id="active-ab-tests-count">0</span></li>
+                        <li class="list-group-item">Backup Kernel: <span id="backup-kernel-status">No</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Update History</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Status</th>
+                                    <th>Proposed By</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="update-history-list">
+                                <!-- Updates will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Active A/B Tests</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Test ID</th>
+                                    <th>Feature</th>
+                                    <th>Status</th>
+                                    <th>Started</th>
+                                    <th>Duration</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ab-tests-list">
+                                <!-- A/B tests will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Propose Update Modal -->
+<div class="modal fade" id="proposeUpdateModal" tabindex="-1" aria-labelledby="proposeUpdateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="proposeUpdateModalLabel">Propose New Update</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="propose-update-form">
+                    <div class="mb-3">
+                        <label for="update-title-input" class="form-label">Title</label>
+                        <input type="text" class="form-control" id="update-title-input" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="update-description-input" class="form-label">Description</label>
+                        <textarea class="form-control" id="update-description-input" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="update-priority-select" class="form-label">Priority</label>
+                        <select class="form-select" id="update-priority-select">
+                            <option value="critical">Critical</option>
+                            <option value="high">High</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="low">Low</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="update-components-input" class="form-label">Affected Components</label>
+                        <input type="text" class="form-control" id="update-components-input" placeholder="e.g. agent_manager, llm_orchestrator">
+                        <div class="form-text">Comma-separated list of components</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="update-code-changes-input" class="form-label">Code Changes (JSON)</label>
+                        <textarea class="form-control" id="update-code-changes-input" rows="6" placeholder='{"path/to/file.py": "new content..."}'></textarea>
+                        <div class="form-text">Specify file paths and new content as JSON. For non-technical users, leave blank for auto-generation.</div>
+                    </div>
+                </form>
+                <div id="propose-update-help" class="alert alert-info mt-3">
+                    <i class='bx bx-info-circle'></i> You can describe the desired change in plain language. EvoGenesis will auto-generate the technical details if possible.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="submit-propose-update">Submit Proposal</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Load initial data
+    loadSelfEvolutionStatus();
+    loadUpdates();
+    loadABTests();
+    
+    // Subscribe to WebSocket events
+    EvoGenesis.ws.subscribe(['self_evolution', 'self_evolution.updates', 'self_evolution.abtests']);
+    
+    // Setup event listeners for WebSocket events
+    document.addEventListener('ws-message', function(e) {
+        const data = e.detail;
+        
+        if (data.topic.startsWith('self_evolution')) {
+            // Reload data based on the event
+            loadSelfEvolutionStatus();
+            
+            if (data.topic === 'self_evolution.updates') {
+                loadUpdates();
+            } else if (data.topic === 'self_evolution.abtests') {
+                loadABTests();
+            }
+            
+            // Show notification about the event
+            if (data.data && data.data.event) {
+                let message = '';
+                
+                switch (data.data.event) {
+                    case 'update_proposed':
+                        message = 'New update proposal submitted';
+                        break;
+                    case 'update_approved':
+                        message = 'Update approved and queued for implementation';
+                        break;
+                    case 'update_rolled_back':
+                        message = 'Update rolled back due to issues';
+                        break;
+                    case 'abtest_started':
+                        message = 'New A/B test started';
+                        break;
+                    default:
+                        message = `Self-Evolution event: ${data.data.event}`;
+                }
+                
+                EvoGenesis.ui.showNotification(message, 'info');
+            }
+        }
+    });
+    
+    // Setup button event listeners
+    document.getElementById('propose-update-btn').addEventListener('click', function() {
+        const modal = new bootstrap.Modal(document.getElementById('proposeUpdateModal'));
+        modal.show();
+    });
+    
+    document.getElementById('submit-propose-update').addEventListener('click', proposeUpdate);
+});
+
+async function loadSelfEvolutionStatus() {
+    try {
+        const status = await EvoGenesis.api.fetch('/api/self-evolution/status');
+        if (!status) return;
+        
+        // Update status indicators
+        const statusElement = document.getElementById('evolution-status');
+        const pendingUpdatesElement = document.getElementById('pending-updates-count');
+        const deployedUpdatesElement = document.getElementById('deployed-updates-count');
+        const abTestsElement = document.getElementById('active-ab-tests-count');
+        const backupKernelElement = document.getElementById('backup-kernel-status');
+        
+        // Set status with appropriate styling
+        let statusHtml = '';
+        switch (status.status) {
+            case 'active':
+                statusHtml = '<span class="badge bg-success">Active</span>';
+                break;
+            case 'stopped':
+                statusHtml = '<span class="badge bg-danger">Stopped</span>';
+                break;
+            case 'paused':
+                statusHtml = '<span class="badge bg-warning">Paused</span>';
+                break;
+            default:
+                statusHtml = `<span class="badge bg-secondary">${status.status}</span>`;
+        }
+        
+        statusElement.innerHTML = statusHtml;
+        
+        // Update counts
+        pendingUpdatesElement.textContent = status.pending_updates || 0;
+        deployedUpdatesElement.textContent = status.deployed_updates || 0;
+        abTestsElement.textContent = status.active_ab_tests || 0;
+        
+        // Update backup kernel status
+        backupKernelElement.textContent = status.has_backup_kernel ? 'Yes' : 'No';
+        backupKernelElement.className = status.has_backup_kernel ? 'text-success' : 'text-danger';
+        
+    } catch (error) {
+        console.error('Error loading Self-Evolution status:', error);
+        EvoGenesis.ui.showNotification('Failed to load Self-Evolution status', 'error');
+    }
+}
+
+async function loadUpdates() {
+    try {
+        const updates = await EvoGenesis.api.fetch('/api/self-evolution/updates');
+        if (!updates) return;
+        
+        const updateList = document.getElementById('update-history-list');
+        updateList.innerHTML = '';
+        
+        if (updates.length === 0) {
+            updateList.innerHTML = '<tr><td colspan="5" class="text-center">No updates found</td></tr>';
+            return;
+        }
+        
+        // Sort updates by created_at date (newest first)
+        updates.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        
+        updates.forEach(update => {
+            const row = document.createElement('tr');
+            
+            // Status badge
+            let statusBadge = '';
+            switch (update.status) {
+                case 'proposed':
+                    statusBadge = '<span class="badge bg-info">Proposed</span>';
+                    break;
+                case 'approved':
+                    statusBadge = '<span class="badge bg-primary">Approved</span>';
+                    break;
+                case 'in_progress':
+                    statusBadge = '<span class="badge bg-warning">In Progress</span>';
+                    break;
+                case 'testing':
+                    statusBadge = '<span class="badge bg-secondary">Testing</span>';
+                    break;
+                case 'deployed':
+                    statusBadge = '<span class="badge bg-success">Deployed</span>';
+                    break;
+                case 'failed':
+                    statusBadge = '<span class="badge bg-danger">Failed</span>';
+                    break;
+                case 'rolled_back':
+                    statusBadge = '<span class="badge bg-danger">Rolled Back</span>';
+                    break;
+                default:
+                    statusBadge = `<span class="badge bg-secondary">${update.status}</span>`;
+            }
+            
+            // Action buttons based on status
+            let actionButtons = '';
+            
+            if (update.status === 'proposed') {
+                actionButtons = `
+                    <button class="btn btn-sm btn-primary" onclick="approveUpdate('${update.update_id}')">
+                        <i class='bx bx-check'></i>
+                    </button>
+                `;
+            } else if (update.status === 'deployed' || update.status === 'failed') {
+                actionButtons = `
+                    <button class="btn btn-sm btn-danger" onclick="rollbackUpdate('${update.update_id}')">
+                        <i class='bx bx-revision'></i>
+                    </button>
+                `;
+            } else if (update.status === 'approved') {
+                actionButtons = `
+                    <button class="btn btn-sm btn-info" onclick="startABTest('${update.update_id}')">
+                        <i class='bx bx-test-tube'></i>
+                    </button>
+                `;
+            }
+            
+            // Add details button
+            actionButtons += `
+                <button class="btn btn-sm btn-outline-secondary" onclick="showUpdateDetails('${update.update_id}')">
+                    <i class='bx bx-info-circle'></i>
+                </button>
+            `;
+            
+            // Format created date
+            const createdDate = new Date(update.created_at).toLocaleString();
+            
+            row.innerHTML = `
+                <td>${update.title}</td>
+                <td>${statusBadge}</td>
+                <td>${update.proposed_by}</td>
+                <td>${createdDate}</td>
+                <td>
+                    <div class="btn-group">
+                        ${actionButtons}
+                    </div>
+                </td>
+            `;
+            
+            updateList.appendChild(row);
+        });
+    } catch (error) {
+        console.error('Error loading updates:', error);
+        EvoGenesis.ui.showNotification('Failed to load updates', 'error');
+    }
+}
+
+async function loadABTests() {
+    try {
+        const tests = await EvoGenesis.api.fetch('/api/self-evolution/abtests');
+        if (!tests) return;
+        
+        const testsList = document.getElementById('ab-tests-list');
+        testsList.innerHTML = '';
+        
+        if (tests.length === 0) {
+            testsList.innerHTML = '<tr><td colspan="6" class="text-center">No active A/B tests</td></tr>';
+            return;
+        }
+        
+        tests.forEach(test => {
+            const row = document.createElement('tr');
+            
+            // Status badge
+            let statusBadge = '';
+            switch (test.status) {
+                case 'initializing':
+                    statusBadge = '<span class="badge bg-info">Initializing</span>';
+                    break;
+                case 'running':
+                    statusBadge = '<span class="badge bg-primary">Running</span>';
+                    break;
+                case 'completed':
+                    statusBadge = '<span class="badge bg-success">Completed</span>';
+                    break;
+                case 'failed':
+                    statusBadge = '<span class="badge bg-danger">Failed</span>';
+                    break;
+                default:
+                    statusBadge = `<span class="badge bg-secondary">${test.status}</span>`;
+            }
+            
+            // Format duration
+            const durationHours = Math.floor(test.duration / 3600);
+            const durationMinutes = Math.floor((test.duration % 3600) / 60);
+            const durationFormatted = `${durationHours}h ${durationMinutes}m`;
+            
+            // Format start date
+            let startDate = 'Unknown';
+            if (test.started_at && test.started_at !== 'Unknown') {
+                startDate = new Date(test.started_at).toLocaleString();
+            }
+            
+            // Action buttons
+            let actionButtons = `
+                <button class="btn btn-sm btn-outline-secondary" onclick="showABTestDetails('${test.test_id}')">
+                    <i class='bx bx-info-circle'></i>
+                </button>
+            `;
+            
+            if (test.status === 'completed' && test.results) {
+                const winnerClass = test.results.winner === 'version_b' ? 'success' : 'danger';
+                actionButtons += `
+                    <button class="btn btn-sm btn-${winnerClass}" onclick="applyABTestResult('${test.test_id}')">
+                        <i class='bx bx-check-circle'></i>
+                    </button>
+                `;
+            }
+            
+            row.innerHTML = `
+                <td>${test.test_id.substr(0, 8)}...</td>
+                <td>${test.feature}</td>
+                <td>${statusBadge}</td>
+                <td>${startDate}</td>
+                <td>${durationFormatted}</td>
+                <td>
+                    <div class="btn-group">
+                        ${actionButtons}
+                    </div>
+                </td>
+            `;
+            
+            testsList.appendChild(row);
+        });
+    } catch (error) {
+        console.error('Error loading A/B tests:', error);
+        EvoGenesis.ui.showNotification('Failed to load A/B tests', 'error');
+    }
+}
+
+async function proposeUpdate() {
+    try {
+        const title = document.getElementById('update-title-input').value;
+        const description = document.getElementById('update-description-input').value;
+        const priority = document.getElementById('update-priority-select').value;
+        const componentsInput = document.getElementById('update-components-input').value;
+        const codeChangesInput = document.getElementById('update-code-changes-input').value;
+        
+        if (!title || !description) {
+            EvoGenesis.ui.showNotification('Title and description are required', 'warning');
+            return;
+        }
+        
+        // Parse components
+        const components = componentsInput.split(',').map(comp => comp.trim()).filter(comp => comp);
+        
+        // Parse code changes if provided
+        let codeChanges = {};
+        if (codeChangesInput) {
+            try {
+                codeChanges = JSON.parse(codeChangesInput);
+            } catch (e) {
+                EvoGenesis.ui.showNotification('Invalid JSON in code changes', 'warning');
+                return;
+            }
+        }
+        
+        const result = await EvoGenesis.api.fetch('/api/self-evolution/propose', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                title,
+                description,
+                priority,
+                affected_components: components,
+                code_changes: codeChanges,
+                proposed_by: 'user'
+            })
+        });
+        
+        if (result && result.success) {
+            EvoGenesis.ui.showNotification('Update proposal submitted successfully', 'success');
+            
+            // Close modal and reset form
+            const modal = bootstrap.Modal.getInstance(document.getElementById('proposeUpdateModal'));
+            modal.hide();
+            document.getElementById('propose-update-form').reset();
+            
+            // Reload updates
+            loadUpdates();
+            loadSelfEvolutionStatus();
+        } else {
+            throw new Error(result?.message || 'Unknown error proposing update');
+        }
+    } catch (error) {
+        console.error('Error proposing update:', error);
+        EvoGenesis.ui.showNotification(`Failed to propose update: ${error.message}`, 'error');
+    }
+}
+
+async function approveUpdate(updateId) {
+    try {
+        if (!confirm('Are you sure you want to approve this update? This will implement the changes.')) {
+            return;
+        }
+        
+        const result = await EvoGenesis.api.fetch(`/api/self-evolution/approve/${updateId}`, {
+            method: 'POST'
+        });
+        
+        if (result && result.success) {
+            EvoGenesis.ui.showNotification('Update approved successfully', 'success');
+            loadUpdates();
+            loadSelfEvolutionStatus();
+        } else {
+            throw new Error(result?.message || 'Unknown error approving update');
+        }
+    } catch (error) {
+        console.error('Error approving update:', error);
+        EvoGenesis.ui.showNotification(`Failed to approve update: ${error.message}`, 'error');
+    }
+}
+
+async function rollbackUpdate(updateId) {
+    try {
+        if (!confirm('Are you sure you want to roll back this update? This will revert all changes.')) {
+            return;
+        }
+        
+        const result = await EvoGenesis.api.fetch(`/api/self-evolution/rollback/${updateId}`, {
+            method: 'POST'
+        });
+        
+        if (result && result.success) {
+            EvoGenesis.ui.showNotification('Update rolled back successfully', 'success');
+            loadUpdates();
+            loadSelfEvolutionStatus();
+        } else {
+            throw new Error(result?.message || 'Unknown error rolling back update');
+        }
+    } catch (error) {
+        console.error('Error rolling back update:', error);
+        EvoGenesis.ui.showNotification(`Failed to roll back update: ${error.message}`, 'error');
+    }
+}
+
+async function startABTest(updateId) {
+    try {
+        const duration = prompt('Enter test duration in hours:', '1');
+        if (!duration) return; // User cancelled
+        
+        const durationSeconds = parseInt(duration) * 3600;
+        
+        const result = await EvoGenesis.api.fetch(`/api/self-evolution/abtest/${updateId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                duration: durationSeconds
+            })
+        });
+        
+        if (result && result.success) {
+            EvoGenesis.ui.showNotification('A/B test started successfully', 'success');
+            loadABTests();
+            loadUpdates();
+            loadSelfEvolutionStatus();
+        } else {
+            throw new Error(result?.message || 'Unknown error starting A/B test');
+        }
+    } catch (error) {
+        console.error('Error starting A/B test:', error);
+        EvoGenesis.ui.showNotification(`Failed to start A/B test: ${error.message}`, 'error');
+    }
+}
+
+async function showUpdateDetails(updateId) {
+    try {
+        const updates = await EvoGenesis.api.fetch('/api/self-evolution/updates');
+        const update = updates.find(u => u.update_id === updateId);
+        
+        if (!update) {
+            EvoGenesis.ui.showNotification('Update not found', 'error');
+            return;
+        }
+        
+        // Create a modal to display update details
+        let modal = document.getElementById('updateDetailsModal');
+        
+        // If modal doesn't exist, create it
+        if (!modal) {
+            const modalHTML = `
+                <div class="modal fade" id="updateDetailsModal" tabindex="-1" aria-labelledby="updateDetailsModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="updateDetailsModalLabel">Update Details</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <h6>Title</h6>
+                                    <p id="update-detail-title"></p>
+                                </div>
+                                <div class="mb-3">
+                                    <h6>Description</h6>
+                                    <p id="update-detail-description"></p>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <h6>Status</h6>
+                                        <p id="update-detail-status"></p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>Priority</h6>
+                                        <p id="update-detail-priority"></p>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <h6>Affected Components</h6>
+                                    <p id="update-detail-components"></p>
+                                </div>
+                                <div class="mb-3">
+                                    <h6>Code Changes</h6>
+                                    <pre id="update-detail-code-changes" class="p-3 bg-light"></pre>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <h6>Proposed By</h6>
+                                        <p id="update-detail-proposed-by"></p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>Created At</h6>
+                                        <p id="update-detail-created-at"></p>
+                                    </div>
+                                </div>
+                                <div id="update-detail-test-results-container" class="mb-3 d-none">
+                                    <h6>Test Results</h6>
+                                    <pre id="update-detail-test-results" class="p-3 bg-light"></pre>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add modal to the document
+            const div = document.createElement('div');
+            div.innerHTML = modalHTML;
+            document.body.appendChild(div.firstChild);
+            
+            modal = document.getElementById('updateDetailsModal');
+        }
+        
+        // Fill in update details
+        document.getElementById('update-detail-title').textContent = update.title;
+        document.getElementById('update-detail-description').textContent = update.description;
+        
+        // Status with badge
+        let statusBadge = '';
+        switch (update.status) {
+            case 'proposed':
+                statusBadge = '<span class="badge bg-info">Proposed</span>';
+                break;
+            case 'approved':
+                statusBadge = '<span class="badge bg-primary">Approved</span>';
+                break;
+            case 'in_progress':
+                statusBadge = '<span class="badge bg-warning">In Progress</span>';
+                break;
+            case 'testing':
+                statusBadge = '<span class="badge bg-secondary">Testing</span>';
+                break;
+            case 'deployed':
+                statusBadge = '<span class="badge bg-success">Deployed</span>';
+                break;
+            case 'failed':
+                statusBadge = '<span class="badge bg-danger">Failed</span>';
+                break;
+            case 'rolled_back':
+                statusBadge = '<span class="badge bg-danger">Rolled Back</span>';
+                break;
+            default:
+                statusBadge = `<span class="badge bg-secondary">${update.status}</span>`;
+        }
+        document.getElementById('update-detail-status').innerHTML = statusBadge;
+        
+        // Priority with badge
+        let priorityBadge = '';
+        switch (update.priority) {
+            case 'critical':
+                priorityBadge = '<span class="badge bg-danger">Critical</span>';
+                break;
+            case 'high':
+                priorityBadge = '<span class="badge bg-warning">High</span>';
+                break;
+            case 'medium':
+                priorityBadge = '<span class="badge bg-info">Medium</span>';
+                break;
+            case 'low':
+                priorityBadge = '<span class="badge bg-secondary">Low</span>';
+                break;
+            default:
+                priorityBadge = `<span class="badge bg-info">${update.priority}</span>`;
+        }
+        document.getElementById('update-detail-priority').innerHTML = priorityBadge;
+        
+        // Components list
+        const componentsElement = document.getElementById('update-detail-components');
+        if (update.affected_components && update.affected_components.length > 0) {
+            componentsElement.innerHTML = update.affected_components.map(comp => 
+                `<span class="badge bg-secondary me-1">${comp}</span>`
+            ).join(' ');
+        } else {
+            componentsElement.textContent = 'None specified';
+        }
+        
+        // Code changes
+        const codeChangesElement = document.getElementById('update-detail-code-changes');
+        if (update.code_changes && Object.keys(update.code_changes).length > 0) {
+            codeChangesElement.textContent = JSON.stringify(update.code_changes, null, 2);
+        } else {
+            codeChangesElement.textContent = 'No code changes specified';
+        }
+        
+        // Proposed by and created at
+        document.getElementById('update-detail-proposed-by').textContent = update.proposed_by;
+        document.getElementById('update-detail-created-at').textContent = new Date(update.created_at).toLocaleString();
+        
+        // Test results if available
+        const testResultsContainer = document.getElementById('update-detail-test-results-container');
+        const testResultsElement = document.getElementById('update-detail-test-results');
+        
+        if (update.testing_results && Object.keys(update.testing_results).length > 0) {
+            testResultsContainer.classList.remove('d-none');
+            testResultsElement.textContent = JSON.stringify(update.testing_results, null, 2);
+        } else {
+            testResultsContainer.classList.add('d-none');
+        }
+        
+        // Show modal
+        const modalInstance = new bootstrap.Modal(modal);
+        modalInstance.show();
+        
+    } catch (error) {
+        console.error('Error showing update details:', error);
+        EvoGenesis.ui.showNotification('Failed to load update details', 'error');
+    }
+}
+
+async function showABTestDetails(testId) {
+    try {
+        const tests = await EvoGenesis.api.fetch('/api/self-evolution/abtests');
+        const test = tests.find(t => t.test_id === testId);
+        
+        if (!test) {
+            EvoGenesis.ui.showNotification('Test not found', 'error');
+            return;
+        }
+        
+        // Create a modal to display test details
+        let modal = document.getElementById('abTestDetailsModal');
+        
+        // If modal doesn't exist, create it
+        if (!modal) {
+            const modalHTML = `
+                <div class="modal fade" id="abTestDetailsModal" tabindex="-1" aria-labelledby="abTestDetailsModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="abTestDetailsModalLabel">A/B Test Details</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <h6>Test ID</h6>
+                                        <p id="abtest-detail-id"></p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>Feature</h6>
+                                        <p id="abtest-detail-feature"></p>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <h6>Status</h6>
+                                        <p id="abtest-detail-status"></p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h6>Started At</h6>
+                                        <p id="abtest-detail-started"></p>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <h6>Duration</h6>
+                                        <p id="abtest-detail-duration"></p>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <h6>Version A (Current)</h6>
+                                        <p id="abtest-detail-version-a"></p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>Version B (Experimental)</h6>
+                                        <p id="abtest-detail-version-b"></p>
+                                    </div>
+                                </div>
+                                <div id="abtest-detail-results-container" class="mb-3">
+                                    <h6>Results</h6>
+                                    <div id="abtest-detail-results">
+                                        <div class="alert alert-info">Test is still running. Results will be available when the test completes.</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add modal to the document
+            const div = document.createElement('div');
+            div.innerHTML = modalHTML;
+            document.body.appendChild(div.firstChild);
+            
+            modal = document.getElementById('abTestDetailsModal');
+        }
+        
+        // Fill in test details
+        document.getElementById('abtest-detail-id').textContent = test.test_id;
+        document.getElementById('abtest-detail-feature').textContent = test.feature;
+        
+        // Status with badge
+        let statusBadge = '';
+        switch (test.status) {
+            case 'initializing':
+                statusBadge = '<span class="badge bg-info">Initializing</span>';
+                break;
+            case 'running':
+                statusBadge = '<span class="badge bg-primary">Running</span>';
+                break;
+            case 'completed':
+                statusBadge = '<span class="badge bg-success">Completed</span>';
+                break;
+            case 'failed':
+                statusBadge = '<span class="badge bg-danger">Failed</span>';
+                break;
+            default:
+                statusBadge = `<span class="badge bg-secondary">${test.status}</span>`;
+        }
+        document.getElementById('abtest-detail-status').innerHTML = statusBadge;
+        
+        // Start time and duration
+        document.getElementById('abtest-detail-started').textContent = 
+            test.started_at !== 'Unknown' ? new Date(test.started_at).toLocaleString() : 'Unknown';
+            
+        const durationHours = Math.floor(test.duration / 3600);
+        const durationMinutes = Math.floor((test.duration % 3600) / 60);
+        document.getElementById('abtest-detail-duration').textContent = `${durationHours}h ${durationMinutes}m`;
+        
+        // Versions
+        document.getElementById('abtest-detail-version-a').textContent = test.version_a || 'Current';
+        document.getElementById('abtest-detail-version-b').textContent = test.version_b || 'Experimental';
+        
+        // Results if available
+        const resultsContainer = document.getElementById('abtest-detail-results');
+        
+        if (test.status === 'completed' && test.results) {
+            // Create a comparison table
+            let resultsHTML = `
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Metric</th>
+                                <th>Version A (Current)</th>
+                                <th>Version B (Experimental)</th>
+                                <th>Improvement</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            if (test.results.metrics) {
+                // Add a row for each metric
+                for (const metric in test.results.metrics.version_a) {
+                    const valueA = test.results.metrics.version_a[metric];
+                    const valueB = test.results.metrics.version_b[metric];
+                    const improvement = test.results.improvements[metric];
+                    const improvementPercent = (improvement * 100).toFixed(1);
+                    
+                    const improvementClass = improvement > 0 ? 'text-success' : 'text-danger';
+                    const arrow = improvement > 0 ? '↑' : '↓';
+                    
+                    resultsHTML += `
+                        <tr>
+                            <td>${metric.replace('_', ' ')}</td>
+                            <td>${typeof valueA === 'number' ? valueA.toFixed(2) : valueA}</td>
+                            <td>${typeof valueB === 'number' ? valueB.toFixed(2) : valueB}</td>
+                            <td class="${improvementClass}">${arrow} ${improvementPercent}%</td>
+                        </tr>
+                    `;
+                }
+            }
+            
+            resultsHTML += `
+                    </tbody>
+                </table>
+            </div>
+            `;
+            
+            // Add winner information
+            if (test.results.winner) {
+                const winner = test.results.winner === 'version_b' ? 'Version B (Experimental)' : 'Version A (Current)';
+                const confidence = test.results.confidence ? (test.results.confidence * 100).toFixed(1) + '%' : 'Unknown';
+                
+                resultsHTML += `
+                    <div class="alert alert-${test.results.winner === 'version_b' ? 'success' : 'info'}">
+                        <strong>Winner:</strong> ${winner} with ${confidence} confidence
+                    </div>
+                `;
+            }
+            
+            resultsContainer.innerHTML = resultsHTML;
+        } else if (test.status === 'failed') {
+            resultsContainer.innerHTML = `
+                <div class="alert alert-danger">
+                    Test failed: ${test.error || 'Unknown error'}
+                </div>
+            `;
+        } else {
+            resultsContainer.innerHTML = `
+                <div class="alert alert-info">
+                    ${test.status === 'running' 
+                        ? 'Test is still running. Results will be available when the test completes.' 
+                        : 'No results available yet.'}
+                </div>
+            `;
+        }
+        
+        // Show modal
+        const modalInstance = new bootstrap.Modal(modal);
+        modalInstance.show();
+        
+    } catch (error) {
+        console.error('Error showing A/B test details:', error);
+        EvoGenesis.ui.showNotification('Failed to load A/B test details', 'error');
+    }
+}
+
+async function applyABTestResult(testId) {
+    try {
+        if (!confirm('Are you sure you want to apply this A/B test result? This will implement the winning version.')) {
+            return;
+        }
+        
+        // Make an API call to apply the winning version
+        const result = await EvoGenesis.api.fetch(`/api/self-evolution/apply-test-result/${testId}`, {
+            method: 'POST'
+        });
+        
+        if (result && result.success) {
+            EvoGenesis.ui.showNotification(`Applied ${result.winner} as the new version`, 'success');
+            
+            // Reload data
+            loadABTests();
+            loadUpdates();
+            loadSelfEvolutionStatus();
+        } else {
+            throw new Error(result?.message || 'Unknown error applying A/B test result');
+        }
+    } catch (error) {
+        console.error('Error applying A/B test result:', error);
+        EvoGenesis.ui.showNotification(`Failed to apply A/B test result: ${error.message}`, 'error');
+    }
+}
+
+// Function to check for framework updates
+async function checkForUpdates() {
+    try {
+        const result = await EvoGenesis.api.fetch('/api/self-evolution/check-updates', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                source: 'repository',
+                branch: 'main'
+            })
+        });
+        
+        if (result && result.success) {
+            if (result.updates && result.updates.length > 0) {
+                EvoGenesis.ui.showNotification(`Found ${result.updates.length} available updates`, 'info');
+                
+                // Here you could show a dialog listing the available updates
+                
+            } else {
+                EvoGenesis.ui.showNotification('No updates available', 'info');
+            }
+        } else {
+            throw new Error(result?.message || 'Unknown error checking for updates');
+        }
+    } catch (error) {
+        console.error('Error checking for updates:', error);
+        EvoGenesis.ui.showNotification('Failed to check for updates', 'error');
+    }
+}
+
+// Function to trigger agent self-reflection
+async function triggerAgentReflection(agentId) {
+    try {
+        const result = await EvoGenesis.api.fetch(`/api/self-evolution/agent-reflection/${agentId}`, {
+            method: 'POST'
+        });
+        
+        if (result && result.success) {
+            EvoGenesis.ui.showNotification('Agent self-reflection triggered successfully', 'success');
+        } else {
+            throw new Error(result?.message || 'Unknown error triggering agent reflection');
+        }
+    } catch (error) {
+        console.error('Error triggering agent reflection:', error);
+        EvoGenesis.ui.showNotification('Failed to trigger agent reflection', 'error');
+    }
+}
+</script>
+{% endblock %}

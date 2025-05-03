@@ -1,0 +1,1013 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="wizard-container">
+    <h1 class="page-title mb-4">Memory System Configuration</h1>
+    
+    <div class="wizard-progress mb-4">
+        <div class="progress">
+            <div class="progress-bar" role="progressbar" style="width: 25%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">25%</div>
+        </div>
+        <div class="wizard-steps">
+            <div class="wizard-step active" data-step="1">
+                <div class="step-number">1</div>
+                <div class="step-label">Vector Store</div>
+            </div>
+            <div class="wizard-step" data-step="2">
+                <div class="step-number">2</div>
+                <div class="step-label">Memory Types</div>
+            </div>
+            <div class="wizard-step" data-step="3">
+                <div class="step-number">3</div>
+                <div class="step-label">Retrieval Settings</div>
+            </div>
+            <div class="wizard-step" data-step="4">
+                <div class="step-number">4</div>
+                <div class="step-label">Review & Create</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="wizard-content">
+        <!-- Step 1: Vector Store Configuration -->
+        <div class="wizard-step-content active" data-step="1">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Vector Store Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text mb-4">Configure the vector database that will store and retrieve your system's memories.</p>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="vector-store-type" class="form-label">Vector Store Type</label>
+                                <select class="form-select" id="vector-store-type">
+                                    <option value="chroma" selected>Chroma DB (Default)</option>
+                                    <option value="pinecone">Pinecone (Cloud)</option>
+                                    <option value="qdrant">Qdrant</option>
+                                    <option value="faiss">FAISS (Local)</option>
+                                    <option value="milvus">Milvus</option>
+                                </select>
+                                <div class="form-text">Select the vector database technology to use for memory storage.</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="embedding-model" class="form-label">Embedding Model</label>
+                                <select class="form-select" id="embedding-model">
+                                    <option value="openai" selected>OpenAI ada-002 (1536 dimensions)</option>
+                                    <option value="huggingface-e5">HuggingFace E5-large (1024 dimensions)</option>
+                                    <option value="cohere">Cohere embed-english-v2.0 (4096 dimensions)</option>
+                                    <option value="sentence-transformers">Sentence Transformers (768 dimensions)</option>
+                                </select>
+                                <div class="form-text">Choose the model used to create vector embeddings.</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info mb-4">
+                        <i class='bx bx-info-circle'></i>
+                        <strong>Vector Store Recommendation:</strong> For most use cases, the default Chroma DB with OpenAI embeddings provides an excellent balance of performance and accuracy.
+                    </div>
+                    
+                    <div class="row" id="vector-store-config">
+                        <!-- Chroma DB Configuration (default) -->
+                        <div class="col-12 vector-config-section" id="chroma-config">
+                            <h6 class="mb-3">Chroma DB Configuration</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="chroma-persist-directory" class="form-label">Persist Directory</label>
+                                        <input type="text" class="form-control" id="chroma-persist-directory" value="./data/vector_db">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="chroma-collection-name" class="form-label">Collection Name Prefix</label>
+                                        <input type="text" class="form-control" id="chroma-collection-name" value="evogenesis_">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Pinecone Configuration (hidden by default) -->
+                        <div class="col-12 vector-config-section d-none" id="pinecone-config">
+                            <h6 class="mb-3">Pinecone Configuration</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="pinecone-api-key" class="form-label">API Key</label>
+                                        <input type="password" class="form-control" id="pinecone-api-key">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="pinecone-environment" class="form-label">Environment</label>
+                                        <input type="text" class="form-control" id="pinecone-environment">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="pinecone-index-name" class="form-label">Index Name</label>
+                                        <input type="text" class="form-control" id="pinecone-index-name" value="evogenesis">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="pinecone-dimension" class="form-label">Vector Dimension</label>
+                                        <input type="number" class="form-control" id="pinecone-dimension" value="1536">
+                                        <div class="form-text">Must match the embedding model's dimension</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="enable-caching" checked>
+                                <label class="form-check-label" for="enable-caching">Enable Embedding Cache</label>
+                            </div>
+                            <div class="form-text mb-3">Improves performance by caching embeddings to avoid recomputation.</div>
+                            
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="enable-persistence" checked>
+                                <label class="form-check-label" for="enable-persistence">Enable Persistence</label>
+                            </div>
+                            <div class="form-text">Store embeddings on disk rather than just in memory.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="batch-size" class="form-label">Embedding Batch Size</label>
+                                <input type="number" class="form-control" id="batch-size" value="100">
+                                <div class="form-text">Number of texts to embed in a single API call. Higher values are more efficient but use more memory.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <button class="btn btn-outline-secondary" onclick="window.location.href='/'">Cancel</button>
+                        <button class="btn btn-primary next-step">Next: Memory Types</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Step 2: Memory Types Configuration -->
+        <div class="wizard-step-content" data-step="2">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Memory Types Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text mb-4">Configure how different types of memories are processed and stored.</p>
+                    
+                    <div class="alert alert-info mb-4">
+                        <i class='bx bx-info-circle'></i>
+                        Memory types influence how information is stored, retrieved, and used by agents. Each type has different characteristics and use cases.
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">Episodic Memory</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p>Stores specific experiences and events in chronological order.</p>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="enable-episodic" checked>
+                                        <label class="form-check-label" for="enable-episodic">Enable Episodic Memory</label>
+                                    </div>
+                                    <div class="memory-config" id="episodic-config">
+                                        <div class="form-group mb-3">
+                                            <label for="episodic-ttl" class="form-label">Time to Live (days)</label>
+                                            <input type="number" class="form-control" id="episodic-ttl" value="30">
+                                            <div class="form-text">Set to 0 for no expiration</div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="episodic-importance" class="form-label">Importance Threshold</label>
+                                            <select class="form-select" id="episodic-importance">
+                                                <option value="low">Low (Store most events)</option>
+                                                <option value="medium" selected>Medium (Balanced)</option>
+                                                <option value="high">High (Only store significant events)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">Semantic Memory</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p>Stores general knowledge, facts, and concepts independent of specific experiences.</p>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="enable-semantic" checked>
+                                        <label class="form-check-label" for="enable-semantic">Enable Semantic Memory</label>
+                                    </div>
+                                    <div class="memory-config" id="semantic-config">
+                                        <div class="form-group mb-3">
+                                            <label for="semantic-confidence" class="form-label">Confidence Threshold</label>
+                                            <input type="range" class="form-range" min="1" max="10" value="7" id="semantic-confidence">
+                                            <div class="d-flex justify-content-between">
+                                                <small>Lower (More inclusive)</small>
+                                                <small>Higher (More selective)</small>
+                                            </div>
+                                        </div>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="enable-contradiction-detection" checked>
+                                            <label class="form-check-label" for="enable-contradiction-detection">Enable Contradiction Detection</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">Procedural Memory</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p>Stores how to perform tasks and actions, like skills and procedures.</p>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="enable-procedural" checked>
+                                        <label class="form-check-label" for="enable-procedural">Enable Procedural Memory</label>
+                                    </div>
+                                    <div class="memory-config" id="procedural-config">
+                                        <div class="form-group mb-3">
+                                            <label for="procedural-format" class="form-label">Storage Format</label>
+                                            <select class="form-select" id="procedural-format">
+                                                <option value="step-by-step">Step-by-Step Instructions</option>
+                                                <option value="flowchart" selected>Flowchart Structure</option>
+                                                <option value="code">Code-Like Format</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="enable-version-history" checked>
+                                            <label class="form-check-label" for="enable-version-history">Enable Version History</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">Working Memory</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p>Short-term, temporary memory for active reasoning and task execution.</p>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="enable-working" checked>
+                                        <label class="form-check-label" for="enable-working">Enable Working Memory</label>
+                                    </div>
+                                    <div class="memory-config" id="working-config">
+                                        <div class="form-group mb-3">
+                                            <label for="working-capacity" class="form-label">Capacity (items)</label>
+                                            <input type="number" class="form-control" id="working-capacity" value="7">
+                                            <div class="form-text">Default of 7 based on human cognitive limits</div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="working-ttl" class="form-label">Time to Live (minutes)</label>
+                                            <input type="number" class="form-control" id="working-ttl" value="30">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">Additional Memory Types</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="enable-reflexive">
+                                        <label class="form-check-label" for="enable-reflexive">Enable Reflexive Memory</label>
+                                        <div class="form-text">Automatic, fast responses to specific triggers</div>
+                                    </div>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="enable-associative">
+                                        <label class="form-check-label" for="enable-associative">Enable Associative Memory</label>
+                                        <div class="form-text">Connections between related concepts and memories</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="enable-emotional">
+                                        <label class="form-check-label" for="enable-emotional">Enable Emotional Memory</label>
+                                        <div class="form-text">Emotional context associated with memories</div>
+                                    </div>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="enable-collective" checked>
+                                        <label class="form-check-label" for="enable-collective">Enable Collective Memory</label>
+                                        <div class="form-text">Shared memories accessible across multiple agents</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <button class="btn btn-outline-secondary prev-step">Previous</button>
+                        <button class="btn btn-primary next-step">Next: Retrieval Settings</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Step 3: Retrieval Settings -->
+        <div class="wizard-step-content" data-step="3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Memory Retrieval Settings</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text mb-4">Configure how memories are retrieved, processed, and integrated into the system's thinking.</p>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">Retrieval Parameters</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="form-group mb-3">
+                                        <label for="default-k" class="form-label">Default Number of Results (k)</label>
+                                        <input type="number" class="form-control" id="default-k" value="5">
+                                        <div class="form-text">Number of memories to retrieve by default</div>
+                                    </div>
+                                    <div class="form-group mb-3">
+                                        <label for="similarity-threshold" class="form-label">Similarity Threshold</label>
+                                        <input type="range" class="form-range" min="0" max="100" value="75" id="similarity-threshold">
+                                        <div class="d-flex justify-content-between">
+                                            <small>0% (Broad matches)</small>
+                                            <small>100% (Exact matches)</small>
+                                        </div>
+                                        <div class="form-text text-center">Current: <span id="threshold-value">75%</span></div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="query-expansion" class="form-label">Query Expansion</label>
+                                        <select class="form-select" id="query-expansion">
+                                            <option value="none">None</option>
+                                            <option value="synonym" selected>Synonym Expansion</option>
+                                            <option value="neural">Neural Query Expansion</option>
+                                            <option value="llm">LLM-based Expansion</option>
+                                        </select>
+                                        <div class="form-text">Technique to enhance queries for better retrieval</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">Retrieval Strategy</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="form-group mb-3">
+                                        <label for="search-type" class="form-label">Search Type</label>
+                                        <select class="form-select" id="search-type">
+                                            <option value="similarity" selected>Similarity Search</option>
+                                            <option value="mmr">Maximal Marginal Relevance (MMR)</option>
+                                            <option value="hybrid">Hybrid Search</option>
+                                        </select>
+                                        <div class="form-text">Method used to search for relevant memories</div>
+                                    </div>
+                                    <div id="mmr-settings" class="d-none">
+                                        <div class="form-group mb-3">
+                                            <label for="mmr-lambda" class="form-label">MMR Lambda (Diversity vs. Relevance)</label>
+                                            <input type="range" class="form-range" min="0" max="100" value="60" id="mmr-lambda">
+                                            <div class="d-flex justify-content-between">
+                                                <small>0% (Max diversity)</small>
+                                                <small>100% (Max relevance)</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group mb-3">
+                                        <label for="context-window" class="form-label">Context Window Size</label>
+                                        <select class="form-select" id="context-window">
+                                            <option value="small">Small (Less context)</option>
+                                            <option value="medium" selected>Medium (Balanced)</option>
+                                            <option value="large">Large (More context)</option>
+                                        </select>
+                                        <div class="form-text">Amount of surrounding content to include when retrieving a memory</div>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="enable-reranking" checked>
+                                        <label class="form-check-label" for="enable-reranking">Enable Cross-Encoder Reranking</label>
+                                        <div class="form-text">Improves result quality but adds computational overhead</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">Advanced Settings</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="retrieval-mode" class="form-label">Default Retrieval Mode</label>
+                                        <select class="form-select" id="retrieval-mode">
+                                            <option value="auto" selected>Automatic (Context-aware)</option>
+                                            <option value="semantic-priority">Semantic Priority</option>
+                                            <option value="episodic-priority">Episodic Priority</option>
+                                            <option value="procedural-priority">Procedural Priority</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="enable-recursive-retrieval" checked>
+                                        <label class="form-check-label" for="enable-recursive-retrieval">Enable Recursive Retrieval</label>
+                                        <div class="form-text">Retrieve memories referenced within retrieved memories</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="temporal-decay" class="form-label">Temporal Decay Factor</label>
+                                        <input type="range" class="form-range" min="0" max="100" value="20" id="temporal-decay">
+                                        <div class="d-flex justify-content-between">
+                                            <small>0% (No decay)</small>
+                                            <small>100% (Strong decay)</small>
+                                        </div>
+                                        <div class="form-text">How quickly older memories lose retrieval priority</div>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="enable-dynamic-k" checked>
+                                        <label class="form-check-label" for="enable-dynamic-k">Enable Dynamic Result Count</label>
+                                        <div class="form-text">Automatically adjust number of results based on query complexity</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <button class="btn btn-outline-secondary prev-step">Previous</button>
+                        <button class="btn btn-primary next-step">Next: Review & Create</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Step 4: Review & Create -->
+        <div class="wizard-step-content" data-step="4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Review & Create Memory System</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text mb-4">Review your Memory System configuration and deploy it.</p>
+                    
+                    <div class="alert alert-info mb-4">
+                        <i class='bx bx-info-circle'></i>
+                        You'll be able to modify these settings later from the Memory settings page.
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">Vector Store Configuration</h6>
+                                </div>
+                                <div class="card-body">
+                                    <dl class="row">
+                                        <dt class="col-sm-5">Vector Store Type</dt>
+                                        <dd class="col-sm-7" id="review-vector-store-type">Chroma DB</dd>
+                                        
+                                        <dt class="col-sm-5">Embedding Model</dt>
+                                        <dd class="col-sm-7" id="review-embedding-model">OpenAI ada-002</dd>
+                                        
+                                        <dt class="col-sm-5">Persistence</dt>
+                                        <dd class="col-sm-7" id="review-persistence">Enabled</dd>
+                                        
+                                        <dt class="col-sm-5">Caching</dt>
+                                        <dd class="col-sm-7" id="review-caching">Enabled</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">Memory Types</h6>
+                                </div>
+                                <div class="card-body">
+                                    <dl class="row">
+                                        <dt class="col-sm-6">Enabled Types</dt>
+                                        <dd class="col-sm-6" id="review-memory-types">
+                                            <span class="badge bg-primary">Episodic</span>
+                                            <span class="badge bg-primary">Semantic</span>
+                                            <span class="badge bg-primary">Procedural</span>
+                                            <span class="badge bg-primary">Working</span>
+                                            <span class="badge bg-primary">Collective</span>
+                                        </dd>
+                                        
+                                        <dt class="col-sm-6">Episodic TTL</dt>
+                                        <dd class="col-sm-6" id="review-episodic-ttl">30 days</dd>
+                                        
+                                        <dt class="col-sm-6">Working Memory Capacity</dt>
+                                        <dd class="col-sm-6" id="review-working-capacity">7 items</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">Retrieval Settings</h6>
+                                </div>
+                                <div class="card-body">
+                                    <dl class="row">
+                                        <dt class="col-sm-6">Search Type</dt>
+                                        <dd class="col-sm-6" id="review-search-type">Similarity Search</dd>
+                                        
+                                        <dt class="col-sm-6">Default Results</dt>
+                                        <dd class="col-sm-6" id="review-default-k">5</dd>
+                                        
+                                        <dt class="col-sm-6">Similarity Threshold</dt>
+                                        <dd class="col-sm-6" id="review-similarity-threshold">75%</dd>
+                                        
+                                        <dt class="col-sm-6">Query Expansion</dt>
+                                        <dd class="col-sm-6" id="review-query-expansion">Synonym Expansion</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">Advanced Settings</h6>
+                                </div>
+                                <div class="card-body">
+                                    <dl class="row">
+                                        <dt class="col-sm-6">Retrieval Mode</dt>
+                                        <dd class="col-sm-6" id="review-retrieval-mode">Automatic</dd>
+                                        
+                                        <dt class="col-sm-6">Reranking</dt>
+                                        <dd class="col-sm-6" id="review-reranking">Enabled</dd>
+                                        
+                                        <dt class="col-sm-6">Recursive Retrieval</dt>
+                                        <dd class="col-sm-6" id="review-recursive">Enabled</dd>
+                                        
+                                        <dt class="col-sm-6">Dynamic Result Count</dt>
+                                        <dd class="col-sm-6" id="review-dynamic-k">Enabled</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="migration-needed">
+                            <label class="form-check-label" for="migration-needed">Migration Needed</label>
+                        </div>
+                        <div class="form-text" id="migration-note">No data migration is needed for this configuration.</div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <button class="btn btn-outline-secondary prev-step">Previous</button>
+                        <button class="btn btn-primary" id="create-memory-system-btn">Deploy Memory System</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get all elements needed for wizard functionality
+        const wizardSteps = document.querySelectorAll('.wizard-step');
+        const wizardStepContents = document.querySelectorAll('.wizard-step-content');
+        const nextButtons = document.querySelectorAll('.next-step');
+        const prevButtons = document.querySelectorAll('.prev-step');
+        const progressBar = document.querySelector('.progress-bar');
+        const createButton = document.getElementById('create-memory-system-btn');
+        
+        // Vector store type select
+        const vectorStoreType = document.getElementById('vector-store-type');
+        const vectorConfigSections = document.querySelectorAll('.vector-config-section');
+        
+        // Memory type toggles
+        const memoryToggles = document.querySelectorAll('.form-check-input[id^="enable-"]');
+        
+        // Retrieve strategy settings
+        const searchType = document.getElementById('search-type');
+        const mmrSettings = document.getElementById('mmr-settings');
+        
+        // Range input display values
+        const similarityThreshold = document.getElementById('similarity-threshold');
+        const thresholdValue = document.getElementById('threshold-value');
+        
+        // Initialize wizard state
+        let currentStep = 1;
+        let maxStep = wizardSteps.length;
+        
+        // ---- Event Listeners ----
+        
+        // Vector store type change
+        vectorStoreType.addEventListener('change', function() {
+            // Hide all config sections
+            vectorConfigSections.forEach(section => {
+                section.classList.add('d-none');
+            });
+            
+            // Show the selected one
+            const selectedType = this.value;
+            const selectedConfig = document.getElementById(`${selectedType}-config`);
+            if (selectedConfig) {
+                selectedConfig.classList.remove('d-none');
+            }
+        });
+        
+        // Search type change
+        searchType.addEventListener('change', function() {
+            if (this.value === 'mmr') {
+                mmrSettings.classList.remove('d-none');
+            } else {
+                mmrSettings.classList.add('d-none');
+            }
+        });
+        
+        // Similarity threshold change
+        similarityThreshold.addEventListener('input', function() {
+            thresholdValue.textContent = `${this.value}%`;
+        });
+        
+        // Memory toggles
+        memoryToggles.forEach(toggle => {
+            toggle.addEventListener('change', function() {
+                const configId = this.id.replace('enable-', '') + '-config';
+                const configSection = document.getElementById(configId);
+                
+                if (configSection) {
+                    if (this.checked) {
+                        configSection.style.opacity = '1';
+                        configSection.style.pointerEvents = 'auto';
+                    } else {
+                        configSection.style.opacity = '0.5';
+                        configSection.style.pointerEvents = 'none';
+                    }
+                }
+            });
+        });
+        
+        // Next button click handler
+        nextButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (currentStep < maxStep) {
+                    if (currentStep === 3) {
+                        // Update review page with the configured values
+                        updateReviewPage();
+                    }
+                    goToStep(currentStep + 1);
+                }
+            });
+        });
+        
+        // Previous button click handler
+        prevButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (currentStep > 1) {
+                    goToStep(currentStep - 1);
+                }
+            });
+        });
+        
+        // Create button click handler
+        createButton.addEventListener('click', function() {
+            // Show creating feedback
+            this.disabled = true;
+            this.innerHTML = '<i class="bx bx-loader-alt bx-spin me-1"></i> Deploying Memory System...';
+            
+            // Collect all configuration data
+            const memorySystemConfig = collectConfigData();
+            
+            // Create the memory system
+            deployMemorySystem(memorySystemConfig);
+        });
+        
+        // Function to navigate to a specific step
+        function goToStep(stepNumber) {
+            if (stepNumber < 1 || stepNumber > maxStep) return;
+            
+            // Update current step
+            currentStep = stepNumber;
+            
+            // Update progress bar
+            const progress = ((stepNumber - 1) / (maxStep - 1)) * 100;
+            progressBar.style.width = `${progress}%`;
+            progressBar.setAttribute('aria-valuenow', progress);
+            
+            // Update step indicators
+            wizardSteps.forEach(step => {
+                const stepNum = parseInt(step.dataset.step);
+                if (stepNum < stepNumber) {
+                    step.classList.remove('active');
+                    step.classList.add('completed');
+                } else if (stepNum === stepNumber) {
+                    step.classList.add('active');
+                    step.classList.remove('completed');
+                } else {
+                    step.classList.remove('active', 'completed');
+                }
+            });
+            
+            // Show current step content, hide others
+            wizardStepContents.forEach(content => {
+                const contentStepNum = parseInt(content.dataset.step);
+                if (contentStepNum === stepNumber) {
+                    content.classList.add('active');
+                } else {
+                    content.classList.remove('active');
+                }
+            });
+        }
+        
+        // Function to update the review page with configured values
+        function updateReviewPage() {
+            // Vector store config
+            document.getElementById('review-vector-store-type').textContent = 
+                vectorStoreType.options[vectorStoreType.selectedIndex].text;
+                
+            const embeddingModel = document.getElementById('embedding-model');
+            document.getElementById('review-embedding-model').textContent = 
+                embeddingModel.options[embeddingModel.selectedIndex].text;
+                
+            document.getElementById('review-persistence').textContent = 
+                document.getElementById('enable-persistence').checked ? 'Enabled' : 'Disabled';
+                
+            document.getElementById('review-caching').textContent = 
+                document.getElementById('enable-caching').checked ? 'Enabled' : 'Disabled';
+            
+            // Memory types
+            const enabledTypes = [];
+            if (document.getElementById('enable-episodic').checked) enabledTypes.push('Episodic');
+            if (document.getElementById('enable-semantic').checked) enabledTypes.push('Semantic');
+            if (document.getElementById('enable-procedural').checked) enabledTypes.push('Procedural');
+            if (document.getElementById('enable-working').checked) enabledTypes.push('Working');
+            if (document.getElementById('enable-reflexive').checked) enabledTypes.push('Reflexive');
+            if (document.getElementById('enable-associative').checked) enabledTypes.push('Associative');
+            if (document.getElementById('enable-emotional').checked) enabledTypes.push('Emotional');
+            if (document.getElementById('enable-collective').checked) enabledTypes.push('Collective');
+            
+            const reviewMemoryTypes = document.getElementById('review-memory-types');
+            reviewMemoryTypes.innerHTML = '';
+            enabledTypes.forEach(type => {
+                const badge = document.createElement('span');
+                badge.className = 'badge bg-primary me-1';
+                badge.textContent = type;
+                reviewMemoryTypes.appendChild(badge);
+            });
+            
+            document.getElementById('review-episodic-ttl').textContent = 
+                `${document.getElementById('episodic-ttl').value} days`;
+                
+            document.getElementById('review-working-capacity').textContent = 
+                `${document.getElementById('working-capacity').value} items`;
+            
+            // Retrieval settings
+            document.getElementById('review-search-type').textContent = 
+                searchType.options[searchType.selectedIndex].text;
+                
+            document.getElementById('review-default-k').textContent = 
+                document.getElementById('default-k').value;
+                
+            document.getElementById('review-similarity-threshold').textContent = 
+                `${document.getElementById('similarity-threshold').value}%`;
+                
+            const queryExpansion = document.getElementById('query-expansion');
+            document.getElementById('review-query-expansion').textContent = 
+                queryExpansion.options[queryExpansion.selectedIndex].text;
+            
+            // Advanced settings
+            const retrievalMode = document.getElementById('retrieval-mode');
+            document.getElementById('review-retrieval-mode').textContent = 
+                retrievalMode.options[retrievalMode.selectedIndex].text;
+                
+            document.getElementById('review-reranking').textContent = 
+                document.getElementById('enable-reranking').checked ? 'Enabled' : 'Disabled';
+                
+            document.getElementById('review-recursive').textContent = 
+                document.getElementById('enable-recursive-retrieval').checked ? 'Enabled' : 'Disabled';
+                
+            document.getElementById('review-dynamic-k').textContent = 
+                document.getElementById('enable-dynamic-k').checked ? 'Enabled' : 'Disabled';
+        }
+        
+        // Function to collect all configuration data
+        function collectConfigData() {
+            return {
+                vectorStore: {
+                    type: vectorStoreType.value,
+                    embeddingModel: document.getElementById('embedding-model').value,
+                    persistence: document.getElementById('enable-persistence').checked,
+                    cache: document.getElementById('enable-caching').checked,
+                    batchSize: parseInt(document.getElementById('batch-size').value),
+                    config: getVectorStoreConfig(vectorStoreType.value)
+                },
+                memoryTypes: {
+                    episodic: {
+                        enabled: document.getElementById('enable-episodic').checked,
+                        ttl: parseInt(document.getElementById('episodic-ttl').value),
+                        importanceThreshold: document.getElementById('episodic-importance').value
+                    },
+                    semantic: {
+                        enabled: document.getElementById('enable-semantic').checked,
+                        confidenceThreshold: parseInt(document.getElementById('semantic-confidence').value),
+                        contradictionDetection: document.getElementById('enable-contradiction-detection').checked
+                    },
+                    procedural: {
+                        enabled: document.getElementById('enable-procedural').checked,
+                        format: document.getElementById('procedural-format').value,
+                        versionHistory: document.getElementById('enable-version-history').checked
+                    },
+                    working: {
+                        enabled: document.getElementById('enable-working').checked,
+                        capacity: parseInt(document.getElementById('working-capacity').value),
+                        ttl: parseInt(document.getElementById('working-ttl').value)
+                    },
+                    additional: {
+                        reflexive: document.getElementById('enable-reflexive').checked,
+                        associative: document.getElementById('enable-associative').checked,
+                        emotional: document.getElementById('enable-emotional').checked,
+                        collective: document.getElementById('enable-collective').checked
+                    }
+                },
+                retrieval: {
+                    searchType: searchType.value,
+                    defaultK: parseInt(document.getElementById('default-k').value),
+                    similarityThreshold: parseInt(document.getElementById('similarity-threshold').value) / 100,
+                    queryExpansion: document.getElementById('query-expansion').value,
+                    mmrLambda: document.getElementById('mmr-lambda') ? 
+                        parseInt(document.getElementById('mmr-lambda').value) / 100 : 0.6,
+                    contextWindow: document.getElementById('context-window').value,
+                    reranking: document.getElementById('enable-reranking').checked
+                },
+                advanced: {
+                    retrievalMode: document.getElementById('retrieval-mode').value,
+                    recursiveRetrieval: document.getElementById('enable-recursive-retrieval').checked,
+                    temporalDecay: parseInt(document.getElementById('temporal-decay').value) / 100,
+                    dynamicK: document.getElementById('enable-dynamic-k').checked
+                },
+                migration: document.getElementById('migration-needed').checked
+            };
+        }
+        
+        // Function to get vector store specific configuration
+        function getVectorStoreConfig(type) {
+            switch(type) {
+                case 'chroma':
+                    return {
+                        persistDirectory: document.getElementById('chroma-persist-directory').value,
+                        collectionNamePrefix: document.getElementById('chroma-collection-name').value
+                    };
+                case 'pinecone':
+                    return {
+                        apiKey: document.getElementById('pinecone-api-key').value,
+                        environment: document.getElementById('pinecone-environment').value,
+                        indexName: document.getElementById('pinecone-index-name').value,
+                        dimension: parseInt(document.getElementById('pinecone-dimension').value)
+                    };
+                default:
+                    return {};
+            }
+        }
+        
+        // Function to deploy memory system
+        async function deployMemorySystem(config) {
+            try {
+                // Make API call to deploy memory system
+                const response = await fetch('/api/memory/system/deploy', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(config)
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to deploy memory system');
+                }
+                
+                const result = await response.json();
+                
+                // Show success message
+                EvoGenesis.ui.showNotification('Memory System deployed successfully!', 'success');
+                
+                // Redirect to memory page
+                setTimeout(() => {
+                    window.location.href = '/memory';
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Error deploying memory system:', error);
+                EvoGenesis.ui.showNotification('Failed to deploy Memory System', 'error');
+                
+                // Re-enable create button
+                const createButton = document.getElementById('create-memory-system-btn');
+                createButton.disabled = false;
+                createButton.textContent = 'Deploy Memory System';
+            }
+        }
+    });
+</script>
+
+<style>
+    /* Wizard specific styles */
+    .wizard-progress {
+        position: relative;
+        margin-bottom: 30px;
+    }
+    
+    .wizard-steps {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 10px;
+    }
+    
+    .wizard-step {
+        text-align: center;
+        width: 25%;
+        position: relative;
+    }
+    
+    .step-number {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background-color: #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 5px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+    
+    .wizard-step.active .step-number {
+        background-color: #0078d4;
+        color: white;
+    }
+    
+    .wizard-step.completed .step-number {
+        background-color: #28a745;
+        color: white;
+    }
+    
+    .step-label {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #6c757d;
+    }
+    
+    .wizard-step.active .step-label {
+        color: #0078d4;
+        font-weight: 600;
+    }
+    
+    .wizard-step-content {
+        display: none;
+    }
+    
+    .wizard-step-content.active {
+        display: block;
+    }
+    
+    /* Vector configuration section styles */
+    .vector-config-section {
+        margin-top: 1.5rem;
+        padding: 1rem;
+        border: 1px solid #e9ecef;
+        border-radius: 4px;
+        background-color: #f8f9fa;
+    }
+    
+    /* Memory configuration section styles */
+    .memory-config {
+        transition: opacity 0.3s ease;
+    }
+</style>
+{% endblock %}

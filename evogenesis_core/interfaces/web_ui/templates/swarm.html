@@ -1,0 +1,960 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="swarm-dashboard">
+    <h1 class="page-title">EvoGenesis Swarm Network</h1>
+    
+    <!-- Swarm Status -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Swarm Status</h5>
+                    <div class="status-display">
+                        <div id="swarm-status-indicator" class="status-indicator inactive"></div>
+                        <h2 id="swarm-status-text">Inactive</h2>
+                    </div>
+                    <p id="swarm-status-message" class="text-center">Not connected to swarm</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Connected Nodes</h5>
+                    <div class="metric-display">
+                        <i class='bx bx-server'></i>
+                        <h2 id="connected-nodes-count">0</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Active Tasks</h5>
+                    <div class="metric-display">
+                        <i class='bx bx-task'></i>
+                        <h2 id="swarm-tasks-count">0</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Memory Sync</h5>
+                    <div class="metric-display">
+                        <i class='bx bx-sync'></i>
+                        <h2 id="memory-sync-status">--</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Swarm Actions</h5>
+                    <div class="swarm-actions">
+                        <button id="connect-swarm-btn" class="btn btn-primary action-btn">
+                            <i class='bx bx-link'></i>
+                            <span>Connect to Swarm</span>
+                        </button>
+                        <button id="disconnect-swarm-btn" class="btn btn-secondary action-btn" disabled>
+                            <i class='bx bx-unlink'></i>
+                            <span>Disconnect</span>
+                        </button>
+                        <button id="add-node-btn" class="btn btn-primary action-btn">
+                            <i class='bx bx-server'></i>
+                            <span>Add Node</span>
+                        </button>
+                        <button id="create-swarm-task-btn" class="btn btn-primary action-btn">
+                            <i class='bx bx-task'></i>
+                            <span>Create Task</span>
+                        </button>
+                        <button id="sync-memory-btn" class="btn btn-primary action-btn">
+                            <i class='bx bx-sync'></i>
+                            <span>Sync Memory</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Swarm Nodes -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="card-title">Swarm Nodes</h5>
+                <div class="card-actions">
+                    <input type="text" id="node-search" class="form-control" placeholder="Search nodes...">
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Node ID</th>
+                            <th>Name</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>URL</th>
+                            <th>Last Heartbeat</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="swarm-nodes-list">
+                        <tr>
+                            <td colspan="7" class="text-center">No nodes connected to swarm</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Swarm Tasks -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="card-title">Swarm Tasks</h5>
+                <div class="card-actions">
+                    <input type="text" id="task-search" class="form-control" placeholder="Search tasks...">
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Task ID</th>
+                            <th>Title</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                            <th>Assigned To</th>
+                            <th>Progress</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="swarm-tasks-list">
+                        <tr>
+                            <td colspan="7" class="text-center">No active swarm tasks</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Connect to Swarm Modal -->
+<div class="modal fade" id="connectSwarmModal" tabindex="-1" aria-labelledby="connectSwarmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="connectSwarmModalLabel">Connect to Swarm</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="connect-swarm-form">
+                    <div class="mb-3">
+                        <label for="coordinator-url-input" class="form-label">Coordinator URL</label>
+                        <input type="url" class="form-control" id="coordinator-url-input" placeholder="https://coordinator-instance.example.com" required>
+                        <div class="form-text">Enter the URL of the swarm coordinator instance</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="node-role-select" class="form-label">Join As</label>
+                        <select class="form-select" id="node-role-select">
+                            <option value="worker" selected>Worker</option>
+                            <option value="coordinator">Coordinator</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="connect-swarm-submit">Connect</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Node Modal -->
+<div class="modal fade" id="addNodeModal" tabindex="-1" aria-labelledby="addNodeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addNodeModalLabel">Add Swarm Node</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="add-node-form">
+                    <div class="mb-3">
+                        <label for="node-name-input" class="form-label">Node Name</label>
+                        <input type="text" class="form-control" id="node-name-input" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="node-url-input" class="form-label">Node URL</label>
+                        <input type="url" class="form-control" id="node-url-input" placeholder="https://node-instance.example.com" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="node-role-input" class="form-label">Role</label>
+                        <select class="form-select" id="node-role-input">
+                            <option value="worker" selected>Worker</option>
+                            <option value="coordinator">Coordinator</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="add-node-submit">Add Node</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Swarm Task Modal -->
+<div class="modal fade" id="createSwarmTaskModal" tabindex="-1" aria-labelledby="createSwarmTaskModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createSwarmTaskModalLabel">Create Swarm Task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="create-swarm-task-form">
+                    <div class="mb-3">
+                        <label for="task-title-input" class="form-label">Task Title</label>
+                        <input type="text" class="form-control" id="task-title-input" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="task-description-input" class="form-label">Description</label>
+                        <textarea class="form-control" id="task-description-input" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="task-priority-select" class="form-label">Priority</label>
+                        <select class="form-select" id="task-priority-select">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="task-assign-select" class="form-label">Assign To Node</label>
+                        <select class="form-select" id="task-assign-select">
+                            <option value="">Auto-assign</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="create-swarm-task-submit">Create Task</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Node Details Modal -->
+<div class="modal fade" id="nodeDetailsModal" tabindex="-1" aria-labelledby="nodeDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="nodeDetailsModalLabel">Node Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6>General Information</h6>
+                        <dl class="row">
+                            <dt class="col-sm-4">Node ID</dt>
+                            <dd class="col-sm-8" id="node-detail-id">node-12345</dd>
+                            
+                            <dt class="col-sm-4">Name</dt>
+                            <dd class="col-sm-8" id="node-detail-name">Worker Node 1</dd>
+                            
+                            <dt class="col-sm-4">Role</dt>
+                            <dd class="col-sm-8" id="node-detail-role">Worker</dd>
+                            
+                            <dt class="col-sm-4">Status</dt>
+                            <dd class="col-sm-8" id="node-detail-status">Active</dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Connection Information</h6>
+                        <dl class="row">
+                            <dt class="col-sm-4">URL</dt>
+                            <dd class="col-sm-8" id="node-detail-url">https://node1.example.com</dd>
+                            
+                            <dt class="col-sm-4">Connected At</dt>
+                            <dd class="col-sm-8" id="node-detail-connected-at">2023-04-18 14:32:10</dd>
+                            
+                            <dt class="col-sm-4">Last Heartbeat</dt>
+                            <dd class="col-sm-8" id="node-detail-heartbeat">2023-04-18 15:12:22</dd>
+                        </dl>
+                    </div>
+                </div>
+                
+                <h6>Active Tasks</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Task ID</th>
+                                <th>Title</th>
+                                <th>Status</th>
+                                <th>Progress</th>
+                            </tr>
+                        </thead>
+                        <tbody id="node-tasks">
+                            <tr>
+                                <td colspan="4" class="text-center">No active tasks on this node</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <h6>Performance Metrics</h6>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-subtitle mb-2 text-muted">CPU Usage</h6>
+                                <div class="progress">
+                                    <div class="progress-bar" role="progressbar" style="width: 65%;" aria-valuenow="65" aria-valuemin="0" aria-valuemax="100">65%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-subtitle mb-2 text-muted">Memory Usage</h6>
+                                <div class="progress">
+                                    <div class="progress-bar bg-info" role="progressbar" style="width: 45%;" aria-valuenow="45" aria-valuemin="0" aria-valuemax="100">45%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-subtitle mb-2 text-muted">Network Traffic</h6>
+                                <p class="card-text">2.4 MB/s</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-warning" id="disconnect-node-btn">Disconnect Node</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // WebSocket connection for real-time updates
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Swarm UI
+        loadSwarmStatus();
+        loadSwarmNodes();
+        loadSwarmTasks();
+        
+        // Subscribe to swarm-related WebSocket events
+        EvoGenesis.ws.subscribe(['swarm', 'swarm.nodes', 'swarm.tasks']);
+        
+        // Set up event listeners
+        document.getElementById('connect-swarm-btn').addEventListener('click', function() {
+            const modal = new bootstrap.Modal(document.getElementById('connectSwarmModal'));
+            modal.show();
+        });
+        
+        document.getElementById('disconnect-swarm-btn').addEventListener('click', disconnectFromSwarm);
+        
+        document.getElementById('add-node-btn').addEventListener('click', function() {
+            const modal = new bootstrap.Modal(document.getElementById('addNodeModal'));
+            modal.show();
+        });
+        
+        document.getElementById('create-swarm-task-btn').addEventListener('click', function() {
+            loadNodesForTaskAssignment();
+            const modal = new bootstrap.Modal(document.getElementById('createSwarmTaskModal'));
+            modal.show();
+        });
+        
+        document.getElementById('sync-memory-btn').addEventListener('click', syncSwarmMemory);
+        
+        // Modal form submissions
+        document.getElementById('connect-swarm-submit').addEventListener('click', connectToSwarm);
+        document.getElementById('add-node-submit').addEventListener('click', addSwarmNode);
+        document.getElementById('create-swarm-task-submit').addEventListener('click', createSwarmTask);
+        
+        // Search functionality
+        document.getElementById('node-search').addEventListener('input', function() {
+            filterNodes(this.value);
+        });
+        
+        document.getElementById('task-search').addEventListener('input', function() {
+            filterTasks(this.value);
+        });
+        
+        // Listen for WebSocket events
+        document.addEventListener('ws-message', function(e) {
+            const data = e.detail;
+            
+            if (data.topic === 'swarm' || data.topic === 'swarm.status') {
+                loadSwarmStatus();
+            } else if (data.topic === 'swarm.nodes') {
+                loadSwarmNodes();
+            } else if (data.topic === 'swarm.tasks') {
+                loadSwarmTasks();
+            }
+        });
+    });
+    
+    // Load swarm status
+    async function loadSwarmStatus() {
+        try {
+            const statusData = await EvoGenesis.api.fetch('/api/swarm/status');
+            if (!statusData) return;
+            
+            // Update swarm status indicator
+            const indicator = document.getElementById('swarm-status-indicator');
+            const statusText = document.getElementById('swarm-status-text');
+            const statusMessage = document.getElementById('swarm-status-message');
+            
+            indicator.className = 'status-indicator';
+            
+            if (statusData.status === 'active') {
+                indicator.classList.add('active');
+                statusText.textContent = 'Active';
+                statusMessage.textContent = `Connected as ${statusData.node_role} (ID: ${statusData.node_id})`;
+                document.getElementById('disconnect-swarm-btn').disabled = false;
+            } else {
+                indicator.classList.add('inactive');
+                statusText.textContent = 'Inactive';
+                statusMessage.textContent = statusData.message || 'Not connected to swarm';
+                document.getElementById('disconnect-swarm-btn').disabled = true;
+            }
+            
+            // Update metrics
+            document.getElementById('connected-nodes-count').textContent = statusData.connected_nodes || 0;
+            document.getElementById('swarm-tasks-count').textContent = statusData.active_tasks || 0;
+            document.getElementById('memory-sync-status').textContent = statusData.memory_sync_status || '--';
+            
+        } catch (error) {
+            console.error('Error loading swarm status:', error);
+            EvoGenesis.ui.showNotification('Failed to load swarm status', 'error');
+        }
+    }
+    
+    // Load swarm nodes
+    async function loadSwarmNodes() {
+        try {
+            const nodes = await EvoGenesis.api.fetch('/api/swarm/nodes');
+            if (!nodes) return;
+            
+            const nodesList = document.getElementById('swarm-nodes-list');
+            nodesList.innerHTML = '';
+            
+            if (nodes.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="7" class="text-center">No nodes connected to swarm</td>';
+                nodesList.appendChild(row);
+                return;
+            }
+            
+            // Render nodes
+            nodes.forEach(node => {
+                const row = document.createElement('tr');
+                
+                // Status class
+                const statusClass = node.status === 'connected' ? 'success' : 
+                                  node.status === 'connecting' ? 'warning' : 'secondary';
+                
+                // Role icon
+                const roleIcon = node.role === 'coordinator' ? 'bx-crown' : 'bx-server';
+                
+                row.innerHTML = `
+                    <td>${node.id}</td>
+                    <td>${node.name}</td>
+                    <td><i class='bx ${roleIcon}'></i> ${node.role}</td>
+                    <td><span class="badge bg-${statusClass}">${node.status}</span></td>
+                    <td>${node.url}</td>
+                    <td>${node.last_heartbeat || 'Never'}</td>
+                    <td>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-outline-primary node-details-btn" data-node-id="${node.id}">
+                                <i class='bx bx-info-circle'></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger node-disconnect-btn" data-node-id="${node.id}">
+                                <i class='bx bx-unlink'></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                
+                nodesList.appendChild(row);
+            });
+            
+            // Set up node details buttons
+            document.querySelectorAll('.node-details-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const nodeId = this.getAttribute('data-node-id');
+                    showNodeDetails(nodeId);
+                });
+            });
+            
+            // Set up node disconnect buttons
+            document.querySelectorAll('.node-disconnect-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const nodeId = this.getAttribute('data-node-id');
+                    confirmDisconnectNode(nodeId);
+                });
+            });
+            
+        } catch (error) {
+            console.error('Error loading swarm nodes:', error);
+            EvoGenesis.ui.showNotification('Failed to load swarm nodes', 'error');
+        }
+    }
+    
+    // Load swarm tasks
+    async function loadSwarmTasks() {
+        try {
+            const tasks = await EvoGenesis.api.fetch('/api/swarm/tasks');
+            if (!tasks) return;
+            
+            const tasksList = document.getElementById('swarm-tasks-list');
+            tasksList.innerHTML = '';
+            
+            if (tasks.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="7" class="text-center">No active swarm tasks</td>';
+                tasksList.appendChild(row);
+                return;
+            }
+            
+            // Render tasks
+            tasks.forEach(task => {
+                const row = document.createElement('tr');
+                
+                // Status class
+                const statusClass = task.status === 'completed' ? 'success' : 
+                                  task.status === 'running' ? 'primary' : 
+                                  task.status === 'failed' ? 'danger' : 'secondary';
+                
+                // Priority class
+                const priorityClass = task.priority === 'high' ? 'danger' : 
+                                    task.priority === 'medium' ? 'warning' : 'info';
+                
+                row.innerHTML = `
+                    <td>${task.id}</td>
+                    <td>${task.title}</td>
+                    <td><span class="badge bg-${statusClass}">${task.status}</span></td>
+                    <td><span class="badge bg-${priorityClass}">${task.priority}</span></td>
+                    <td>${task.assigned_node_id || 'Auto-assigned'}</td>
+                    <td>
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" style="width: ${task.progress * 100}%;" 
+                                 aria-valuenow="${task.progress * 100}" aria-valuemin="0" aria-valuemax="100">
+                                ${Math.round(task.progress * 100)}%
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-outline-primary task-details-btn" data-task-id="${task.id}">
+                                <i class='bx bx-info-circle'></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger task-cancel-btn" data-task-id="${task.id}"
+                                    ${task.status === 'completed' || task.status === 'failed' ? 'disabled' : ''}>
+                                <i class='bx bx-x'></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                
+                tasksList.appendChild(row);
+            });
+            
+            // Set up task details buttons
+            document.querySelectorAll('.task-details-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const taskId = this.getAttribute('data-task-id');
+                    showTaskDetails(taskId);
+                });
+            });
+            
+            // Set up task cancel buttons
+            document.querySelectorAll('.task-cancel-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const taskId = this.getAttribute('data-task-id');
+                    confirmCancelTask(taskId);
+                });
+            });
+            
+        } catch (error) {
+            console.error('Error loading swarm tasks:', error);
+            EvoGenesis.ui.showNotification('Failed to load swarm tasks', 'error');
+        }
+    }
+    
+    // Load nodes for task assignment dropdown
+    async function loadNodesForTaskAssignment() {
+        try {
+            const nodes = await EvoGenesis.api.fetch('/api/swarm/nodes');
+            if (!nodes) return;
+            
+            const selectElement = document.getElementById('task-assign-select');
+            // Keep the first option (auto-assign)
+            selectElement.innerHTML = '<option value="">Auto-assign</option>';
+            
+            nodes.forEach(node => {
+                if (node.status === 'connected') {
+                    const option = document.createElement('option');
+                    option.value = node.id;
+                    option.textContent = `${node.name} (${node.role})`;
+                    selectElement.appendChild(option);
+                }
+            });
+        } catch (error) {
+            console.error('Error loading nodes for assignment:', error);
+        }
+    }
+    
+    // Connect to swarm
+    async function connectToSwarm() {
+        try {
+            const coordinatorUrl = document.getElementById('coordinator-url-input').value;
+            const nodeRole = document.getElementById('node-role-select').value;
+            
+            if (!coordinatorUrl) {
+                EvoGenesis.ui.showNotification('Coordinator URL is required', 'error');
+                return;
+            }
+            
+            const response = await EvoGenesis.api.fetch('/api/swarm/connect', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    coordinator_url: coordinatorUrl,
+                    role: nodeRole
+                })
+            });
+            
+            if (response && response.success) {
+                EvoGenesis.ui.showNotification(response.message, 'success');
+                
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('connectSwarmModal'));
+                modal.hide();
+                
+                // Refresh data
+                loadSwarmStatus();
+                loadSwarmNodes();
+                loadSwarmTasks();
+            } else {
+                EvoGenesis.ui.showNotification('Failed to connect to swarm', 'error');
+            }
+        } catch (error) {
+            console.error('Error connecting to swarm:', error);
+            EvoGenesis.ui.showNotification('Failed to connect to swarm', 'error');
+        }
+    }
+    
+    // Disconnect from swarm
+    async function disconnectFromSwarm() {
+        try {
+            const response = await EvoGenesis.api.fetch('/api/swarm/disconnect', {
+                method: 'POST'
+            });
+            
+            if (response && response.success) {
+                EvoGenesis.ui.showNotification(response.message, 'success');
+                
+                // Refresh data
+                loadSwarmStatus();
+                loadSwarmNodes();
+                loadSwarmTasks();
+            } else {
+                EvoGenesis.ui.showNotification('Failed to disconnect from swarm', 'error');
+            }
+        } catch (error) {
+            console.error('Error disconnecting from swarm:', error);
+            EvoGenesis.ui.showNotification('Failed to disconnect from swarm', 'error');
+        }
+    }
+    
+    // Add swarm node
+    async function addSwarmNode() {
+        try {
+            const name = document.getElementById('node-name-input').value;
+            const url = document.getElementById('node-url-input').value;
+            const role = document.getElementById('node-role-input').value;
+            
+            if (!name || !url) {
+                EvoGenesis.ui.showNotification('Name and URL are required', 'error');
+                return;
+            }
+            
+            const response = await EvoGenesis.api.fetch('/api/swarm/nodes', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: name,
+                    url: url,
+                    role: role
+                })
+            });
+            
+            if (response && response.success) {
+                EvoGenesis.ui.showNotification(response.message, 'success');
+                
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addNodeModal'));
+                modal.hide();
+                
+                // Refresh nodes
+                loadSwarmNodes();
+                loadSwarmStatus();
+            } else {
+                EvoGenesis.ui.showNotification('Failed to add node', 'error');
+            }
+        } catch (error) {
+            console.error('Error adding node:', error);
+            EvoGenesis.ui.showNotification('Failed to add node', 'error');
+        }
+    }
+    
+    // Create swarm task
+    async function createSwarmTask() {
+        try {
+            const title = document.getElementById('task-title-input').value;
+            const description = document.getElementById('task-description-input').value;
+            const priority = document.getElementById('task-priority-select').value;
+            const assignedNodeId = document.getElementById('task-assign-select').value;
+            
+            if (!title || !description) {
+                EvoGenesis.ui.showNotification('Title and description are required', 'error');
+                return;
+            }
+            
+            const response = await EvoGenesis.api.fetch('/api/swarm/tasks', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    title: title,
+                    description: description,
+                    priority: priority,
+                    assigned_node_id: assignedNodeId || null
+                })
+            });
+            
+            if (response && response.success) {
+                EvoGenesis.ui.showNotification(response.message, 'success');
+                
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('createSwarmTaskModal'));
+                modal.hide();
+                
+                // Refresh tasks
+                loadSwarmTasks();
+                loadSwarmStatus();
+            } else {
+                EvoGenesis.ui.showNotification('Failed to create task', 'error');
+            }
+        } catch (error) {
+            console.error('Error creating task:', error);
+            EvoGenesis.ui.showNotification('Failed to create task', 'error');
+        }
+    }
+    
+    // Sync swarm memory
+    async function syncSwarmMemory() {
+        try {
+            const response = await EvoGenesis.api.fetch('/api/swarm/sync-memory', {
+                method: 'POST'
+            });
+            
+            if (response && response.success) {
+                EvoGenesis.ui.showNotification(`Memory synchronization initiated across ${response.synced_nodes} nodes`, 'success');
+                
+                // Refresh status
+                loadSwarmStatus();
+            } else {
+                EvoGenesis.ui.showNotification('Failed to sync memory', 'error');
+            }
+        } catch (error) {
+            console.error('Error syncing memory:', error);
+            EvoGenesis.ui.showNotification('Failed to sync memory', 'error');
+        }
+    }
+    
+    // Show node details
+    async function showNodeDetails(nodeId) {
+        // In a real implementation, this would fetch detailed node information
+        // For now, we'll use a simplified version with the information we have
+        
+        try {
+            const nodes = await EvoGenesis.api.fetch('/api/swarm/nodes');
+            if (!nodes) return;
+            
+            const node = nodes.find(n => n.id === nodeId);
+            if (!node) {
+                EvoGenesis.ui.showNotification('Node not found', 'error');
+                return;
+            }
+            
+            // Fill in node details
+            document.getElementById('node-detail-id').textContent = node.id;
+            document.getElementById('node-detail-name').textContent = node.name;
+            document.getElementById('node-detail-role').textContent = node.role;
+            document.getElementById('node-detail-status').textContent = node.status;
+            document.getElementById('node-detail-url').textContent = node.url;
+            document.getElementById('node-detail-connected-at').textContent = node.connected_at || 'Unknown';
+            document.getElementById('node-detail-heartbeat').textContent = node.last_heartbeat || 'Never';
+            
+            // Set up the disconnect button
+            const disconnectBtn = document.getElementById('disconnect-node-btn');
+            disconnectBtn.setAttribute('data-node-id', node.id);
+            disconnectBtn.addEventListener('click', function() {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('nodeDetailsModal'));
+                modal.hide();
+                confirmDisconnectNode(nodeId);
+            });
+            
+            // Show the modal
+            const modal = new bootstrap.Modal(document.getElementById('nodeDetailsModal'));
+            modal.show();
+            
+        } catch (error) {
+            console.error('Error showing node details:', error);
+            EvoGenesis.ui.showNotification('Failed to load node details', 'error');
+        }
+    }
+    
+    // Confirm node disconnection
+    function confirmDisconnectNode(nodeId) {
+        if (confirm(`Are you sure you want to disconnect node ${nodeId} from the swarm?`)) {
+            disconnectNode(nodeId);
+        }
+    }
+    
+    // Disconnect a node
+    async function disconnectNode(nodeId) {
+        try {
+            const response = await EvoGenesis.api.fetch(`/api/swarm/nodes/${nodeId}`, {
+                method: 'DELETE'
+            });
+            
+            if (response && response.success) {
+                EvoGenesis.ui.showNotification(response.message, 'success');
+                
+                // Refresh data
+                loadSwarmNodes();
+                loadSwarmStatus();
+            } else {
+                EvoGenesis.ui.showNotification('Failed to disconnect node', 'error');
+            }
+        } catch (error) {
+            console.error('Error disconnecting node:', error);
+            EvoGenesis.ui.showNotification('Failed to disconnect node', 'error');
+        }
+    }
+    
+    // Confirm task cancellation
+    function confirmCancelTask(taskId) {
+        if (confirm(`Are you sure you want to cancel task ${taskId}?`)) {
+            cancelTask(taskId);
+        }
+    }
+    
+    // Cancel a task
+    async function cancelTask(taskId) {
+        try {
+            const response = await EvoGenesis.api.fetch(`/api/swarm/tasks/${taskId}/cancel`, {
+                method: 'POST'
+            });
+            
+            if (response && response.success) {
+                EvoGenesis.ui.showNotification(response.message, 'success');
+                
+                // Refresh tasks
+                loadSwarmTasks();
+            } else {
+                EvoGenesis.ui.showNotification('Failed to cancel task', 'error');
+            }
+        } catch (error) {
+            console.error('Error canceling task:', error);
+            EvoGenesis.ui.showNotification('Failed to cancel task', 'error');
+        }
+    }
+    
+    // Filter nodes
+    function filterNodes(query) {
+        const rows = document.querySelectorAll('#swarm-nodes-list tr');
+        query = query.toLowerCase();
+        
+        rows.forEach(row => {
+            // Skip "No nodes" row
+            if (row.cells.length <= 1) return;
+            
+            const id = row.cells[0].textContent.toLowerCase();
+            const name = row.cells[1].textContent.toLowerCase();
+            const role = row.cells[2].textContent.toLowerCase();
+            const url = row.cells[4].textContent.toLowerCase();
+            
+            if (id.includes(query) || name.includes(query) || 
+                role.includes(query) || url.includes(query)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+    
+    // Filter tasks
+    function filterTasks(query) {
+        const rows = document.querySelectorAll('#swarm-tasks-list tr');
+        query = query.toLowerCase();
+        
+        rows.forEach(row => {
+            // Skip "No tasks" row
+            if (row.cells.length <= 1) return;
+            
+            const id = row.cells[0].textContent.toLowerCase();
+            const title = row.cells[1].textContent.toLowerCase();
+            const status = row.cells[2].textContent.toLowerCase();
+            const priority = row.cells[3].textContent.toLowerCase();
+            
+            if (id.includes(query) || title.includes(query) || 
+                status.includes(query) || priority.includes(query)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+</script>
+{% endblock %}

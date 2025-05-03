@@ -1,0 +1,843 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="wizard-container">
+    <h1 class="page-title mb-4">Strategic Observatory Configuration</h1>
+    
+    <div class="wizard-progress mb-4">
+        <div class="progress">
+            <div class="progress-bar" role="progressbar" style="width: 25%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">25%</div>
+        </div>
+        <div class="wizard-steps">
+            <div class="wizard-step active" data-step="1">
+                <div class="step-number">1</div>
+                <div class="step-label">Observatory Type</div>
+            </div>
+            <div class="wizard-step" data-step="2">
+                <div class="step-number">2</div>
+                <div class="step-label">Signal Sources</div>
+            </div>
+            <div class="wizard-step" data-step="3">
+                <div class="step-number">3</div>
+                <div class="step-label">Analysis Rules</div>
+            </div>
+            <div class="wizard-step" data-step="4">
+                <div class="step-number">4</div>
+                <div class="step-label">Review & Create</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="wizard-content">
+        <!-- Step 1: Observatory Type -->
+        <div class="wizard-step-content active" data-step="1">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Select Observatory Type</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text mb-4">Choose the type of Strategic Observatory to deploy. Each type focuses on different aspects of strategic opportunity identification.</p>
+                    
+                    <div class="row observatory-type-options">
+                        <div class="col-md-6 mb-3">
+                            <div class="type-card" data-type="competitive-analysis">
+                                <div class="type-icon">
+                                    <i class='bx bx-radar'></i>
+                                </div>
+                                <h6>Competitive Analysis</h6>
+                                <p>Monitor competitors, market trends, and identify strategic openings in your industry space.</p>
+                                <div class="type-footer">
+                                    <span class="badge bg-info">Market Focus</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="type-card" data-type="innovation-scout">
+                                <div class="type-icon">
+                                    <i class='bx bx-bulb'></i>
+                                </div>
+                                <h6>Innovation Scout</h6>
+                                <p>Track emerging technologies, research breakthroughs, and novel applications in your domain.</p>
+                                <div class="type-footer">
+                                    <span class="badge bg-primary">Technology Focus</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="type-card" data-type="regulatory-monitor">
+                                <div class="type-icon">
+                                    <i class='bx bx-file'></i>
+                                </div>
+                                <h6>Regulatory Monitor</h6>
+                                <p>Stay updated on policy changes, compliance requirements, and regulatory landscapes.</p>
+                                <div class="type-footer">
+                                    <span class="badge bg-warning">Policy Focus</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="type-card" data-type="custom-observatory">
+                                <div class="type-icon">
+                                    <i class='bx bx-customize'></i>
+                                </div>
+                                <h6>Custom Observatory</h6>
+                                <p>Build a completely customized observatory with hand-picked metrics and sources.</p>
+                                <div class="type-footer">
+                                    <span class="badge bg-secondary">Advanced</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="observatory-detail-section mt-4 d-none">
+                        <h6 class="selected-type-name"></h6>
+                        <div class="alert alert-info">
+                            <i class='bx bx-info-circle'></i>
+                            <span class="selected-type-description"></span>
+                        </div>
+                        
+                        <div class="form-group mt-3">
+                            <label for="observatory-name" class="form-label">Observatory Name</label>
+                            <input type="text" class="form-control" id="observatory-name" placeholder="Enter a name for this observatory">
+                        </div>
+                        
+                        <div class="form-group mt-3">
+                            <label for="observatory-description" class="form-label">Description</label>
+                            <textarea class="form-control" id="observatory-description" rows="3" placeholder="Describe the purpose of this observatory"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <button class="btn btn-outline-secondary" onclick="window.location.href='/'">Cancel</button>
+                        <button class="btn btn-primary next-step" disabled>Next: Signal Sources</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Step 2: Signal Sources -->
+        <div class="wizard-step-content" data-step="2">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Configure Signal Sources</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text mb-4">Select and configure the sources from which the observatory will gather signals.</p>
+                    
+                    <div class="signal-sources-container">
+                        <h6>Recommended Sources</h6>
+                        <div class="alert alert-info mb-4">
+                            <i class='bx bx-info-circle'></i>
+                            Based on your observatory type, we've preselected optimal signal sources. You can customize this selection below.
+                        </div>
+                        
+                        <div class="row" id="recommended-sources">
+                            <!-- Will be populated dynamically based on the selected observatory type -->
+                        </div>
+                        
+                        <h6 class="mt-4">Additional Sources</h6>
+                        <div class="row mb-3" id="additional-sources">
+                            <div class="col-md-4 mb-3">
+                                <div class="source-card">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="web-crawler" id="source-web-crawler">
+                                        <label class="form-check-label" for="source-web-crawler">
+                                            Web Crawler
+                                        </label>
+                                    </div>
+                                    <small class="text-muted">Scan specific websites for changes and updates</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="source-card">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="research-papers" id="source-research-papers">
+                                        <label class="form-check-label" for="source-research-papers">
+                                            Research Papers
+                                        </label>
+                                    </div>
+                                    <small class="text-muted">Monitor academic publications and preprints</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="source-card">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="rss-feeds" id="source-rss-feeds">
+                                        <label class="form-check-label" for="source-rss-feeds">
+                                            RSS Feeds
+                                        </label>
+                                    </div>
+                                    <small class="text-muted">Subscribe to industry blogs and news sources</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="source-card">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="social-media" id="source-social-media">
+                                        <label class="form-check-label" for="source-social-media">
+                                            Social Media
+                                        </label>
+                                    </div>
+                                    <small class="text-muted">Monitor relevant hashtags and accounts</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="source-card">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="patent-database" id="source-patent-database">
+                                        <label class="form-check-label" for="source-patent-database">
+                                            Patent Database
+                                        </label>
+                                    </div>
+                                    <small class="text-muted">Track patent filings and approvals</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="source-card">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="custom-api" id="source-custom-api">
+                                        <label class="form-check-label" for="source-custom-api">
+                                            Custom API
+                                        </label>
+                                    </div>
+                                    <small class="text-muted">Connect to custom data sources via API</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="source-configuration mt-4">
+                            <h6>Source Configuration</h6>
+                            <div class="alert alert-secondary">
+                                <i class='bx bx-info-circle'></i>
+                                Select a signal source above to configure its settings
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <button class="btn btn-outline-secondary prev-step">Previous</button>
+                        <button class="btn btn-primary next-step">Next: Analysis Rules</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Step 3: Analysis Rules -->
+        <div class="wizard-step-content" data-step="3">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Configure Analysis Rules</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text mb-4">Define how the observatory will analyze signals and identify strategic opportunities.</p>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6>Opportunity Identification</h6>
+                                    <div class="mb-3">
+                                        <label for="opportunity-threshold" class="form-label">Opportunity Threshold</label>
+                                        <select class="form-select" id="opportunity-threshold">
+                                            <option value="high">High (Fewer, higher-quality opportunities)</option>
+                                            <option value="medium" selected>Medium (Balanced approach)</option>
+                                            <option value="low">Low (More opportunities, varying quality)</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="opportunity-categories" class="form-label">Opportunity Categories</label>
+                                        <select class="form-select" id="opportunity-categories" multiple>
+                                            <option value="market_gap">Market Gaps</option>
+                                            <option value="tech_advancement">Technological Advancements</option>
+                                            <option value="efficiency_gain">Efficiency Gains</option>
+                                            <option value="strategic_partnership">Strategic Partnerships</option>
+                                            <option value="regulatory_advantage">Regulatory Advantages</option>
+                                        </select>
+                                        <small class="form-text">Hold Ctrl/Cmd to select multiple</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6>Signal Analysis</h6>
+                                    <div class="mb-3">
+                                        <label for="analysis-frequency" class="form-label">Analysis Frequency</label>
+                                        <select class="form-select" id="analysis-frequency">
+                                            <option value="hourly">Hourly</option>
+                                            <option value="daily" selected>Daily</option>
+                                            <option value="weekly">Weekly</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="signal-weighting" class="form-label">Signal Weighting</label>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="trend_strength" id="weight-trend-strength" checked>
+                                            <label class="form-check-label" for="weight-trend-strength">
+                                                Trend Strength
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="source_reliability" id="weight-source-reliability" checked>
+                                            <label class="form-check-label" for="weight-source-reliability">
+                                                Source Reliability
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="time_relevance" id="weight-time-relevance" checked>
+                                            <label class="form-check-label" for="weight-time-relevance">
+                                                Time Relevance
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-body">
+                            <h6>Advanced Analysis Settings</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="pattern-recognition" class="form-label">Pattern Recognition</label>
+                                        <select class="form-select" id="pattern-recognition">
+                                            <option value="standard">Standard</option>
+                                            <option value="enhanced" selected>Enhanced</option>
+                                            <option value="advanced">Advanced (Higher LLM usage)</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="competitive-intelligence" class="form-label">Competitive Intelligence Depth</label>
+                                        <select class="form-select" id="competitive-intelligence">
+                                            <option value="surface">Surface-level</option>
+                                            <option value="detailed" selected>Detailed</option>
+                                            <option value="comprehensive">Comprehensive</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="trend-detection" class="form-label">Trend Detection Sensitivity</label>
+                                        <input type="range" class="form-range" min="1" max="10" value="6" id="trend-detection">
+                                        <div class="d-flex justify-content-between">
+                                            <small>Less Sensitive</small>
+                                            <small>More Sensitive</small>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="llm-models" class="form-label">LLM Models for Analysis</label>
+                                        <select class="form-select" id="llm-models">
+                                            <option value="gpt-3.5-turbo">GPT-3.5 Turbo (Faster)</option>
+                                            <option value="gpt-4" selected>GPT-4 (More accurate)</option>
+                                            <option value="custom">Custom model</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <button class="btn btn-outline-secondary prev-step">Previous</button>
+                        <button class="btn btn-primary next-step">Next: Review & Create</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Step 4: Review & Create -->
+        <div class="wizard-step-content" data-step="4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Review & Create Observatory</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text mb-4">Review your Strategic Observatory configuration and create it.</p>
+                    
+                    <div class="alert alert-info mb-4">
+                        <i class='bx bx-info-circle'></i>
+                        You'll be able to modify these settings later from the observatory configuration page.
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6>Basic Information</h6>
+                                    <dl class="row">
+                                        <dt class="col-sm-4">Name</dt>
+                                        <dd class="col-sm-8" id="review-name">-</dd>
+                                        
+                                        <dt class="col-sm-4">Type</dt>
+                                        <dd class="col-sm-8" id="review-type">-</dd>
+                                        
+                                        <dt class="col-sm-4">Description</dt>
+                                        <dd class="col-sm-8" id="review-description">-</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6>Analysis Configuration</h6>
+                                    <dl class="row">
+                                        <dt class="col-sm-6">Analysis Frequency</dt>
+                                        <dd class="col-sm-6" id="review-analysis-frequency">Daily</dd>
+                                        
+                                        <dt class="col-sm-6">Opportunity Threshold</dt>
+                                        <dd class="col-sm-6" id="review-opportunity-threshold">Medium</dd>
+                                        
+                                        <dt class="col-sm-6">Pattern Recognition</dt>
+                                        <dd class="col-sm-6" id="review-pattern-recognition">Enhanced</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-4">
+                        <div class="card-body">
+                            <h6>Signal Sources</h6>
+                            <div id="review-sources" class="mt-3">
+                                <!-- Will be populated dynamically -->
+                                <span class="badge bg-primary me-2 mb-2">Web Crawler</span>
+                                <span class="badge bg-primary me-2 mb-2">Research Papers</span>
+                                <span class="badge bg-primary me-2 mb-2">RSS Feeds</span>
+                                <span class="badge bg-primary me-2 mb-2">Patent Database</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-4">
+                        <div class="card-body">
+                            <h6>Resource Allocation</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="observatory-priority" class="form-label">Priority Level</label>
+                                        <select class="form-select" id="observatory-priority">
+                                            <option value="low">Low</option>
+                                            <option value="medium" selected>Medium</option>
+                                            <option value="high">High</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="observatory-agents" class="form-label">Dedicated Agents</label>
+                                        <select class="form-select" id="observatory-agents">
+                                            <option value="1">1 Agent (Minimal)</option>
+                                            <option value="2" selected>2 Agents (Recommended)</option>
+                                            <option value="3">3 Agents (Enhanced)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <button class="btn btn-outline-secondary prev-step">Previous</button>
+                        <button class="btn btn-primary" id="create-observatory-btn">Create Observatory</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get all elements needed for wizard functionality
+        const wizardSteps = document.querySelectorAll('.wizard-step');
+        const wizardStepContents = document.querySelectorAll('.wizard-step-content');
+        const nextButtons = document.querySelectorAll('.next-step');
+        const prevButtons = document.querySelectorAll('.prev-step');
+        const progressBar = document.querySelector('.progress-bar');
+        const createButton = document.getElementById('create-observatory-btn');
+        
+        // Observatory type selection
+        const typeCards = document.querySelectorAll('.type-card');
+        const nextStepBtn = document.querySelector('.next-step');
+        const detailSection = document.querySelector('.observatory-detail-section');
+        const selectedTypeName = document.querySelector('.selected-type-name');
+        const selectedTypeDesc = document.querySelector('.selected-type-description');
+        
+        // Initialize wizard state
+        let currentStep = 1;
+        let maxStep = wizardSteps.length;
+        let observatoryData = {
+            type: '',
+            name: '',
+            description: '',
+            sources: [],
+            analysis: {
+                frequency: 'daily',
+                threshold: 'medium',
+                patternRecognition: 'enhanced'
+            }
+        };
+        
+        // Type card selection
+        typeCards.forEach(card => {
+            card.addEventListener('click', function() {
+                // Remove active class from all cards
+                typeCards.forEach(c => c.classList.remove('active'));
+                
+                // Add active class to clicked card
+                this.classList.add('active');
+                
+                // Show detail section
+                detailSection.classList.remove('d-none');
+                
+                // Get type data
+                const type = this.dataset.type;
+                const name = this.querySelector('h6').textContent;
+                const description = this.querySelector('p').textContent;
+                
+                // Update detail section
+                selectedTypeName.textContent = name;
+                selectedTypeDesc.textContent = description;
+                
+                // Store in observatory data
+                observatoryData.type = type;
+                
+                // Enable next button
+                nextStepBtn.disabled = false;
+            });
+        });
+        
+        // Next button click handler
+        nextButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (currentStep < maxStep) {
+                    // If we're on step 1, capture name and description
+                    if (currentStep === 1) {
+                        observatoryData.name = document.getElementById('observatory-name').value || 'Unnamed Observatory';
+                        observatoryData.description = document.getElementById('observatory-description').value || 'No description provided';
+                        
+                        // Load recommended sources based on type
+                        loadRecommendedSources(observatoryData.type);
+                    }
+                    
+                    // If we're on step 3, update analysis settings
+                    if (currentStep === 3) {
+                        observatoryData.analysis.frequency = document.getElementById('analysis-frequency').value;
+                        observatoryData.analysis.threshold = document.getElementById('opportunity-threshold').value;
+                        observatoryData.analysis.patternRecognition = document.getElementById('pattern-recognition').value;
+                        
+                        // Update review section
+                        document.getElementById('review-name').textContent = observatoryData.name;
+                        document.getElementById('review-type').textContent = getTypeDisplayName(observatoryData.type);
+                        document.getElementById('review-description').textContent = observatoryData.description;
+                        document.getElementById('review-analysis-frequency').textContent = 
+                            document.getElementById('analysis-frequency').options[document.getElementById('analysis-frequency').selectedIndex].text;
+                        document.getElementById('review-opportunity-threshold').textContent = 
+                            document.getElementById('opportunity-threshold').options[document.getElementById('opportunity-threshold').selectedIndex].text;
+                        document.getElementById('review-pattern-recognition').textContent = 
+                            document.getElementById('pattern-recognition').options[document.getElementById('pattern-recognition').selectedIndex].text;
+                    }
+                    
+                    // Move to next step
+                    goToStep(currentStep + 1);
+                }
+            });
+        });
+        
+        // Previous button click handler
+        prevButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (currentStep > 1) {
+                    goToStep(currentStep - 1);
+                }
+            });
+        });
+        
+        // Create button click handler
+        createButton.addEventListener('click', function() {
+            // Get final values
+            const priority = document.getElementById('observatory-priority').value;
+            const agentCount = document.getElementById('observatory-agents').value;
+            
+            // Add to observatory data
+            observatoryData.priority = priority;
+            observatoryData.agentCount = agentCount;
+            
+            // Show creating feedback
+            this.disabled = true;
+            this.innerHTML = '<i class="bx bx-loader-alt bx-spin me-1"></i> Creating Observatory...';
+            
+            // Create the observatory
+            createObservatory(observatoryData);
+        });
+        
+        // Function to navigate to a specific step
+        function goToStep(stepNumber) {
+            if (stepNumber < 1 || stepNumber > maxStep) return;
+            
+            // Update current step
+            currentStep = stepNumber;
+            
+            // Update progress bar
+            const progress = ((stepNumber - 1) / (maxStep - 1)) * 100;
+            progressBar.style.width = `${progress}%`;
+            progressBar.setAttribute('aria-valuenow', progress);
+            
+            // Update step indicators
+            wizardSteps.forEach(step => {
+                const stepNum = parseInt(step.dataset.step);
+                if (stepNum < stepNumber) {
+                    step.classList.remove('active');
+                    step.classList.add('completed');
+                } else if (stepNum === stepNumber) {
+                    step.classList.add('active');
+                    step.classList.remove('completed');
+                } else {
+                    step.classList.remove('active', 'completed');
+                }
+            });
+            
+            // Show current step content, hide others
+            wizardStepContents.forEach(content => {
+                const contentStepNum = parseInt(content.dataset.step);
+                if (contentStepNum === stepNumber) {
+                    content.classList.add('active');
+                } else {
+                    content.classList.remove('active');
+                }
+            });
+        }
+        
+        // Function to load recommended sources based on type
+        function loadRecommendedSources(type) {
+            const sourceContainer = document.getElementById('recommended-sources');
+            sourceContainer.innerHTML = '';
+            
+            let sources = [];
+            
+            // Define recommended sources based on type
+            switch(type) {
+                case 'competitive-analysis':
+                    sources = [
+                        { id: 'news-monitoring', name: 'Industry News', description: 'Monitor industry news and press releases' },
+                        { id: 'market-analysis', name: 'Market Analysis', description: 'Analysis of market trends and competitor movements' },
+                        { id: 'financial-data', name: 'Financial Data', description: 'Track financial performance of key competitors' }
+                    ];
+                    break;
+                case 'innovation-scout':
+                    sources = [
+                        { id: 'research-databases', name: 'Research Databases', description: 'Academic and scientific research databases' },
+                        { id: 'patent-monitoring', name: 'Patent Monitoring', description: 'Track patent applications in relevant domains' },
+                        { id: 'tech-blogs', name: 'Tech Blogs', description: 'Follow influential technology blogs and publications' }
+                    ];
+                    break;
+                case 'regulatory-monitor':
+                    sources = [
+                        { id: 'regulatory-feeds', name: 'Regulatory Feeds', description: 'Direct feeds from regulatory bodies' },
+                        { id: 'legal-updates', name: 'Legal Updates', description: 'Legal databases and compliance updates' },
+                        { id: 'policy-trackers', name: 'Policy Trackers', description: 'Track policy changes and proposed legislation' }
+                    ];
+                    break;
+                case 'custom-observatory':
+                    sources = [
+                        { id: 'custom-source-1', name: 'Custom Source', description: 'Configure your custom signal source' }
+                    ];
+                    break;
+            }
+            
+            // Add sources to the container
+            sources.forEach(source => {
+                const sourceElement = document.createElement('div');
+                sourceElement.className = 'col-md-4 mb-3';
+                sourceElement.innerHTML = `
+                    <div class="source-card recommended">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="${source.id}" id="source-${source.id}" checked>
+                            <label class="form-check-label" for="source-${source.id}">
+                                ${source.name}
+                            </label>
+                        </div>
+                        <small class="text-muted">${source.description}</small>
+                        <span class="badge bg-success">Recommended</span>
+                    </div>
+                `;
+                sourceContainer.appendChild(sourceElement);
+            });
+            
+            // Store in observatory data
+            observatoryData.sources = sources.map(s => s.id);
+        }
+        
+        // Function to create observatory
+        async function createObservatory(data) {
+            try {
+                // Make API call to create observatory
+                const response = await fetch('/api/observatory/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to create observatory');
+                }
+                
+                const result = await response.json();
+                
+                // Show success message
+                EvoGenesis.ui.showNotification('Strategic Observatory created successfully!', 'success');
+                
+                // Redirect to observatory page
+                setTimeout(() => {
+                    window.location.href = `/observatory/${result.id}`;
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Error creating observatory:', error);
+                EvoGenesis.ui.showNotification('Failed to create Strategic Observatory', 'error');
+                
+                // Re-enable create button
+                const createButton = document.getElementById('create-observatory-btn');
+                createButton.disabled = false;
+                createButton.textContent = 'Create Observatory';
+            }
+        }
+        
+        // Helper function to get display name for observatory type
+        function getTypeDisplayName(type) {
+            const typeMap = {
+                'competitive-analysis': 'Competitive Analysis',
+                'innovation-scout': 'Innovation Scout',
+                'regulatory-monitor': 'Regulatory Monitor',
+                'custom-observatory': 'Custom Observatory'
+            };
+            
+            return typeMap[type] || type;
+        }
+    });
+</script>
+
+<style>
+    /* Wizard specific styles */
+    .wizard-progress {
+        position: relative;
+        margin-bottom: 30px;
+    }
+    
+    .wizard-steps {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 10px;
+    }
+    
+    .wizard-step {
+        text-align: center;
+        width: 25%;
+        position: relative;
+    }
+    
+    .step-number {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background-color: #e9ecef;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 5px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+    
+    .wizard-step.active .step-number {
+        background-color: #0078d4;
+        color: white;
+    }
+    
+    .wizard-step.completed .step-number {
+        background-color: #28a745;
+        color: white;
+    }
+    
+    .step-label {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #6c757d;
+    }
+    
+    .wizard-step.active .step-label {
+        color: #0078d4;
+        font-weight: 600;
+    }
+    
+    .wizard-step-content {
+        display: none;
+    }
+    
+    .wizard-step-content.active {
+        display: block;
+    }
+    
+    /* Type cards styles */
+    .type-card {
+        border: 2px solid #e9ecef;
+        border-radius: 4px;
+        padding: 20px;
+        height: 100%;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .type-card:hover {
+        border-color: #0078d4;
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .type-card.active {
+        border-color: #0078d4;
+        background-color: rgba(0, 120, 212, 0.05);
+    }
+    
+    .type-icon {
+        font-size: 2rem;
+        color: #0078d4;
+        margin-bottom: 15px;
+    }
+    
+    .type-footer {
+        margin-top: 15px;
+    }
+    
+    /* Source cards styles */
+    .source-card {
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 15px;
+        height: 100%;
+    }
+    
+    .source-card.recommended {
+        border-left: 3px solid #28a745;
+    }
+    
+    .source-card .badge {
+        position: absolute;
+        top: 10px;
+        right: 25px;
+        font-size: 0.7rem;
+    }
+</style>
+{% endblock %}

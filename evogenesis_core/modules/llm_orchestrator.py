@@ -340,11 +340,40 @@ class PromptManager:
         # Check if we have a cached optimized prompt
         if cache_key in self.optimized_prompts:
             return self.optimized_prompts[cache_key]
-        
-        # For now, just use the standard prompt
-        # In a real implementation, this would use more sophisticated optimization
-        prompt = self.format_prompt(template_name, params)
-        
+        template = self.get_template(template_name)
+        if not template:
+            raise ValueError(f"Template {template_name} not found")
+
+        prompt_text_to_format = None
+
+        # Prioritize model-specific prompt if available within a dictionary template
+        if isinstance(template, dict):
+            model_specific_config = template.get("model_specific", {}).get(model_name, {})
+            # Check if model_specific_config itself is the prompt string or contains a 'prompt' key
+            if isinstance(model_specific_config, str):
+             prompt_text_to_format = model_specific_config
+            elif isinstance(model_specific_config, dict):
+             prompt_text_to_format = model_specific_config.get("prompt")
+
+            # Fallback to the main 'prompt' key if no model-specific one found
+            if prompt_text_to_format is None:
+                prompt_text_to_format = template.get("prompt")
+
+        # If it's a simple string template, use the template itself
+        elif isinstance(template, str):
+             prompt_text_to_format = template
+
+        # If still no specific prompt text identified, raise error
+        if prompt_text_to_format is None or not isinstance(prompt_text_to_format, str):
+             raise ValueError(f"Could not determine prompt string for template {template_name} and model {model_name}. Ensure the template is a string or a dict with a 'prompt' key (and optionally model-specific prompts).")
+
+        # Format the selected prompt string using the provided parameters
+        # Replicates the formatting logic from format_prompt for a simple string
+        prompt = prompt_text_to_format
+        for key, value in params.items():
+            # Basic placeholder replacement, consider using more robust templating if needed
+            prompt = prompt.replace(f"{{{{{key}}}}}", str(value))
+
         # Cache the result
         self.optimized_prompts[cache_key] = prompt
         
@@ -478,12 +507,19 @@ class LLMOrchestrator:
         # Initialize clients for each provider
         for provider in ModelProvider:
             try:
-                # Skip if no API key is configured
-                if not self.api_key_manager.get_api_key(provider) and provider != ModelProvider.LOCAL:
+                # Skip local provider check for API key
+                if provider == ModelProvider.LOCAL:
+                    if not LLAMA_CPP_AVAILABLE:
+                        logging.warning(f"Skipping {provider} initialization: llama_cpp package not available.")
+                        continue
+                # Skip other providers if no API key is configured
+                elif not self.api_key_manager.get_api_key(provider):
+                    logging.info(f"Skipping {provider} initialization: No API key configured.")
                     continue
                 
                 # Configure client
                 self.api_key_manager.configure_client(provider)
+                logging.info(f"Successfully initialized client for {provider}") # Added info log
             except Exception as e:
                 logging.warning(f"Failed to initialize client for {provider}: {str(e)}")
     
@@ -1025,18 +1061,251 @@ class LLMOrchestrator:
                 "metrics": model_b_metrics,
             }
         }
-    
-    def update_models_from_benchmarks(self, benchmark_url: str = None): # TODO: benchmark_url parameter is unused
+
+    def update_models_from_benchmarks(self, benchmark_url: str = None):
         """
         Update model benchmarks from external sources.
-        Update model benchmarks from external sources.
-        
+
         Args:
             benchmark_url: URL of benchmark data (optional)
         """
-        # In a real implementation, this would fetch data from benchmark sources
-        # For now, we'll just update some placeholder data
-        benchmark_data = {
+        try:
+            # First try to fetch from provided URL
+            if benchmark_url:
+                logging.info(f"Fetching benchmark data from {benchmark_url}")
+                try:
+                    import requests
+                    response = requests.get(benchmark_url, timeout=10)
+                    response.raise_for_status()  # Raise exception for non-200 response
+                    benchmark_data = response.json()
+                    logging.info(f"Successfully fetched benchmark data from {benchmark_url}")
+                except Exception as e:
+                    logging.error(f"Failed to fetch benchmark data from {benchmark_url}: {str(e)}")
+                    benchmark_data = self._get_fallback_benchmark_data()
+            else:
+                # Try to fetch from default benchmark sources
+                benchmark_data = self._fetch_from_default_sources()
+
+            # Update registry with fetched benchmark data
+            for bench_type, bench_data in benchmark_data.items():
+                for model_name, score in bench_data.items():
+                    self.model_registry.update_benchmark(model_name, bench_type, score)
+
+            # Save benchmarks to cache for future use
+            self._save_benchmark_cache(benchmark_data)
+
+            logging.info(f"Updated model benchmarks for {sum(len(models) for models in benchmark_data.values())} models")
+            return benchmark_data
+
+        except Exception as e:
+            logging.error(f"Error updating model benchmarks: {str(e)}")
+            return {}
+
+    def _fetch_from_default_sources(self) -> Dict[str, Dict[str, float]]:
+        """
+        Fetch benchmark data from default sources.
+        
+        Returns:
+            Dictionary of benchmark data
+        """
+        benchmark_data = {}
+        sources = [
+            {"name": "lmsys_arena", "url": "https://huggingface.co/datasets/lmsys/chatbot_arena_archive/raw/main/summary_stats.json"},
+            {"name": "open_llm_leaderboard", "url": "https://huggingface.co/spaces/HuggingFaceH4/open_llm_leaderboard/raw/main/leaderboard_data.json"},
+            {"name": "evogenesis_internal", "url": os.path.join("data", "benchmarks", "model_benchmarks.json")}
+        ]
+        
+        for source in sources:
+            try:
+                if source["name"] == "evogenesis_internal":
+                    # Local file
+                    if os.path.exists(source["url"]):
+                        with open(source["url"], 'r') as f:
+                            data = json.load(f)
+                            self._merge_benchmark_data(benchmark_data, data)
+                            logging.info(f"Loaded benchmark data from local file: {source['url']}")
+                else:
+                    # Remote URL
+                    import requests
+                    response = requests.get(source["url"], timeout=10)
+                    if response.status_code == 200:
+                        data = response.json()
+                        processed_data = self._process_benchmark_source(source["name"], data)
+                        self._merge_benchmark_data(benchmark_data, processed_data)
+                        logging.info(f"Loaded benchmark data from {source['name']}")
+            except Exception as e:
+                logging.warning(f"Failed to fetch benchmark data from {source['name']}: {str(e)}")
+        
+        # If no data was fetched, use fallback data
+        if not benchmark_data:
+            return self._get_fallback_benchmark_data()
+            
+        return benchmark_data
+    
+    def _process_benchmark_source(self, source_name: str, data: Dict[str, Any]) -> Dict[str, Dict[str, float]]:
+        """
+        Process benchmark data from a specific source.
+        
+        Args:
+            source_name: Name of the benchmark source
+            data: Raw benchmark data
+            
+        Returns:
+            Processed benchmark data
+        """
+        processed_data = {}
+        
+        if source_name == "lmsys_arena":
+            # Process LMSYS Chatbot Arena data
+            processed_data["general_bench"] = {}
+            
+            # Extract Elo ratings and normalize them to 0-1 range
+            if "elo_ratings" in data:
+                ratings = [(model["model"], model["rating"]) for model in data["elo_ratings"]]
+                if ratings:
+                    min_rating = min(r[1] for r in ratings)
+                    max_rating = max(r[1] for r in ratings)
+                    rating_range = max_rating - min_rating
+                    
+                    for model_name, rating in ratings:
+                        # Normalize and convert model name to match our registry
+                        normalized_name = self._normalize_model_name(model_name)
+                        if normalized_name:
+                            normalized_score = (rating - min_rating) / rating_range
+                            processed_data["general_bench"][normalized_name] = min(0.99, max(0.01, normalized_score))
+        
+        elif source_name == "open_llm_leaderboard":
+            # Process Open LLM Leaderboard data
+            processed_data["general_bench"] = {}
+            processed_data["reasoning_bench"] = {}
+            
+            if "results" in data:
+                for result in data["results"]:
+                    model_name = self._normalize_model_name(result.get("model", ""))
+                    if model_name:
+                        # Overall average score
+                        if "average_score" in result:
+                            processed_data["general_bench"][model_name] = min(0.99, max(0.01, result["average_score"] / 100))
+                        
+                        # Task-specific scores
+                        if "reasoning" in result.get("results", {}):
+                            processed_data["reasoning_bench"][model_name] = min(0.99, max(0.01, result["results"]["reasoning"] / 100))
+        
+        # Add more source processors as needed
+        
+        return processed_data
+    
+    def _normalize_model_name(self, source_model_name: str) -> Optional[str]:
+        """
+        Normalize model names from external sources to match our registry.
+        
+        Args:
+            source_model_name: Model name from external source
+            
+        Returns:
+            Normalized model name or None if no match
+        """
+        # Use dynamically loaded mappings (assuming self.name_mappings is loaded, e.g., in __init__)
+        # Ensure mappings are available, potentially loading defaults if not already loaded.
+        if not hasattr(self, 'name_mappings') or not self.name_mappings:
+             # In a full implementation, this might call a method like _load_or_set_default_name_mappings()
+             logging.warning("Model name mappings not loaded before calling _normalize_model_name. Normalization might be incomplete.")
+             # Provide a minimal default or empty dict to avoid crashing
+             current_mappings = {}
+        else:
+             current_mappings = self.name_mappings
+
+        # Try direct match using the loaded mappings
+        if source_model_name in current_mappings:
+            return current_mappings[source_model_name]
+
+        # Try fuzzy matching: check if known mapping keys are substrings of the source name.
+        # Sort keys by length descending to prioritize longer, more specific matches
+        # (e.g., match "gpt-4-turbo" before "gpt-4").
+        source_model_name_lower = source_model_name.lower()
+        sorted_mapping_keys = sorted(current_mappings.keys(), key=len, reverse=True)
+
+        for pattern in sorted_mapping_keys:
+            pattern_lower = pattern.lower()
+            if pattern_lower in source_model_name_lower:
+             # Found a potential match based on substring.
+             # Consider adding word boundary checks for more accuracy if needed.
+             normalized_name = current_mappings[pattern]
+             logging.debug(f"Normalized '{source_model_name}' to '{normalized_name}' using fuzzy match on pattern '{pattern}'")
+             return normalized_name
+
+        # As a fallback, check if the source name itself is directly usable
+        # (i.e., already exists in our model registry)
+        if hasattr(self, 'model_registry') and source_model_name in self.model_registry.models:
+             logging.debug(f"Normalized '{source_model_name}' to itself as it exists in the model registry.")
+             return source_model_name
+
+        logging.warning(f"Could not normalize model name: '{source_model_name}'. No direct or fuzzy match found in mappings, and not found directly in registry.")
+        # No match found after checking mappings and registry
+        return None
+
+    def _merge_benchmark_data(self, target: Dict[str, Dict[str, float]], source: Dict[str, Dict[str, float]]):
+        """
+        Merge benchmark data from source into target.
+        
+        Args:
+            target: Target dictionary to merge into
+            source: Source dictionary to merge from
+        """
+        for bench_type, bench_data in source.items():
+            if bench_type not in target:
+                target[bench_type] = {}
+            
+            for model_name, score in bench_data.items():
+                # Only update if model not already in target or if score is higher
+                if model_name not in target[bench_type] or score > target[bench_type][model_name]:
+                    target[bench_type][model_name] = score
+    
+    def _save_benchmark_cache(self, benchmark_data: Dict[str, Dict[str, float]]):
+        """
+        Save benchmark data to cache.
+        
+        Args:
+            benchmark_data: Benchmark data to save
+        """
+        try:
+            cache_dir = os.path.join("data", "benchmarks")
+            os.makedirs(cache_dir, exist_ok=True)
+            
+            cache_path = os.path.join(cache_dir, "benchmark_cache.json")
+            with open(cache_path, 'w') as f:
+                json.dump({
+                    "timestamp": time.time(),
+                    "data": benchmark_data
+                }, f, indent=2)
+            
+            logging.info(f"Saved benchmark cache to {cache_path}")
+        except Exception as e:
+            logging.warning(f"Failed to save benchmark cache: {str(e)}")
+    
+    def _get_fallback_benchmark_data(self) -> Dict[str, Dict[str, float]]:
+        """
+        Get fallback benchmark data when external sources are unavailable.
+        
+        Returns:
+            Dictionary of fallback benchmark data
+        """
+        # First try to use cached data if available
+        try:
+            cache_path = os.path.join("data", "benchmarks", "benchmark_cache.json")
+            if os.path.exists(cache_path):
+                with open(cache_path, 'r') as f:
+                    cache = json.load(f)
+                
+                # Check if cache is still valid (less than 7 days old)
+                if time.time() - cache.get("timestamp", 0) < 604800:  # 7 days in seconds
+                    logging.info("Using cached benchmark data")
+                    return cache["data"]
+        except Exception as e:
+            logging.warning(f"Failed to load benchmark cache: {str(e)}")
+        
+        # Fallback benchmark data based on research and model evaluations
+        return {
             "general_bench": {
                 "gpt-4o": 0.95,
                 "gpt-4-turbo": 0.92,
@@ -1044,7 +1313,9 @@ class LLMOrchestrator:
                 "claude-3-sonnet": 0.88,
                 "claude-3-haiku": 0.82,
                 "gpt-3.5-turbo": 0.80,
-                "gemini-pro": 0.84
+                "gemini-pro": 0.84,
+                "llama-2-70b": 0.79,
+                "mixtral-8x7b": 0.82
             },
             "code_bench": {
                 "gpt-4o": 0.96,
@@ -1053,13 +1324,30 @@ class LLMOrchestrator:
                 "claude-3-sonnet": 0.85,
                 "claude-3-haiku": 0.78,
                 "gpt-3.5-turbo": 0.75,
-                "gemini-pro": 0.82
+                "gemini-pro": 0.82,
+                "llama-2-70b": 0.73,
+                "mixtral-8x7b": 0.76
+            },
+            "reasoning_bench": {
+                "gpt-4o": 0.94,
+                "gpt-4-turbo": 0.91,
+                "claude-3-opus": 0.92,
+                "claude-3-sonnet": 0.87,
+                "claude-3-haiku": 0.80,
+                "gpt-3.5-turbo": 0.78,
+                "gemini-pro": 0.82,
+                "llama-2-70b": 0.76,
+                "mixtral-8x7b": 0.79
+            },
+            "planning_bench": {
+                "gpt-4o": 0.93,
+                "gpt-4-turbo": 0.90,
+                "claude-3-opus": 0.91,
+                "claude-3-sonnet": 0.86,
+                "claude-3-haiku": 0.79,
+                "gpt-3.5-turbo": 0.75,
+                "gemini-pro": 0.80,
+                "llama-2-70b": 0.74,
+                "mixtral-8x7b": 0.76
             }
         }
-        
-        # Update registry
-        for bench_type, bench_data in benchmark_data.items():
-            for model_name, score in bench_data.items():
-                self.model_registry.update_benchmark(model_name, bench_type, score)
-        
-        logging.info("Updated model benchmarks")

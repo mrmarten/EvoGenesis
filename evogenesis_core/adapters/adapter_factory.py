@@ -12,6 +12,7 @@ import logging
 import ast
 import re
 import pkgutil
+import fnmatch
 from typing import Dict, Any, List, Optional, Union, Callable, Type
 import jinja2
 import difflib
@@ -535,14 +536,19 @@ class AdapterFactory:
                         validation_results["implements_interface"] = True
             else:
                 validation_results["errors"].append("No adapter classes found")
-            
-            # Remove the directory from sys.path
+              # Remove the directory from sys.path
             sys.path.remove(os.path.dirname(module_dir))
             
         except Exception as e:
             validation_results["errors"].append(f"Error importing adapter: {str(e)}")
         
-        # TODO: Run tests if available
+        # Run tests if available
+        test_results = self._run_adapter_tests(adapter_path, adapter_classes)
+        validation_results["test_results"] = test_results
+        if test_results and test_results.get("failures"):
+            validation_results["errors"].extend([
+                f"Test failure: {failure}" for failure in test_results.get("failures", [])
+            ])
         
         return validation_results
     
@@ -726,3 +732,110 @@ class AdapterFactory:
         )
         
         return ''.join(diff)
+    
+    def _run_adapter_tests(self, adapter_path: str, adapter_classes: List[Type]) -> Dict[str, Any]:
+        """
+        Run tests for an adapter if they exist.
+        
+        Args:
+            adapter_path: Path to the adapter file
+            adapter_classes: List of adapter classes found in the file
+            
+        Returns:
+            Dictionary with test results
+        """
+        if not adapter_classes:
+            return None
+            
+        test_results = {
+            "total": 0,
+            "passed": 0,
+            "failures": []
+        }
+        
+        try:
+            # Look for test files in the tests directory
+            module_name = os.path.splitext(os.path.basename(adapter_path))[0]
+            test_file_patterns = [
+                f"test_{module_name}.py",
+                f"{module_name}_test.py",
+                f"test_*_{module_name}.py"
+            ]
+            
+            test_files = []
+            tests_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(adapter_path))), "tests")
+            
+            if os.path.exists(tests_dir):
+                for pattern in test_file_patterns:
+                    for filename in os.listdir(tests_dir):
+                        if fnmatch.fnmatch(filename, pattern):
+                            test_files.append(os.path.join(tests_dir, filename))
+            
+            # If no test files found in the standard location, check adapter's directory
+            if not test_files:
+                adapter_dir = os.path.dirname(adapter_path)
+                for pattern in test_file_patterns:
+                    for filename in os.listdir(adapter_dir):
+                        if fnmatch.fnmatch(filename, pattern):
+                            test_files.append(os.path.join(adapter_dir, filename))
+            
+            if not test_files:
+                return {
+                    "total": 0,
+                    "passed": 0,
+                    "failures": [],
+                    "message": "No test files found"
+                }
+            
+            # Run each test file
+            for test_file in test_files:
+                # Create a temporary test suite and runner
+                import unittest
+                import io
+                from contextlib import redirect_stdout, redirect_stderr
+                
+                # Load the test module
+                spec = importlib.util.spec_from_file_location(
+                    f"test_{module_name}", test_file
+                )
+                test_module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(test_module)
+                
+                # Find test cases
+                test_cases = []
+                for name, obj in inspect.getmembers(test_module):
+                    if (inspect.isclass(obj) and 
+                        issubclass(obj, unittest.TestCase) and
+                        obj != unittest.TestCase):
+                        test_cases.append(obj)
+                
+                if not test_cases:
+                    test_results["failures"].append(f"No test cases found in {test_file}")
+                    continue
+                
+                # Run tests
+                for test_case in test_cases:
+                    suite = unittest.TestLoader().loadTestsFromTestCase(test_case)
+                    test_results["total"] += suite.countTestCases()
+                    
+                    # Capture test output
+                    output = io.StringIO()
+                    with redirect_stdout(output), redirect_stderr(output):
+                        result = unittest.TextTestRunner(stream=output).run(suite)
+                    
+                    test_results["passed"] += result.testsRun - len(result.failures) - len(result.errors)
+                    
+                    # Add failures and errors to results
+                    for failure in result.failures:
+                        test_name = failure[0].id().split('.')[-1]
+                        test_results["failures"].append(f"{test_case.__name__}.{test_name}: {failure[1]}")
+                    
+                    for error in result.errors:
+                        test_name = error[0].id().split('.')[-1]
+                        test_results["failures"].append(f"{test_case.__name__}.{test_name} (ERROR): {error[1]}")
+        
+        except Exception as e:
+            test_results["failures"].append(f"Error running tests: {str(e)}")
+            logging.error(f"Error running adapter tests: {str(e)}")
+        
+        return test_results

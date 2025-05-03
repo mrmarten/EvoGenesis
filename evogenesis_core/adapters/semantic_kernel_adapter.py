@@ -9,6 +9,7 @@ import asyncio
 import logging
 from typing import Dict, Any
 import uuid
+import threading
 
 # Conditionally import Semantic Kernel
 try:
@@ -37,39 +38,37 @@ def run_async(coro):
     """
     if not asyncio.iscoroutine(coro):
         logging.error(f"Expected a coroutine object, but got {type(coro)}")
-        # If it's already a dictionary, just return it
         if isinstance(coro, dict):
             return coro
-        # Otherwise return an empty dict as fallback
         return {}
-        
     try:
-        # Try to use existing event loop
         try:
             loop = asyncio.get_event_loop()
         except RuntimeError:
-            # No event loop exists, create a new one
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-            
-        # If the loop is running (like in FastAPI), we need to be careful
         if loop.is_running():
-            # Use a thread-safe approach to run the coroutine
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor() as pool:
-                future = asyncio.run_coroutine_threadsafe(coro, loop)
-                return future.result(timeout=30)  # 30 second timeout
+            # Run in a new thread to avoid deadlock
+            result_container = {}
+            def runner():
+                try:
+                    result_container['result'] = asyncio.run(coro)
+                except Exception as e:
+                    logging.error(f"Error in thread running async function: {str(e)}", exc_info=True)
+                    result_container['result'] = {"name": "Semantic Kernel", "version": "unknown", "features": {}}
+            t = threading.Thread(target=runner)
+            t.start()
+            t.join(timeout=120)
+            if t.is_alive():
+                logging.error("Async function timed out in thread.")
+                return {"name": "Semantic Kernel", "version": "unknown", "features": {}}
+            return result_container.get('result', {})
         else:
-            # Standard approach when loop isn't running
             return loop.run_until_complete(coro)
     except Exception as e:
-        logging.error(f"Error running async function: {str(e)}")
-        # Return a minimal capabilities dictionary on error
-        return {
-            "name": "Semantic Kernel",
-            "version": "unknown",
-            "features": {}
-        }
+        logging.error(f"Error running async function: {str(e)}", exc_info=True)
+        return {"name": "Semantic Kernel", "version": "unknown", "features": {}}
+        
 
 
 class SemanticKernelAdapter(AgentExecutionAdapter):
@@ -150,16 +149,47 @@ class SemanticKernelAdapter(AgentExecutionAdapter):
                 "chat_completion", 
                 OpenAIChatCompletion(model, api_key)
             )
-            
-            # Load any specified plugins
+              # Load any specified plugins
             if agent_spec.get("semantic_plugins"):
-                # In a real implementation, this would create and load semantic functions
-                pass
+                # Load built-in plugins from the plugin directory
+                plugin_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "plugins")
+                if os.path.exists(plugin_dir):
+                    for plugin_folder in os.listdir(plugin_dir):
+                        plugin_path = os.path.join(plugin_dir, plugin_folder)
+                        if os.path.isdir(plugin_path):
+                            try:
+                                kernel.import_plugin_from_directory(plugin_path, plugin_folder)
+                                self.logger.info(f"Loaded plugin {plugin_folder} from directory")
+                            except Exception as e:
+                                self.logger.error(f"Failed to load plugin {plugin_folder}: {str(e)}")
             
-            # Load semantic plugins if specified
+            # Load semantic plugins if specified with custom configuration
             for plugin_name, plugin_config in agent_spec.get("semantic_plugins", {}).items():
-                # In a real implementation, this would create and load semantic functions
-                pass
+                try:
+                    # Check if plugin config has a directory path
+                    if "path" in plugin_config:
+                        kernel.import_plugin_from_directory(plugin_config["path"], plugin_name)
+                    # Check if plugin config has a Python module
+                    elif "module" in plugin_config:
+                        import importlib
+                        module = importlib.import_module(plugin_config["module"])
+                        kernel.import_plugin_from_object(module, plugin_name)
+                    # Use semantic functions defined in the config
+                    elif "functions" in plugin_config:
+                        # Create a new plugin
+                        plugin = kernel.create_plugin(plugin_name)
+                        
+                        # Add each function from the config
+                        for func_name, func_def in plugin_config["functions"].items():
+                            prompt = func_def.get("prompt", "")
+                            system_prompt = func_def.get("system_prompt", "")
+                            
+                            # Create and register the function
+                            plugin.add_semantic_function(prompt, func_name, system_prompt)
+                            
+                    self.logger.info(f"Loaded semantic plugin: {plugin_name}")
+                except Exception as e:
+                    self.logger.error(f"Failed to load semantic plugin {plugin_name}: {str(e)}")
             
             # Store the kernel instance
             self.kernel_instances[agent_id] = kernel

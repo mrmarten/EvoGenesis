@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+
+{% block title %}System Activities - EvoGenesis Control Panel{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">System Activities</h6>
+                    <div class="dropdown no-arrow">
+                        <a class="dropdown-toggle" href="#" role="button" id="activityFilterDropdown" 
+                           data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="fas fa-filter fa-sm fa-fw text-gray-400"></i>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" 
+                             aria-labelledby="activityFilterDropdown" id="activity-type-filters">
+                            <div class="dropdown-header">Filter by Type:</div>
+                            <a class="dropdown-item active" href="#" data-type="all">All Activities</a>
+                            <div class="dropdown-divider"></div>
+                            <!-- Activity types will be dynamically added here -->
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="activity-timeline" id="activity-timeline">
+                        <!-- Activities will be dynamically added here -->
+                        <div class="text-center py-4" id="loading-activities">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="sr-only">Loading...</span>
+                            </div>
+                            <p class="mt-2">Loading activities...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Activity types and their icons
+const activityTypeIcons = {
+    'system.startup': 'fa-power-off',
+    'system.shutdown': 'fa-power-off',
+    'agent.created': 'fa-robot',
+    'agent.started': 'fa-play',
+    'agent.stopped': 'fa-stop',
+    'task.created': 'fa-tasks',
+    'task.started': 'fa-play',
+    'task.completed': 'fa-check',
+    'memory.store': 'fa-memory',
+    'tool.executed': 'fa-tools',
+    'llm.request': 'fa-comment-alt',
+    'self_evolution.update': 'fa-code-branch',
+    'hitl.intervention': 'fa-user-edit',
+    'client_action': 'fa-user',
+    'strategic_observatory.opportunity': 'fa-lightbulb',
+    'swarm.connection': 'fa-network-wired',
+    'default': 'fa-info-circle'
+};
+
+// Function to format a timestamp
+function formatTimestamp(timestamp) {
+    const date = new Date(timestamp * 1000);
+    return date.toLocaleString();
+}
+
+// Function to create an activity element
+function createActivityElement(activity) {
+    const activityType = activity.type || 'default';
+    const icon = activityTypeIcons[activityType] || activityTypeIcons['default'];
+    const formattedTime = activity.formatted_time || formatTimestamp(activity.timestamp);
+    const relativeTime = activity.relative_time || '';
+    
+    return `
+    <div class="activity-item mb-3" data-type="${activityType}">
+        <div class="d-flex">
+            <div class="activity-icon mr-3">
+                <div class="icon-circle bg-primary">
+                    <i class="fas ${icon} text-white"></i>
+                </div>
+            </div>
+            <div class="activity-content">
+                <div class="small text-gray-600">${formattedTime} ${relativeTime ? `(${relativeTime})` : ''}</div>
+                <h5 class="activity-title">${activity.title}</h5>
+                <p class="activity-message">${activity.message}</p>
+                ${activity.data && Object.keys(activity.data).length > 0 ? 
+                    `<button class="btn btn-sm btn-outline-info activity-data-toggle" type="button" data-toggle="collapse" 
+                        data-target="#activityData${activity.timestamp}">
+                        Show Details
+                    </button>
+                    <div class="collapse mt-2" id="activityData${activity.timestamp}">
+                        <div class="card card-body">
+                            <pre class="activity-data">${JSON.stringify(activity.data, null, 2)}</pre>
+                        </div>
+                    </div>` : ''}
+            </div>
+        </div>
+    </div>
+    `;
+}
+
+// Function to load activities
+async function loadActivities() {
+    try {
+        // Show loading indicator
+        document.getElementById('loading-activities').style.display = 'block';
+        
+        // Fetch activities from API
+        const response = await fetch('/api/activities?limit=50');
+        const activities = await response.json();
+        
+        // Hide loading indicator
+        document.getElementById('loading-activities').style.display = 'none';
+        
+        // Clear the timeline
+        const timeline = document.getElementById('activity-timeline');
+        timeline.innerHTML = '';
+        
+        if (activities.length === 0) {
+            timeline.innerHTML = '<div class="text-center py-4">No activities found</div>';
+            return;
+        }
+        
+        // Add activities to the timeline
+        activities.forEach(activity => {
+            timeline.innerHTML += createActivityElement(activity);
+        });
+        
+        // Load activity types for filtering
+        loadActivityTypes();
+        
+    } catch (error) {
+        console.error('Error loading activities:', error);
+        document.getElementById('loading-activities').style.display = 'none';
+        document.getElementById('activity-timeline').innerHTML = 
+            `<div class="alert alert-danger">Error loading activities: ${error.message}</div>`;
+    }
+}
+
+// Function to load activity types for filtering
+async function loadActivityTypes() {
+    try {
+        const response = await fetch('/api/activities/types');
+        const types = await response.json();
+        
+        const typesContainer = document.getElementById('activity-type-filters');
+        
+        // Keep the header and "All" option
+        const header = typesContainer.innerHTML;
+        typesContainer.innerHTML = header;
+        
+        // Add each type
+        types.forEach(type => {
+            const icon = activityTypeIcons[type] || activityTypeIcons['default'];
+            typesContainer.innerHTML += `
+                <a class="dropdown-item" href="#" data-type="${type}">
+                    <i class="fas ${icon} fa-sm fa-fw mr-2 text-gray-400"></i>
+                    ${type}
+                </a>
+            `;
+        });
+        
+        // Add event listeners for filtering
+        document.querySelectorAll('#activity-type-filters .dropdown-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Remove active class from all items
+                document.querySelectorAll('#activity-type-filters .dropdown-item').forEach(i => {
+                    i.classList.remove('active');
+                });
+                
+                // Add active class to clicked item
+                this.classList.add('active');
+                
+                // Get the selected type
+                const selectedType = this.getAttribute('data-type');
+                
+                // Filter activities
+                if (selectedType === 'all') {
+                    document.querySelectorAll('.activity-item').forEach(item => {
+                        item.style.display = 'block';
+                    });
+                } else {
+                    document.querySelectorAll('.activity-item').forEach(item => {
+                        if (item.getAttribute('data-type') === selectedType) {
+                            item.style.display = 'block';
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+                }
+            });
+        });
+        
+    } catch (error) {
+        console.error('Error loading activity types:', error);
+    }
+}
+
+// Function to set up WebSocket connection for real-time updates
+function setupWebSocket() {
+    // Create WebSocket connection
+    const ws = new WebSocket(`ws://${window.location.host}/ws`);
+    
+    ws.onopen = function() {
+        console.log('WebSocket connected');
+        
+        // Subscribe to activity topics
+        ws.send(JSON.stringify({
+            subscribe: ['system.activities']
+        }));
+    };
+    
+    ws.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        
+        // Handle activity updates
+        if (data.topic === 'system.activities' && data.data && data.data.event === 'new_activity') {
+            const activity = data.data.activity;
+            
+            // Add the new activity to the top of the timeline
+            const timeline = document.getElementById('activity-timeline');
+            timeline.insertAdjacentHTML('afterbegin', createActivityElement(activity));
+            
+            // Flash the new activity to highlight it
+            const newActivity = timeline.querySelector('.activity-item:first-child');
+            newActivity.classList.add('highlight-new');
+            setTimeout(() => {
+                newActivity.classList.remove('highlight-new');
+            }, 3000);
+        }
+    };
+    
+    ws.onclose = function() {
+        console.log('WebSocket disconnected');
+        // Try to reconnect after 5 seconds
+        setTimeout(setupWebSocket, 5000);
+    };
+    
+    ws.onerror = function(error) {
+        console.error('WebSocket error:', error);
+    };
+}
+
+// Load activities when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadActivities();
+    setupWebSocket();
+    
+    // Set up auto-refresh
+    setInterval(loadActivities, 60000); // Refresh every minute
+});
+</script>
+
+<style>
+.activity-timeline {
+    position: relative;
+    padding: 1rem 0;
+}
+
+.activity-item {
+    position: relative;
+    padding-bottom: 1.5rem;
+    border-left: 1px dashed #e3e6f0;
+    margin-left: 1.25rem;
+    padding-left: 1.5rem;
+}
+
+.activity-item:last-child {
+    border-left: none;
+}
+
+.activity-icon {
+    position: absolute;
+    left: -1.25rem;
+    top: 0;
+}
+
+.icon-circle {
+    height: 2.5rem;
+    width: 2.5rem;
+    border-radius: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.activity-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.activity-message {
+    margin-bottom: 0.5rem;
+}
+
+.activity-data {
+    font-size: 0.8rem;
+    margin: 0;
+}
+
+.highlight-new {
+    animation: highlight 3s;
+}
+
+@keyframes highlight {
+    0% { background-color: rgba(78, 115, 223, 0.1); }
+    100% { background-color: transparent; }
+}
+</style>
+{% endblock %}

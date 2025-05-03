@@ -1,0 +1,1873 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="wizard-page">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-title">Tool Integration Wizard</h1>
+        <a href="/" class="btn btn-outline-secondary">
+            <i class='bx bx-x'></i> Cancel
+        </a>
+    </div>
+    
+    <div class="wizard-progress mb-4">
+        <div class="progress">
+            <div class="progress-bar" role="progressbar" style="width: 25%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+        <div class="wizard-steps mt-2">
+            <div class="wizard-step active">
+                <div class="step-number">1</div>
+                <div class="step-label">Tool Selection</div>
+            </div>
+            <div class="wizard-step">
+                <div class="step-number">2</div>
+                <div class="step-label">Configuration</div>
+            </div>
+            <div class="wizard-step">
+                <div class="step-number">3</div>
+                <div class="step-label">Permission Setup</div>
+            </div>
+            <div class="wizard-step">
+                <div class="step-number">4</div>
+                <div class="step-label">Test & Deploy</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Step 1: Tool Selection -->
+    <div id="step-1" class="wizard-step-content active">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Select Tools to Integrate</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-4">Choose the tools you want to integrate with your EvoGenesis environment:</p>
+                
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" placeholder="Search tools..." id="tool-search">
+                            <button class="btn btn-outline-secondary" type="button">
+                                <i class='bx bx-search'></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <select class="form-select" id="tool-category-filter">
+                            <option value="all" selected>All Categories</option>
+                            <option value="api">API Services</option>
+                            <option value="data">Data Processing</option>
+                            <option value="storage">Storage & Database</option>
+                            <option value="communication">Communication</option>
+                            <option value="productivity">Productivity</option>
+                            <option value="ai">AI & ML</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="tools-grid" id="tools-grid">
+                    <!-- API Services -->
+                    <div class="tool-card" data-category="api">
+                        <div class="tool-header">
+                            <img src="/static/img/tools/github-logo.png" alt="GitHub" class="tool-logo">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input tool-select" type="checkbox" id="github-api">
+                            </div>
+                        </div>
+                        <div class="tool-body">
+                            <h5>GitHub API</h5>
+                            <p>Integrate with GitHub repositories, issues, and pull requests</p>
+                            <div class="tool-tags">
+                                <span class="badge bg-secondary">api</span>
+                                <span class="badge bg-secondary">code</span>
+                                <span class="badge bg-secondary">version-control</span>
+                            </div>
+                        </div>
+                        <div class="tool-footer">
+                            <span class="verification-badge">
+                                <i class='bx bx-check-circle'></i> Verified
+                            </span>
+                            <button class="btn btn-sm btn-outline-primary tool-info-btn" data-tool="github-api">
+                                <i class='bx bx-info-circle'></i> Info
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="tool-card" data-category="api">
+                        <div class="tool-header">
+                            <img src="/static/img/tools/slack-logo.png" alt="Slack" class="tool-logo">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input tool-select" type="checkbox" id="slack-api">
+                            </div>
+                        </div>
+                        <div class="tool-body">
+                            <h5>Slack</h5>
+                            <p>Send messages, create channels, and automate workflows in Slack</p>
+                            <div class="tool-tags">
+                                <span class="badge bg-secondary">api</span>
+                                <span class="badge bg-secondary">communication</span>
+                                <span class="badge bg-secondary">messaging</span>
+                            </div>
+                        </div>
+                        <div class="tool-footer">
+                            <span class="verification-badge">
+                                <i class='bx bx-check-circle'></i> Verified
+                            </span>
+                            <button class="btn btn-sm btn-outline-primary tool-info-btn" data-tool="slack-api">
+                                <i class='bx bx-info-circle'></i> Info
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Data Processing -->
+                    <div class="tool-card" data-category="data">
+                        <div class="tool-header">
+                            <img src="/static/img/tools/pandas-logo.png" alt="Pandas" class="tool-logo">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input tool-select" type="checkbox" id="pandas-lib">
+                            </div>
+                        </div>
+                        <div class="tool-body">
+                            <h5>Pandas</h5>
+                            <p>Data analysis and manipulation tools for structured data</p>
+                            <div class="tool-tags">
+                                <span class="badge bg-secondary">data</span>
+                                <span class="badge bg-secondary">analysis</span>
+                                <span class="badge bg-secondary">python</span>
+                            </div>
+                        </div>
+                        <div class="tool-footer">
+                            <span class="verification-badge">
+                                <i class='bx bx-check-circle'></i> Verified
+                            </span>
+                            <button class="btn btn-sm btn-outline-primary tool-info-btn" data-tool="pandas-lib">
+                                <i class='bx bx-info-circle'></i> Info
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Storage & Database -->
+                    <div class="tool-card" data-category="storage">
+                        <div class="tool-header">
+                            <img src="/static/img/tools/s3-logo.png" alt="AWS S3" class="tool-logo">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input tool-select" type="checkbox" id="aws-s3">
+                            </div>
+                        </div>
+                        <div class="tool-body">
+                            <h5>AWS S3</h5>
+                            <p>Cloud storage service for storing and retrieving any amount of data</p>
+                            <div class="tool-tags">
+                                <span class="badge bg-secondary">storage</span>
+                                <span class="badge bg-secondary">cloud</span>
+                                <span class="badge bg-secondary">aws</span>
+                            </div>
+                        </div>
+                        <div class="tool-footer">
+                            <span class="verification-badge">
+                                <i class='bx bx-check-circle'></i> Verified
+                            </span>
+                            <button class="btn btn-sm btn-outline-primary tool-info-btn" data-tool="aws-s3">
+                                <i class='bx bx-info-circle'></i> Info
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- AI & ML -->
+                    <div class="tool-card" data-category="ai">
+                        <div class="tool-header">
+                            <img src="/static/img/tools/huggingface-logo.png" alt="Hugging Face" class="tool-logo">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input tool-select" type="checkbox" id="huggingface-api">
+                            </div>
+                        </div>
+                        <div class="tool-body">
+                            <h5>Hugging Face</h5>
+                            <p>Access to state-of-the-art ML models for various tasks</p>
+                            <div class="tool-tags">
+                                <span class="badge bg-secondary">ai</span>
+                                <span class="badge bg-secondary">ml</span>
+                                <span class="badge bg-secondary">nlp</span>
+                            </div>
+                        </div>
+                        <div class="tool-footer">
+                            <span class="verification-badge">
+                                <i class='bx bx-check-circle'></i> Verified
+                            </span>
+                            <button class="btn btn-sm btn-outline-primary tool-info-btn" data-tool="huggingface-api">
+                                <i class='bx bx-info-circle'></i> Info
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Custom Tool -->
+                    <div class="tool-card add-custom-tool" data-category="custom">
+                        <div class="add-tool-icon">
+                            <i class='bx bx-plus-circle'></i>
+                        </div>
+                        <h5>Add Custom Tool</h5>
+                        <p>Create a custom tool integration with your own API or service</p>
+                        <button class="btn btn-outline-primary" id="add-custom-tool-btn">
+                            <i class='bx bx-plus'></i> Add Custom
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <button id="next-to-step-2" class="btn btn-primary float-end">Next <i class='bx bx-right-arrow-alt'></i></button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Step 2: Tool Configuration -->
+    <div id="step-2" class="wizard-step-content">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Configure Selected Tools</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-4">Configure the authentication and settings for each selected tool:</p>
+                
+                <div id="tool-config-container">
+                    <!-- This will be populated dynamically based on tool selection -->
+                </div>
+            </div>
+            <div class="card-footer">
+                <button id="back-to-step-1" class="btn btn-outline-secondary"><i class='bx bx-left-arrow-alt'></i> Back</button>
+                <button id="next-to-step-3" class="btn btn-primary float-end">Next <i class='bx bx-right-arrow-alt'></i></button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Step 3: Permission Setup -->
+    <div id="step-3" class="wizard-step-content">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Set Up Permissions</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-4">Define which agents and components can access each integrated tool:</p>
+                
+                <div id="permissions-container">
+                    <!-- Will be dynamically populated based on selected tools -->
+                </div>
+                
+                <div class="mt-4">
+                    <h6>Global Permission Settings</h6>
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="enable-audit-logging" checked>
+                            <label class="form-check-label" for="enable-audit-logging">Enable audit logging for all tool usage</label>
+                        </div>
+                        <small class="text-muted">Track all actions and access to integrated tools</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="require-approval" checked>
+                            <label class="form-check-label" for="require-approval">Require approval for sensitive operations</label>
+                        </div>
+                        <small class="text-muted">Agents will request approval before performing sensitive actions</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="permission-level" class="form-label">Default Permission Level</label>
+                        <select class="form-select" id="permission-level">
+                            <option value="read">Read Only</option>
+                            <option value="write" selected>Read & Write</option>
+                            <option value="admin">Full Access</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <button id="back-to-step-2" class="btn btn-outline-secondary"><i class='bx bx-left-arrow-alt'></i> Back</button>
+                <button id="next-to-step-4" class="btn btn-primary float-end">Next <i class='bx bx-right-arrow-alt'></i></button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Step 4: Test & Deploy -->
+    <div id="step-4" class="wizard-step-content">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Test & Deploy Integrations</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-4">Test the selected tool integrations and deploy them to your environment:</p>
+                
+                <div id="integration-tests">
+                    <!-- Will be populated dynamically based on selected tools -->
+                </div>
+                
+                <div class="alert alert-info mt-4">
+                    <i class='bx bx-info-circle'></i> All integrations must pass the connection test before deployment.
+                </div>
+                
+                <div class="mt-4">
+                    <h6>Deployment Options</h6>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="deployment-mode" id="deploy-active" checked>
+                            <label class="form-check-label" for="deploy-active">
+                                Deploy & Activate Immediately
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="deployment-mode" id="deploy-inactive">
+                            <label class="form-check-label" for="deploy-inactive">
+                                Deploy but Keep Inactive
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="enable-auto-update" checked>
+                            <label class="form-check-label" for="enable-auto-update">Enable automatic updates for tool adapters</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <button id="back-to-step-3" class="btn btn-outline-secondary"><i class='bx bx-left-arrow-alt'></i> Back</button>
+                <button id="deploy-integrations" class="btn btn-success float-end">Deploy Integrations <i class='bx bx-check'></i></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tool Info Modal -->
+<div class="modal fade" id="toolInfoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tool-detail-name">Tool Information</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="tool-detail-content">
+                    <!-- Will be populated dynamically -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="select-tool-btn">Select Tool</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Custom Tool Modal -->
+<div class="modal fade" id="customToolModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Custom Tool Integration</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="custom-tool-form">
+                    <div class="mb-3">
+                        <label for="custom-tool-name" class="form-label">Tool Name</label>
+                        <input type="text" class="form-control" id="custom-tool-name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="custom-tool-type" class="form-label">Tool Type</label>
+                        <select class="form-select" id="custom-tool-type" required>
+                            <option value="api">API Service</option>
+                            <option value="data">Data Processing</option>
+                            <option value="storage">Storage & Database</option>
+                            <option value="communication">Communication</option>
+                            <option value="productivity">Productivity</option>
+                            <option value="ai">AI & ML</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="custom-tool-description" class="form-label">Description</label>
+                        <textarea class="form-control" id="custom-tool-description" rows="2" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="custom-tool-endpoint" class="form-label">API Endpoint</label>
+                        <input type="url" class="form-control" id="custom-tool-endpoint" placeholder="https://api.example.com/v1">
+                    </div>
+                    <div class="mb-3">
+                        <label for="custom-tool-auth" class="form-label">Authentication Method</label>
+                        <select class="form-select" id="custom-tool-auth">
+                            <option value="none">None</option>
+                            <option value="api_key" selected>API Key</option>
+                            <option value="oauth">OAuth</option>
+                            <option value="basic">Basic Auth</option>
+                            <option value="bearer">Bearer Token</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="add-custom-tool-submit">Add Tool</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal fade" id="integrationSuccessModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Integrations Deployed!</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <i class='bx bx-check-circle text-success' style="font-size: 4rem;"></i>
+                    <h4 class="mt-3">Tool Integrations Successfully Deployed</h4>
+                    <p id="success-integration-count"></p>
+                </div>
+                <div class="alert alert-info">
+                    <i class='bx bx-info-circle'></i> Your tools are now available for use by agents and processes in your EvoGenesis environment.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a href="/dashboard" class="btn btn-secondary">Go to Dashboard</a>
+                <a href="/tools" class="btn btn-primary">Manage Tools</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+{% raw %}
+<script src="/static/js/tool_integration_utils.js"></script>
+<script>
+    // Tool integration data
+    let integrationData = {
+        selectedTools: [],
+        configurations: {},
+        permissions: {
+            auditLogging: true,
+            requireApproval: true,
+            defaultPermission: 'write',
+            agentAccess: {}
+        },
+        deployment: {
+            active: true,
+            autoUpdate: true
+        }
+    };
+    
+    // Tool definitions with metadata
+    const toolDefinitions = {
+        'github-api': {
+            name: 'GitHub API',
+            category: 'api',
+            description: 'Integrate with GitHub repositories, issues, and pull requests',
+            authType: 'oauth',
+            configFields: ['api_key', 'owner', 'repo'],
+            capabilities: ['code_access', 'issue_management', 'repository_management'],
+            docsUrl: 'https://docs.github.com/en/rest'
+        },
+        'slack-api': {
+            name: 'Slack',
+            category: 'communication',
+            description: 'Send messages, create channels, and automate workflows in Slack',
+            authType: 'oauth',
+            configFields: ['api_token', 'default_channel'],
+            capabilities: ['messaging', 'channel_management', 'file_sharing'],
+            docsUrl: 'https://api.slack.com/docs'
+        },
+        'pandas-lib': {
+            name: 'Pandas',
+            category: 'data',
+            description: 'Data analysis and manipulation tools for structured data',
+            authType: 'none',
+            configFields: ['python_path', 'use_numpy'],
+            capabilities: ['data_analysis', 'data_cleaning', 'data_visualization'],
+            docsUrl: 'https://pandas.pydata.org/docs/'
+        },
+        'aws-s3': {
+            name: 'AWS S3',
+            category: 'storage',
+            description: 'Cloud storage service for storing and retrieving any amount of data',
+            authType: 'api_key',
+            configFields: ['access_key', 'secret_key', 'region', 'bucket'],
+            capabilities: ['file_storage', 'file_retrieval', 'backup'],
+            docsUrl: 'https://docs.aws.amazon.com/s3/index.html'
+        },
+        'huggingface-api': {
+            name: 'Hugging Face',
+            category: 'ai',
+            description: 'Access to state-of-the-art ML models for various tasks',
+            authType: 'api_key',
+            configFields: ['api_key', 'default_model'],
+            capabilities: ['text_generation', 'translation', 'summarization', 'text_classification'],
+            docsUrl: 'https://huggingface.co/docs/api-inference/index'
+        }
+    };
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize the wizard
+        initializeWizard();
+        
+        // Set up event listeners for tool selection
+        document.querySelectorAll('.tool-select').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const toolId = this.id;
+                if (this.checked) {
+                    if (!integrationData.selectedTools.includes(toolId)) {
+                        integrationData.selectedTools.push(toolId);
+                    }
+                } else {
+                    integrationData.selectedTools = integrationData.selectedTools.filter(id => id !== toolId);
+                }
+            });
+        });
+        
+        // Helper functions for OAuth
+        window.getOAuthEndpointForTool = function(toolId) {
+            const endpoints = {
+                'github-api': 'https://github.com/login/oauth/authorize',
+                'slack-api': 'https://slack.com/oauth/v2/authorize',
+                'google-api': 'https://accounts.google.com/o/oauth2/v2/auth',
+                'microsoft-api': 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize'
+            };
+            return endpoints[toolId] || '';
+        };
+        
+        window.generateRandomState = function() {
+            return Math.random().toString(36).substring(2, 15) + 
+                   Math.random().toString(36).substring(2, 15);
+        };
+        
+        // Tool info buttons
+        document.querySelectorAll('.tool-info-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const toolId = this.getAttribute('data-tool');
+                showToolInfo(toolId);
+            });
+        });
+        
+        // Tool search functionality
+        document.getElementById('tool-search').addEventListener('input', function() {
+            filterTools();
+        });
+        
+        // Tool category filter
+        document.getElementById('tool-category-filter').addEventListener('change', function() {
+            filterTools();
+        });
+        
+        // Add custom tool button
+        document.getElementById('add-custom-tool-btn').addEventListener('click', function() {
+            const modal = new bootstrap.Modal(document.getElementById('customToolModal'));
+            modal.show();
+        });
+        
+        // Add custom tool from modal
+        document.getElementById('add-custom-tool-submit').addEventListener('click', function() {
+            addCustomTool();
+        });
+        
+        // Next/Previous buttons for navigation
+        document.getElementById('next-to-step-2').addEventListener('click', function() {
+            if (validateStep1()) {
+                updateToolConfigurations();
+                goToStep(2);
+            }
+        });
+        
+        document.getElementById('back-to-step-1').addEventListener('click', function() {
+            goToStep(1);
+        });
+        
+        document.getElementById('next-to-step-3').addEventListener('click', function() {
+            if (validateStep2()) {
+                saveConfigData();
+                updatePermissionsView();
+                goToStep(3);
+            }
+        });
+        
+        document.getElementById('back-to-step-2').addEventListener('click', function() {
+            goToStep(2);
+        });
+        
+        document.getElementById('next-to-step-4').addEventListener('click', function() {
+            savePermissionData();
+            updateTestView();
+            goToStep(4);
+        });
+        
+        document.getElementById('back-to-step-3').addEventListener('click', function() {
+            goToStep(3);
+        });
+        
+        // Deploy integrations button
+        document.getElementById('deploy-integrations').addEventListener('click', function() {
+            deployIntegrations();
+        });
+        
+        // Global permission switches
+        document.getElementById('enable-audit-logging').addEventListener('change', function() {
+            integrationData.permissions.auditLogging = this.checked;
+        });
+        
+        document.getElementById('require-approval').addEventListener('change', function() {
+            integrationData.permissions.requireApproval = this.checked;
+        });
+        
+        document.getElementById('permission-level').addEventListener('change', function() {
+            integrationData.permissions.defaultPermission = this.value;
+        });
+        
+        // Deployment options
+        document.getElementById('deploy-active').addEventListener('change', function() {
+            integrationData.deployment.active = this.checked;
+        });
+        
+        document.getElementById('deploy-inactive').addEventListener('change', function() {
+            integrationData.deployment.active = !this.checked;
+        });
+        
+        document.getElementById('enable-auto-update').addEventListener('change', function() {
+            integrationData.deployment.autoUpdate = this.checked;
+        });
+    });
+    
+    // Initialize the wizard
+    function initializeWizard() {
+        // Hide all steps except the first one
+        document.querySelectorAll('.wizard-step-content').forEach(step => {
+            if (!step.id.includes('step-1')) {
+                step.style.display = 'none';
+            }
+        });
+    }
+    
+    // Go to a specific step in the wizard
+    function goToStep(stepNumber) {
+        // Update progress bar
+        const progressBar = document.querySelector('.progress-bar');
+        progressBar.style.width = (stepNumber * 25) + '%';
+        progressBar.setAttribute('aria-valuenow', stepNumber * 25);
+        
+        // Update step indicators
+        document.querySelectorAll('.wizard-step').forEach((step, index) => {
+            if (index < stepNumber) {
+                step.classList.add('active');
+                step.classList.add('completed');
+            } else if (index === stepNumber - 1) {
+                step.classList.add('active');
+                step.classList.remove('completed');
+            } else {
+                step.classList.remove('active');
+                step.classList.remove('completed');
+            }
+        });
+        
+        // Show the selected step, hide others
+        document.querySelectorAll('.wizard-step-content').forEach(step => {
+            if (step.id === `step-${stepNumber}`) {
+                step.style.display = 'block';
+            } else {
+                step.style.display = 'none';
+            }
+        });
+    }
+    
+    // Validate step 1 (tool selection)
+    function validateStep1() {
+        if (integrationData.selectedTools.length === 0) {
+            showNotification('Please select at least one tool to integrate', 'warning');
+            return false;
+        }
+        return true;
+    }
+    
+    // Validate step 2 (configuration)
+    function validateStep2() {
+        let isValid = true;
+        
+        // Check required fields for each selected tool
+        integrationData.selectedTools.forEach(toolId => {
+            const toolConfig = integrationData.configurations[toolId] || {};
+            const toolDef = toolDefinitions[toolId] || { configFields: [] };
+            
+            toolDef.configFields.forEach(field => {
+                const inputId = `${toolId}-${field}`;
+                const input = document.getElementById(inputId);
+                
+                if (input && !input.value && input.hasAttribute('required')) {
+                    showNotification(`Please fill all required fields for ${toolDef.name}`, 'warning');
+                    isValid = false;
+                }
+            });
+        });
+        
+        return isValid;
+    }
+    
+    // Update the tool configurations view
+    function updateToolConfigurations() {
+        const configContainer = document.getElementById('tool-config-container');
+        configContainer.innerHTML = '';
+        
+        integrationData.selectedTools.forEach(toolId => {
+            const toolDef = toolDefinitions[toolId] || {
+                name: toolId,
+                authType: 'none',
+                configFields: []
+            };
+            
+            const configCard = document.createElement('div');
+            configCard.className = 'tool-config-card mb-4';
+            
+            let configFieldsHtml = '';
+            
+            // Add config fields based on the tool definition
+            if (toolDef.authType === 'api_key') {
+                configFieldsHtml += `
+                    <div class="mb-3">
+                        <label for="${toolId}-api_key" class="form-label">API Key</label>
+                        <input type="password" class="form-control" id="${toolId}-api_key" required>
+                    </div>
+                `;
+            } else if (toolDef.authType === 'oauth') {
+                configFieldsHtml += `
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-outline-primary" id="${toolId}-oauth-btn">
+                            <i class='bx bx-lock-open'></i> Connect with OAuth
+                        </button>
+                        <div class="form-text">Status: <span id="${toolId}-oauth-status" class="text-warning">Not Connected</span></div>
+                    </div>
+                `;
+            }
+            
+            // Add other configuration fields
+            toolDef.configFields.forEach(field => {
+                if (field !== 'api_key') { // Skip api_key as it's already added above
+                    configFieldsHtml += `
+                        <div class="mb-3">
+                            <label for="${toolId}-${field}" class="form-label">${formatFieldLabel(field)}</label>
+                            <input type="text" class="form-control" id="${toolId}-${field}" 
+                                ${field.includes('key') || field.includes('secret') ? 'type="password"' : ''}>
+                        </div>
+                    `;
+                }
+            });
+            
+            configCard.innerHTML = `
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">${toolDef.name}</h6>
+                    </div>
+                    <div class="card-body">
+                        <form id="${toolId}-config-form">
+                            ${configFieldsHtml}
+                            <div class="mb-3">
+                                <label for="${toolId}-optional-note" class="form-label">Notes (Optional)</label>
+                                <textarea class="form-control" id="${toolId}-optional-note" rows="2"></textarea>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="${toolId}-test-connection" checked>
+                                <label class="form-check-label" for="${toolId}-test-connection">
+                                    Test connection before deploying
+                                </label>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            
+            configContainer.appendChild(configCard);
+            
+            // Add OAuth button functionality if needed
+            if (toolDef.authType === 'oauth') {
+                const oauthBtn = document.getElementById(`${toolId}-oauth-btn`);
+                if (oauthBtn) {
+                    oauthBtn.addEventListener('click', function() {
+                        // Start OAuth flow with the actual provider
+                        this.disabled = true;
+                        this.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> Connecting...';
+                        
+                        // Open OAuth authorization window
+                        const providerEndpoint = getOAuthEndpointForTool(toolId);
+                        const redirectUri = encodeURIComponent(`${window.location.origin}/oauth/callback`);
+                        const clientId = EvoGenesis.config.tools[toolId]?.clientId || '';
+                        const scope = encodeURIComponent(EvoGenesis.config.tools[toolId]?.scope || 'read');
+                        const state = generateRandomState();
+                        
+                        // Store state for validation on callback
+                        sessionStorage.setItem('oauth_state', state);
+                        sessionStorage.setItem('oauth_tool_id', toolId);
+                        
+                        const authUrl = `${providerEndpoint}?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&state=${state}`;
+                        
+                        // Open popup window for OAuth authorization
+                        const oauthWindow = window.open(authUrl, 'oauth-window', 'width=600,height=700');
+                        
+                        // Set up message listener for OAuth callback
+                        window.addEventListener('message', function oauthCallback(event) {
+                            if (event.origin !== window.location.origin) return;
+                            
+                            if (event.data.type === 'oauth_callback' && event.data.toolId === toolId) {
+                                // Remove the listener once we get the response
+                                window.removeEventListener('message', oauthCallback);
+                                
+                                if (event.data.success) {
+                                    // Update UI to show connected state
+                                    document.getElementById(`${toolId}-oauth-status`).className = 'text-success';
+                                    document.getElementById(`${toolId}-oauth-status`).textContent = 'Connected';
+                                    oauthBtn.innerHTML = '<i class="bx bx-check"></i> Connected';
+                                    oauthBtn.className = 'btn btn-success';
+                                    
+                                    // Store OAuth token in the integrationData
+                                    if (!integrationData.configurations[toolId]) {
+                                        integrationData.configurations[toolId] = {};
+                                    }
+                                    integrationData.configurations[toolId].oauthToken = event.data.token;
+                                    integrationData.configurations[toolId].oauthExpiry = event.data.expiresAt;
+                                    
+                                    // Close the OAuth window if it's still open
+                                    if (oauthWindow && !oauthWindow.closed) {
+                                        oauthWindow.close();
+                                    }
+                                } else {
+                                    // Handle error case
+                                    document.getElementById(`${toolId}-oauth-status`).className = 'text-danger';
+                                    document.getElementById(`${toolId}-oauth-status`).textContent = 'Failed: ' + (event.data.error || 'Unknown error');
+                                    oauthBtn.innerHTML = '<i class="bx bx-refresh"></i> Try Again';
+                                    oauthBtn.className = 'btn btn-outline-danger';
+                                    oauthBtn.disabled = false;
+                                    
+                                    showNotification('OAuth connection failed: ' + (event.data.error || 'Unknown error'), 'error');
+                                }
+                            }
+                        });
+                        
+                        // Handle case where user closes the window
+                        const checkWindowClosed = setInterval(() => {
+                            if (oauthWindow && oauthWindow.closed) {
+                                clearInterval(checkWindowClosed);
+                                
+                                // Check if we got a token, if not then treat as canceled
+                                if (!integrationData.configurations[toolId]?.oauthToken) {
+                                    oauthBtn.innerHTML = '<i class="bx bx-lock-open"></i> Connect with OAuth';
+                                    oauthBtn.className = 'btn btn-outline-primary';
+                                    oauthBtn.disabled = false;
+                                    
+                                    document.getElementById(`${toolId}-oauth-status`).className = 'text-warning';
+                                    document.getElementById(`${toolId}-oauth-status`).textContent = 'Canceled';
+                                }
+                            }
+                        }, 1000);
+                    });
+                }
+            }
+        });
+    }
+    
+    // Save configuration data from the form
+    function saveConfigData() {
+        integrationData.selectedTools.forEach(toolId => {
+            const toolDef = toolDefinitions[toolId] || { configFields: [] };
+            
+            // Initialize config object for this tool
+            integrationData.configurations[toolId] = {};
+            
+            // Save all configuration fields
+            const allFields = [...toolDef.configFields];
+            if (toolDef.authType === 'api_key' && !allFields.includes('api_key')) {
+                allFields.push('api_key');
+            }
+            
+            allFields.forEach(field => {
+                const input = document.getElementById(`${toolId}-${field}`);
+                if (input) {
+                    integrationData.configurations[toolId][field] = input.value;
+                }
+            });
+            
+            // Save notes
+            const notesInput = document.getElementById(`${toolId}-optional-note`);
+            if (notesInput) {
+                integrationData.configurations[toolId].notes = notesInput.value;
+            }
+            
+            // Save test connection preference
+            const testConnectionCheckbox = document.getElementById(`${toolId}-test-connection`);
+            if (testConnectionCheckbox) {
+                integrationData.configurations[toolId].testConnection = testConnectionCheckbox.checked;
+            }
+        });
+    }
+      // Update the permissions view
+    function updatePermissionsView() {
+        const permissionsContainer = document.getElementById('permissions-container');
+        permissionsContainer.innerHTML = '';
+        
+        // Fetch available agents from API
+        EvoGenesis.api.fetch('/api/agents', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response || !response.agents) {
+                throw new Error('Invalid agent data received');
+            }
+            
+            const agentsList = response.agents;
+            
+            // Create permission tables for each tool
+            integrationData.selectedTools.forEach(toolId => {
+                const toolDef = toolDefinitions[toolId] || { name: toolId };
+            
+            const permissionCard = document.createElement('div');
+            permissionCard.className = 'permission-card mb-4';
+            
+            let agentRowsHtml = '';
+            
+            agentsList.forEach(agent => {
+                agentRowsHtml += `
+                    <tr>
+                        <td>${agent.name}</td>
+                        <td><span class="badge bg-secondary">${agent.type}</span></td>
+                        <td>
+                            <select class="form-select form-select-sm agent-permission-select" 
+                                    id="${toolId}-${agent.id}-permission" data-tool="${toolId}" data-agent="${agent.id}">
+                                <option value="none">No Access</option>
+                                <option value="read">Read Only</option>
+                                <option value="write" selected>Read & Write</option>
+                                <option value="admin">Full Access</option>
+                            </select>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            permissionCard.innerHTML = `
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="card-title mb-0">${toolDef.name} Permissions</h6>
+                        <select class="form-select form-select-sm" style="width: auto;" 
+                                id="${toolId}-bulk-permission" data-tool="${toolId}">
+                            <option value="">Set all...</option>
+                            <option value="none">No Access</option>
+                            <option value="read">Read Only</option>
+                            <option value="write">Read & Write</option>
+                            <option value="admin">Full Access</option>
+                        </select>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-sm m-0">
+                                <thead>
+                                    <tr>
+                                        <th>Agent Name</th>
+                                        <th>Type</th>
+                                        <th>Permission</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${agentRowsHtml}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            permissionsContainer.appendChild(permissionCard);
+            
+            // Add bulk permission update functionality
+            const bulkSelect = document.getElementById(`${toolId}-bulk-permission`);
+            if (bulkSelect) {
+                bulkSelect.addEventListener('change', function() {
+                    const selectedValue = this.value;
+                    if (selectedValue) {
+                        document.querySelectorAll(`select[data-tool="${toolId}"].agent-permission-select`).forEach(select => {
+                            select.value = selectedValue;
+                        });
+                    }
+                });
+                }
+            });
+        }) // Added missing closing parenthesis for .then()
+        .catch(error => {
+            console.error('Error fetching agents:', error);
+            showNotification('Failed to load agent list for permissions.', 'error');
+            // Optionally, display an error message in the permissions container
+            permissionsContainer.innerHTML = `<div class="alert alert-danger">Error loading agent list: ${error.message}</div>`;
+        });
+    } // Added missing closing brace for updatePermissionsView function
+        
+        // Save permission data
+        function savePermissionData() {
+            integrationData.permissions.agentAccess = {};
+        
+        integrationData.selectedTools.forEach(toolId => {
+            integrationData.permissions.agentAccess[toolId] = {};
+            
+            document.querySelectorAll(`select[data-tool="${toolId}"].agent-permission-select`).forEach(select => {
+                const agentId = select.getAttribute('data-agent');
+                integrationData.permissions.agentAccess[toolId][agentId] = select.value;
+            });
+        });
+    }
+    
+    // Update the test view
+    function updateTestView() {
+        const testContainer = document.getElementById('integration-tests');
+        testContainer.innerHTML = '';
+        
+        // Create test cards for each tool
+        integrationData.selectedTools.forEach(toolId => {
+            const toolDef = toolDefinitions[toolId] || { name: toolId };
+            const testCard = document.createElement('div');
+            testCard.className = 'test-card mb-3';
+            
+            testCard.innerHTML = `
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="card-title mb-0">${toolDef.name}</h6>
+                        <span class="badge bg-secondary" id="${toolId}-test-status">Pending</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-3">Test the connection to verify integration settings.</p>
+                        <button class="btn btn-outline-primary test-connection-btn" data-tool="${toolId}">
+                            <i class='bx bx-link-alt'></i> Test Connection
+                        </button>
+                        <div class="mt-3 d-none" id="${toolId}-test-result">
+                            <!-- Test results will be shown here -->
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            testContainer.appendChild(testCard);
+            
+            // Add test connection functionality
+            const testBtn = testCard.querySelector('.test-connection-btn');
+            testBtn.addEventListener('click', function() {
+                const toolId = this.getAttribute('data-tool');
+                testToolConnection(toolId, this);
+            });
+        });
+    }
+    
+    // Test tool connection
+    function testToolConnection(toolId, button) {
+        // Get tool configuration
+        const toolConfig = integrationData.configurations[toolId] || {};
+        const toolDef = toolDefinitions[toolId] || { name: toolId };
+        
+        // Update button state
+        button.disabled = true;
+        button.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> Testing...';
+        
+        // Update status badge
+        const statusBadge = document.getElementById(`${toolId}-test-status`);
+        statusBadge.className = 'badge bg-warning';
+        statusBadge.textContent = 'Testing...';
+        
+        // Show result container
+        const resultContainer = document.getElementById(`${toolId}-test-result`);
+        resultContainer.className = 'mt-3';
+        resultContainer.innerHTML = '<div class="spinner-border spinner-border-sm text-primary" role="status"></div> Testing connection...';
+        
+        // Call the real API to test the connection
+        EvoGenesis.api.fetch('/api/tools/test-connection', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                toolId: toolId,
+                configuration: toolConfig,
+                testMode: true
+            })
+        })
+        .then(response => {
+            // Handle the response from the server
+            const isSuccess = response.success;
+            
+            // Update status badge
+            statusBadge.className = isSuccess ? 'badge bg-success' : 'badge bg-danger';
+            statusBadge.textContent = isSuccess ? 'Success' : 'Failed';
+            
+            // Update result container
+            if (isSuccess) {
+                resultContainer.innerHTML = `
+                    <div class="alert alert-success">
+                        <i class='bx bx-check-circle'></i> Successfully connected to ${toolDef.name}.
+                        <div class="mt-2 small">
+                            <strong>Connection Details:</strong><br>
+                            Response Time: 245ms<br>
+                            API Version: v1.2.3
+                        </div>
+                    </div>
+                `;
+            } else {
+                resultContainer.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class='bx bx-error-circle'></i> Failed to connect to ${toolDef.name}.
+                        <div class="mt-2 small">
+                            <strong>Error Details:</strong><br>
+                            Error: Authentication failed. Please check your credentials.
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Reset button
+            button.disabled = false;
+            button.innerHTML = '<i class="bx bx-link-alt"></i> Test Again';
+            
+            // Update integration data
+            integrationData.configurations[toolId].testResult = {
+                success: isSuccess,
+                timestamp: new Date().toISOString(),
+                message: isSuccess ? 'Connection successful' : 'Authentication failed'
+            };
+        });
+    }
+    
+    // Filter tools based on search and category
+    function filterTools() {
+        const searchTerm = document.getElementById('tool-search').value.toLowerCase();
+        const categoryFilter = document.getElementById('tool-category-filter').value;
+        
+        document.querySelectorAll('.tool-card').forEach(card => {
+            const toolName = card.querySelector('h5')?.textContent.toLowerCase() || '';
+            const toolDescription = card.querySelector('p')?.textContent.toLowerCase() || '';
+            const toolCategory = card.getAttribute('data-category');
+            
+            const matchesSearch = toolName.includes(searchTerm) || toolDescription.includes(searchTerm);
+            const matchesCategory = categoryFilter === 'all' || toolCategory === categoryFilter;
+            
+            if (matchesSearch && matchesCategory) {
+                card.style.display = '';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+    
+    // Show tool info in modal
+    function showToolInfo(toolId) {
+        const toolDef = toolDefinitions[toolId] || { 
+            name: toolId,
+            category: 'custom',
+            description: 'No description available'
+        };
+        
+        // Update modal with tool information
+        document.getElementById('tool-detail-name').textContent = toolDef.name;
+        
+        const detailContent = document.getElementById('tool-detail-content');
+        
+        detailContent.innerHTML = `
+            <div class="tool-info">
+                <div class="mb-3">
+                    <h6>Description</h6>
+                    <p>${toolDef.description}</p>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>Category</h6>
+                    <span class="badge bg-secondary">${toolDef.category}</span>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>Authentication Type</h6>
+                    <p>${formatAuthType(toolDef.authType)}</p>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>Capabilities</h6>
+                    <div>
+                        ${(toolDef.capabilities || []).map(cap => 
+                            `<span class="badge bg-secondary">${cap}</span>`
+                        ).join(' ')}
+                    </div>
+                </div>
+                
+                ${toolDef.docsUrl ? `
+                <div class="mb-3">
+                    <h6>Documentation</h6>
+                    <a href="${toolDef.docsUrl}" target="_blank" class="btn btn-sm btn-outline-primary">
+                        <i class='bx bx-link-external'></i> View Documentation
+                    </a>
+                </div>
+                ` : ''}
+            </div>
+        `;
+        
+        // Update select button functionality
+        const selectButton = document.getElementById('select-tool-btn');
+        selectButton.onclick = function() {
+            // Find and check the tool's checkbox
+            const checkbox = document.getElementById(toolId);
+            if (checkbox) {
+                checkbox.checked = true;
+                
+                // Add to selected tools
+                if (!integrationData.selectedTools.includes(toolId)) {
+                    integrationData.selectedTools.push(toolId);
+                }
+            }
+            
+            const modal = bootstrap.Modal.getInstance(document.getElementById('toolInfoModal'));
+            modal.hide();
+        };
+        
+        // Show the modal
+        const modal = new bootstrap.Modal(document.getElementById('toolInfoModal'));
+        modal.show();
+    }
+    
+    // Add custom tool
+    function addCustomTool() {
+        const name = document.getElementById('custom-tool-name').value;
+        const type = document.getElementById('custom-tool-type').value;
+        const description = document.getElementById('custom-tool-description').value;
+        const endpoint = document.getElementById('custom-tool-endpoint').value;
+        const authType = document.getElementById('custom-tool-auth').value;
+        
+        if (!name || !type || !description) {
+            showNotification('Please fill in all required fields', 'warning');
+            return;
+        }
+        
+        // Generate a unique ID
+        const toolId = 'custom-' + Date.now();
+        
+        // Add to tool definitions
+        toolDefinitions[toolId] = {
+            name: name,
+            category: type,
+            description: description,
+            authType: authType,
+            configFields: ['api_key', 'endpoint_url'],
+            capabilities: [],
+            isCustom: true
+        };
+        
+        // Create tool card
+        const toolsGrid = document.getElementById('tools-grid');
+        const toolCard = document.createElement('div');
+        toolCard.className = 'tool-card';
+        toolCard.setAttribute('data-category', type);
+        
+        toolCard.innerHTML = `
+            <div class="tool-header">
+                <div class="custom-tool-icon">
+                    <i class='bx bx-customize'></i>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input tool-select" type="checkbox" id="${toolId}" checked>
+                </div>
+            </div>
+            <div class="tool-body">
+                <h5>${name}</h5>
+                <p>${description}</p>
+                <div class="tool-tags">
+                    <span class="badge bg-secondary">${type}</span>
+                    <span class="badge bg-secondary">custom</span>
+                </div>
+            </div>
+            <div class="tool-footer">
+                <span class="verification-badge custom">
+                    <i class='bx bx-cog'></i> Custom
+                </span>
+                <button class="btn btn-sm btn-outline-primary tool-info-btn" data-tool="${toolId}">
+                    <i class='bx bx-info-circle'></i> Info
+                </button>
+            </div>
+        `;
+        
+        // Insert before the "Add Custom Tool" card
+        toolsGrid.insertBefore(toolCard, document.querySelector('.add-custom-tool'));
+        
+        // Add event listeners
+        const checkbox = toolCard.querySelector('.tool-select');
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                if (!integrationData.selectedTools.includes(toolId)) {
+                    integrationData.selectedTools.push(toolId);
+                }
+            } else {
+                integrationData.selectedTools = integrationData.selectedTools.filter(id => id !== toolId);
+            }
+        });
+        
+        const infoButton = toolCard.querySelector('.tool-info-btn');
+        infoButton.addEventListener('click', function() {
+            showToolInfo(toolId);
+        });
+        
+        // Add to selected tools
+        integrationData.selectedTools.push(toolId);
+        
+        // Close the modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('customToolModal'));
+        modal.hide();
+        
+        // Clear the form
+        document.getElementById('custom-tool-form').reset();
+        
+        showNotification(`Custom tool "${name}" added successfully`, 'success');
+    }
+    
+    // Deploy integrations
+    function deployIntegrations() {
+        const deployButton = document.getElementById('deploy-integrations');
+        
+        // Check if all tests passed
+        const testStatuses = document.querySelectorAll('[id$="-test-status"]');
+        let allSuccessful = true;
+        let skippedTests = false;
+        
+        testStatuses.forEach(status => {
+            if (status.textContent === 'Failed') {
+                allSuccessful = false;
+            } else if (status.textContent === 'Pending') {
+                skippedTests = true;
+            }
+        });
+        
+        if (!allSuccessful) {
+            showNotification('Please fix all failed connection tests before deploying', 'warning');
+            return;
+        }
+        
+        if (skippedTests) {
+            if (!confirm('Some connection tests are still pending. Continue with deployment anyway?')) {
+                return;
+            }
+        }
+        
+        // Update button state
+        deployButton.disabled = true;
+        deployButton.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> Deploying...';
+        
+        // Collect final deployment data
+        integrationData.deployment.active = document.getElementById('deploy-active').checked;
+        integrationData.deployment.autoUpdate = document.getElementById('enable-auto-update').checked;
+        
+        // Simulate API call to deploy integrations
+        setTimeout(() => {
+            // Reset button
+            deployButton.disabled = false;
+            deployButton.innerHTML = 'Deploy Integrations <i class="bx bx-check"></i>';
+            
+            // Simulate API call to EvoGenesis.api.fetch
+            EvoGenesis.apiTesting.testEndpoint('/api/tools/integrations', 'POST', integrationData, function(result) {
+                console.log('Deployment result:', result);
+                
+                // Show success modal
+                document.getElementById('success-integration-count').textContent = 
+                    `${integrationData.selectedTools.length} tools have been integrated`;
+                
+                const modal = new bootstrap.Modal(document.getElementById('integrationSuccessModal'));
+                modal.show();
+            });
+        }, 3000);
+    }
+    
+    // Helper function: Format field label
+    function formatFieldLabel(field) {
+        return field
+            .split('_')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+    }
+    
+    // Helper function: Format auth type
+    function formatAuthType(authType) {
+        switch (authType) {
+            case 'api_key': return 'API Key';
+            case 'oauth': return 'OAuth 2.0';
+            case 'basic': return 'Basic Authentication';
+            case 'bearer': return 'Bearer Token';
+            case 'none': return 'No Authentication';
+            default: return authType;
+        }
+    }
+    
+    // Show a notification
+    function showNotification(message, type = 'info') {
+        // Create toast container if it doesn't exist
+        let toastContainer = document.querySelector('.toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            document.body.appendChild(toastContainer);
+        }
+        
+        // Create the toast
+        const toastId = 'toast-' + Date.now();
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.setAttribute('role', 'alert');
+        toast.setAttribute('aria-live', 'assertive');
+        toast.setAttribute('aria-atomic', 'true');
+        toast.id = toastId;
+        
+        // Set the toast content
+        toast.innerHTML = `
+            <div class="toast-header ${type === 'warning' ? 'text-warning' : type === 'success' ? 'text-success' : type === 'error' ? 'text-danger' : ''}">
+                <strong class="me-auto">${type.charAt(0).toUpperCase() + type.slice(1)}</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+                ${message}
+            </div>
+        `;
+        
+        // Add to container
+        toastContainer.appendChild(toast);
+        
+        // Initialize and show
+        const bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
+          // Remove after hidden
+        toast.addEventListener('hidden.bs.toast', function() {
+            toast.remove();
+        });
+    }
+</script>
+
+<!-- Production Implementation Overrides -->
+<script>
+    // Override placeholder implementations with production code
+    
+    // 1. Replace the OAuth simulation with real implementation
+    document.addEventListener('DOMContentLoaded', function() {
+        const originalUpdateToolConfigurations = window.updateToolConfigurations;
+        
+        // Override the updateToolConfigurations function to use real OAuth flow
+        window.updateToolConfigurations = function() {
+            // Call the original function first
+            originalUpdateToolConfigurations();
+            
+            // Find all OAuth buttons and replace their click handlers
+            document.querySelectorAll('[id$="-oauth-btn"]').forEach(oauthBtn => {
+                if (oauthBtn) {
+                    // Remove existing event listeners
+                    const newOAuthBtn = oauthBtn.cloneNode(true);
+                    oauthBtn.parentNode.replaceChild(newOAuthBtn, oauthBtn);
+                    
+                    // Get the tool ID from the button ID
+                    const toolId = newOAuthBtn.id.replace('-oauth-btn', '');
+                    
+                    // Add the production implementation
+                    newOAuthBtn.addEventListener('click', function() {
+                        EvoGenesis.toolIntegration.oauth.startOAuthFlow(toolId, this);
+                    });
+                }
+            });
+        };
+        
+        // 2. Replace agent list retrieval with API call
+        const originalUpdatePermissionsView = window.updatePermissionsView;
+        
+        window.updatePermissionsView = async function() {
+            try {
+                // Get agents from API
+                const agentsList = await EvoGenesis.toolIntegration.agents.getAgents();
+                
+                // Store in window for the original function to use
+                window.currentAgentsList = agentsList;
+                
+                // Call the original implementation
+                originalUpdatePermissionsView();
+            } catch (error) {
+                console.error('Error fetching agents:', error);
+                // Fall back to original implementation
+                originalUpdatePermissionsView();
+            }
+        };
+        
+        // 3. Replace test connection simulation with real API testing
+        const originalTestToolConnection = window.testToolConnection;
+        
+        window.testToolConnection = async function(toolId, button) {
+            // Get tool configuration
+            const toolConfig = integrationData.configurations[toolId] || {};
+            const toolDef = toolDefinitions[toolId] || { name: toolId };
+            
+            // Update button state
+            button.disabled = true;
+            button.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> Testing...';
+            
+            // Update status badge
+            const statusBadge = document.getElementById(`${toolId}-test-status`);
+            statusBadge.className = 'badge bg-warning';
+            statusBadge.textContent = 'Testing...';
+            
+            // Show result container
+            const resultContainer = document.getElementById(`${toolId}-test-result`);
+            resultContainer.className = 'mt-3';
+            resultContainer.innerHTML = '<div class="spinner-border spinner-border-sm text-primary" role="status"></div> Testing connection...';
+            
+            try {
+                // Call the actual API testing function
+                const result = await EvoGenesis.toolIntegration.testing.testConnection(toolId, toolConfig, toolDef);
+                
+                // Update status badge
+                statusBadge.className = result.success ? 'badge bg-success' : 'badge bg-danger';
+                statusBadge.textContent = result.success ? 'Success' : 'Failed';
+                
+                // Update result container
+                if (result.success) {
+                    resultContainer.innerHTML = `
+                        <div class="alert alert-success">
+                            <i class='bx bx-check-circle'></i> Successfully connected to ${toolDef.name}.
+                            <div class="mt-2 small">
+                                <strong>Connection Details:</strong><br>
+                                Response Time: ${result.details.responseTime || 'N/A'}<br>
+                                API Version: ${result.details.apiVersion || 'N/A'}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    resultContainer.innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class='bx bx-error-circle'></i> Failed to connect to ${toolDef.name}.
+                            <div class="mt-2 small">
+                                <strong>Error Details:</strong><br>
+                                Error: ${result.message || 'Unknown error'}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Reset button
+                button.disabled = false;
+                button.innerHTML = '<i class="bx bx-link-alt"></i> Test Again';
+                
+                // Update integration data
+                integrationData.configurations[toolId].testResult = result;
+                
+            } catch (error) {
+                console.error(`Error testing ${toolId}:`, error);
+                
+                // Update UI to show error
+                statusBadge.className = 'badge bg-danger';
+                statusBadge.textContent = 'Error';
+                
+                resultContainer.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class='bx bx-error-circle'></i> An error occurred while testing the connection.
+                        <div class="mt-2 small">
+                            <strong>Error Details:</strong><br>
+                            ${error.message || 'Unknown error'}
+                        </div>
+                    </div>
+                `;
+                
+                // Reset button
+                button.disabled = false;
+                button.innerHTML = '<i class="bx bx-link-alt"></i> Test Again';
+            }
+        };
+        
+        // 4. Replace deployment simulation with real API deployment
+        const originalDeployIntegrations = window.deployIntegrations;
+        
+        window.deployIntegrations = async function() {
+            const deployButton = document.getElementById('deploy-integrations');
+            
+            // Check if all tests passed (same as original implementation)
+            const testStatuses = document.querySelectorAll('[id$="-test-status"]');
+            let allSuccessful = true;
+            let skippedTests = false;
+            
+            testStatuses.forEach(status => {
+                if (status.textContent === 'Failed') {
+                    allSuccessful = false;
+                } else if (status.textContent === 'Pending') {
+                    skippedTests = true;
+                }
+            });
+            
+            if (!allSuccessful) {
+                showNotification('Please fix all failed connection tests before deploying', 'warning');
+                return;
+            }
+            
+            if (skippedTests) {
+                if (!confirm('Some connection tests are still pending. Continue with deployment anyway?')) {
+                    return;
+                }
+            }
+            
+            // Update button state
+            deployButton.disabled = true;
+            deployButton.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> Deploying...';
+            
+            // Collect final deployment data
+            integrationData.deployment.active = document.getElementById('deploy-active').checked;
+            integrationData.deployment.autoUpdate = document.getElementById('enable-auto-update').checked;
+            
+            try {
+                // Call the real deployment API
+                const result = await EvoGenesis.toolIntegration.deployment.deployTools(integrationData);
+                
+                // Reset button
+                deployButton.disabled = false;
+                deployButton.innerHTML = 'Deploy Integrations <i class="bx bx-check"></i>';
+                
+                if (result.success) {
+                    // Update success counts
+                    document.getElementById('success-integration-count').textContent = 
+                        `${result.deployedTools.length} tools have been integrated`;
+                    
+                    // Show success modal
+                    const modal = new bootstrap.Modal(document.getElementById('integrationSuccessModal'));
+                    modal.show();
+                } else {
+                    // Show error notification
+                    showNotification('Deployment failed: ' + result.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error deploying integrations:', error);
+                
+                // Reset button
+                deployButton.disabled = false;
+                deployButton.innerHTML = 'Deploy Integrations <i class="bx bx-check"></i>';
+                
+                // Show error notification
+                showNotification('Error deploying integrations: ' + (error.message || 'Unknown error'), 'error');
+            }        };
+    });
+</script>
+
+<style>
+    /* Tool Integration Wizard styles */
+    /* Tool cards */
+    .tools-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-top: 1.5rem;
+    }
+    
+    .tool-card {
+        border: 1px solid var(--border-color);
+        border-radius: var(--card-border-radius);
+        overflow: hidden;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .tool-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+    }
+    
+    .tool-header {
+        padding: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .tool-logo {
+        height: 30px;
+        width: auto;
+    }
+    
+    .custom-tool-icon {
+        font-size: 1.8rem;
+        color: var(--primary-color);
+    }
+    
+    .tool-body {
+        padding: 1rem;
+        min-height: 140px;
+    }
+    
+    .tool-body h5 {
+        margin-bottom: 0.5rem;
+    }
+    
+    .tool-body p {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        margin-bottom: 1rem;
+    }
+    
+    .tool-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.3rem;
+    }
+    
+    .tool-footer {
+        padding: 0.8rem 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: rgba(0, 0, 0, 0.02);
+        border-top: 1px solid var(--border-color);
+    }
+    
+    .verification-badge {
+        font-size: 0.8rem;
+        display: flex;
+        align-items: center;
+        color: var(--success-color);
+    }
+    
+    .verification-badge.custom {
+        color: var(--text-secondary);
+    }
+    
+    .verification-badge i {
+        margin-right: 0.3rem;
+    }
+    
+    /* Add custom tool card */
+    .add-custom-tool {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 2rem;
+        border-style: dashed;
+    }
+    
+    .add-tool-icon {
+        font-size: 2.5rem;
+        color: var(--text-muted);
+        margin-bottom: 1rem;
+    }
+    
+    .add-custom-tool h5 {
+        margin-bottom: 0.5rem;
+    }
+    
+    .add-custom-tool p {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        margin-bottom: 1.5rem;
+    }
+    
+    /* Configuration cards */
+    .tool-config-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    /* Test cards */
+    .test-card {
+        transition: all 0.3s;
+    }
+    
+    /* Wizard steps */
+    .wizard-steps {
+        display: flex;
+        justify-content: space-between;
+    }
+    
+    .wizard-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        width: 25%;
+        position: relative;
+    }
+    
+    .wizard-step:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        top: 12px;
+        right: -50%;
+        width: 100%;
+        height: 2px;
+        background-color: var(--border-color);
+        z-index: 0;
+    }
+    
+    .wizard-step.active .step-number,
+    .wizard-step.completed .step-number {
+        background-color: var(--primary-color);
+        color: white;
+    }
+    
+    .wizard-step.completed:not(:last-child)::after {
+        background-color: var(--primary-color);
+    }
+    
+    .step-number {
+        width: 25px;
+        height: 25px;
+        border-radius: 50%;
+        background-color: var(--text-muted);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        margin-bottom: 0.5rem;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .step-label {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+    
+    .wizard-step.active .step-label {
+        color: var(--text-color);
+        font-weight: 500;
+    }
+    
+    .wizard-step-content {
+        display: none;
+    }
+    
+    .wizard-step-content.active {
+        display: block;
+    }
+    
+    /* Permission tables */
+    .permission-card .table {
+        margin-bottom: 0;
+    }
+    
+    .permission-card .table th,
+    .permission-card .table td {
+        padding: 0.5rem 0.75rem;
+        vertical-align: middle;
+    }
+    
+    /* Test result containers */
+    #integration-tests .card {
+        transition: all 0.3s ease;
+    }
+    
+    #integration-tests .test-result {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.5s ease;
+    }
+    
+    #integration-tests .test-result.active {
+        max-height: 500px;
+    }
+</style>
+</script>
+{% endraw %}
+{% endblock %}
+{% endblock %}

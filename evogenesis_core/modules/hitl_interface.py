@@ -524,45 +524,128 @@ class HiTLInterface:
     def start_websocket_server(self, host="0.0.0.0", port=8765):
         """Start the websocket server for real-time updates."""
         async def _run_server():
-            self.ws_server = await websockets.serve(self._ws_handler, host, port)
+            server = await websockets.serve(self._ws_handler, host, port)
+            self.ws_server = server
             logging.info(f"HiTL websocket server started on {host}:{port}")
-            await self.ws_server.wait_closed()
-        
+            return server
+         
         # Run in a separate thread
         def run_loop():
             self.ws_loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self.ws_loop)
-            self.ws_loop.run_until_complete(_run_server())
-            self.ws_loop.run_forever()
-        
+            server = self.ws_loop.run_until_complete(_run_server())
+            try:
+                self.ws_loop.run_forever()
+            finally:
+                # Clean up server and loop on stop
+                server.close()
+                self.ws_loop.run_until_complete(server.wait_closed())
+                self.ws_loop.close()
+         
         self.ws_thread = threading.Thread(target=run_loop, daemon=True)
         self.ws_thread.start()
-    
     def start_cli(self):
         """Start a CLI interface for the HiTL Interface."""
-        # This would implement a command-line interface using a library like `rich`
-        # For now, just a placeholder
+        try:
+            from rich.console import Console
+            from rich.table import Table
+            from rich.prompt import Prompt
+            from rich.text import Text
+        except ImportError:
+            raise RuntimeError("Please install 'rich' to use the HiTL CLI interface")
+
+        console = Console()
         self.cli_active = True
-        
-        def run_cli():
-            try:
-                # In a real implementation, this would use rich or similar
-                # to provide an interactive CLI
-                while self.cli_active:
-                    while not self.request_queue.empty():
-                        _ = self.request_queue.get()
-                        # Display request and get response
-                        # ...
-                        # ...
-                    time.sleep(1)
-            except KeyboardInterrupt:
+
+        def show_help():
+            console.print(Text("\nAvailable commands:", style="bold underline"))
+            console.print("  help                     Show this help message")
+            console.print("  list                     List pending permission requests")
+            console.print("  approve <id> [notes]     Approve a request, optional notes")
+            console.print("  deny <id> [notes]        Deny a request, optional notes")
+            console.print("  exit                     Exit the CLI\n")
+
+        def list_requests():
+            table = Table(title="Pending Permission Requests")
+            table.add_column("Request ID", style="cyan", no_wrap=True)
+            table.add_column("Agent ID", style="magenta")
+            table.add_column("Action", style="green")
+            table.add_column("Risk", style="red")
+            table.add_column("Category", style="yellow")
+            now = time.time()
+
+            for req in self.permission_requests.values():
+                # auto-expire if needed
+                req.check_timeout()
+                if req.status == PermissionStatus.PENDING:
+                    age = int(now - req.created_at)
+                    table.add_row(
+                        req.request_id,
+                        req.agent_id,
+                        f"{req.action_description} ({age}s ago)",
+                        req.risk_level,
+                        req.category
+                    )
+            if table.row_count:
+                console.print(table)
+            else:
+                console.print("No pending permission requests.", style="dim")
+
+        def handle_command(cmd: str):
+            parts = cmd.strip().split()
+            if not parts:
+                return
+            cmd_name = parts[0].lower()
+
+            if cmd_name in ("help", "h"):
+                show_help()
+
+            elif cmd_name == "list":
+                list_requests()
+
+            elif cmd_name in ("approve", "deny"):
+                if len(parts) < 2:
+                    console.print(f"[red]Usage:[/] {cmd_name} <request_id> [notes]", style="bold")
+                    return
+                req_id = parts[1]
+                notes = " ".join(parts[2:]) if len(parts) > 2 else None
+                user = "CLI_USER"
+
+                if cmd_name == "approve":
+                    success = self.approve_permission(req_id, user, notes)
+                    action = "approved"
+                else:
+                    success = self.deny_permission(req_id, user, notes)
+                    action = "denied"
+
+                if success:
+                    console.print(f"Request {req_id} [green]{action}[/].")
+                else:
+                    console.print(f"[red]Failed to {cmd_name} request {req_id}[/].")
+
+            elif cmd_name in ("exit", "quit"):
+                console.print("Stopping CLI...")
                 self.cli_active = False
-            finally:
-                logging.info("HiTL CLI interface stopped")
-        
+
+            else:
+                console.print(f"[red]Unknown command:[/] {cmd_name}. Type 'help' for commands.")
+
+        def run_cli():
+            console.print(Text("HiTL CLI Interface started. Type 'help' for commands.\n", style="bold green"))
+            while self.cli_active:
+                try:
+                    cmd = Prompt.ask(">")  # prompt user
+                    handle_command(cmd)
+                except KeyboardInterrupt:
+                    console.print("\nInterrupted, exiting CLI.", style="bold red")
+                    self.cli_active = False
+                except Exception as e:
+                    console.print(f"[red]Error:[/] {e}")
+
+            console.print(Text("HiTL CLI interface stopped\n", style="bold yellow"))
+
         self.cli_thread = threading.Thread(target=run_cli, daemon=True)
         self.cli_thread.start()
-        logging.info("HiTL CLI interface started")
     
     def start(self):
         """Start the HiTL Interface."""
@@ -583,7 +666,7 @@ class HiTLInterface:
                     logging.warning(f"Permission request {request_id} from agent {request.agent_id} expired")
                     # Notify the agent
                     if hasattr(self.kernel, "agent_manager"):
-                        agent = self.kernel.agent_manager.get_agent(request.agent_id)
+                        agent = self.kernel.agent_factory.get_agent(request.agent_id)
                         if agent:
                             # Notify agent that request expired
                             pass
@@ -599,9 +682,16 @@ class HiTLInterface:
         
         # Stop websocket server
         if self.ws_server:
+            # Close server and stop event loop thread
             self.ws_loop.call_soon_threadsafe(self.ws_server.close)
             self.ws_loop.call_soon_threadsafe(self.ws_loop.stop)
-
+        # Wait for websocket thread to finish cleanly
+        try:
+            if hasattr(self, 'ws_thread') and self.ws_thread.is_alive():
+                self.ws_thread.join(timeout=1)
+        except Exception as e:
+            logging.warning(f"Error joining websocket thread: {e}")
+    
     def request_permission(self, agent_id: str, action_description: str, 
                            details: Dict[str, Any], rationale: Optional[str] = None,
                            risk_level: str = "low", category: str = "general",
@@ -816,11 +906,67 @@ class HiTLInterface:
                     "type": agent.type if hasattr(agent, "type") else "unknown",
                     "name": agent.name if hasattr(agent, "name") else "unknown"
                 }
-        
         # Get resource usage
         resource_usage = {}
-        # In a real implementation, this would collect CPU, memory, etc.
-        
+        try:
+            import psutil
+            import os
+
+            # Get current process
+            process = psutil.Process(os.getpid())
+
+            # CPU usage
+            resource_usage["cpu_percent"] = process.cpu_percent(interval=0.1)
+
+            # Memory usage
+            memory_info = process.memory_info()
+            resource_usage["memory_usage_mb"] = memory_info.rss / (1024 * 1024)  # Convert to MB
+            resource_usage["memory_percent"] = process.memory_percent()
+
+            # Disk I/O
+            io_counters = process.io_counters() if hasattr(process, 'io_counters') else None
+            if io_counters:
+                resource_usage["disk_read_mb"] = io_counters.read_bytes / (1024 * 1024)
+                resource_usage["disk_write_mb"] = io_counters.write_bytes / (1024 * 1024)
+
+            # System-wide stats
+            resource_usage["system_cpu_percent"] = psutil.cpu_percent(interval=0.1)
+            resource_usage["system_memory_percent"] = psutil.virtual_memory().percent
+            resource_usage["system_disk_percent"] = psutil.disk_usage('/').percent
+
+            # Thread count
+            resource_usage["thread_count"] = process.num_threads()
+
+            # Open file count
+            try:
+                resource_usage["open_files"] = len(process.open_files())
+            except (psutil.AccessDenied, psutil.Error):
+                resource_usage["open_files"] = -1
+
+            # Network connections
+            try:
+                resource_usage["network_connections"] = len(process.connections())
+            except (psutil.AccessDenied, psutil.Error):
+                resource_usage["network_connections"] = -1
+        except ImportError:
+            # If psutil isn't available, use a more basic approach
+            resource_usage["note"] = "psutil not installed, using limited resource monitoring"
+
+            # Attempt to get memory usage using os.getrusage
+            try:
+                import resource
+                rusage = resource.getrusage(resource.RUSAGE_SELF)
+                resource_usage["max_rss_kb"] = rusage.ru_maxrss
+                resource_usage["user_cpu_time"] = rusage.ru_utime
+                resource_usage["system_cpu_time"] = rusage.ru_stime
+            except ImportError:
+                # If resource module isn't available either
+                resource_usage["monitoring_limited"] = True
+        except (psutil.AccessDenied, psutil.Error):
+            pass  # Handle access denied or other psutil errors gracefully for the outer try block
+        except Exception as e:
+            resource_usage["error"] = f"Failed to collect resource usage: {str(e)}"
+
         # Check subsystems
         subsystems = {}
         for module_name in ["llm_orchestrator", "tooling_system", "memory_manager", "evolution_engine"]:
@@ -830,275 +976,12 @@ class HiTLInterface:
                     subsystems[module_name] = module.get_status()
                 else:
                     subsystems[module_name] = {"status": "unknown"}
-        
+
         return {
             "agents": agents_status,
             "resource_usage": resource_usage,
             "subsystems": subsystems,
-            "pending_permissions": len([r for r in self.permission_requests.values() 
-                                    if r.status == PermissionStatus.PENDING]),
+            "pending_permissions": len([r for r in self.permission_requests.values()
+                if r.status == PermissionStatus.PENDING]),
             "timestamp": time.time()
         }
-    
-    def get_agent_details(self, agent_id: str) -> Dict[str, Any]:
-        """
-        Get detailed information about an agent.
-        
-        Args:
-            agent_id: ID of the agent
-            
-        Returns:
-            Dictionary with agent details
-        """
-        # Check if we have a view for this agent
-        if agent_id in self.agent_views:
-            view = self.agent_views[agent_id]
-            return view.as_dict()
-        
-        # Try to get from agent manager
-        if hasattr(self.kernel, "agent_manager"):
-            agent = self.kernel.agent_manager.get_agent(agent_id)
-            if agent:
-                # Create a new view
-                view = AgentView(agent_id)
-                
-                # Extract information from agent
-                view.status = agent.status if hasattr(agent, "status") else AgentStatus.UNKNOWN
-                view.current_action = agent.current_action if hasattr(agent, "current_action") else None
-                view.plan = agent.plan if hasattr(agent, "plan") else []
-                view.reasoning_log = agent.reasoning_log if hasattr(agent, "reasoning_log") else []
-                view.cost_accumulator = agent.cost_accumulator if hasattr(agent, "cost_accumulator") else 0.0
-                
-                # Add to agent views
-                self.agent_views[agent_id] = view
-                
-                return view.as_dict()
-        
-        return {"error": f"Agent {agent_id} not found"}
-    
-    def update_agent_view(self, agent_id: str, update_data: Dict[str, Any]):
-        """
-        Update an agent view with new data.
-        
-        Args:
-            agent_id: ID of the agent
-            update_data: Data to update the view with
-        """
-        if agent_id not in self.agent_views:
-            self.agent_views[agent_id] = AgentView(agent_id)
-        
-        self.agent_views[agent_id].update(update_data)
-        
-        # Broadcast to websocket clients
-        if self.ws_loop:
-            asyncio.run_coroutine_threadsafe(
-                self._broadcast_update("agent_view_update", {
-                    "agent_id": agent_id,
-                    "view": self.agent_views[agent_id].as_dict()
-                }),
-                self.ws_loop
-            )
-    
-    def pause_agent(self, agent_id: str) -> bool:
-        """
-        Pause an agent.
-        
-        Args:
-            agent_id: ID of the agent to pause
-            
-        Returns:
-            True if successful, False otherwise
-        """
-        if hasattr(self.kernel, "agent_manager"):
-            return self.kernel.agent_manager.pause_agent(agent_id)
-        return False
-    
-    def resume_agent(self, agent_id: str) -> bool:
-        """
-        Resume a paused agent.
-        
-        Args:
-            agent_id: ID of the agent to resume
-            
-        Returns:
-            True if successful, False otherwise
-        """
-        if hasattr(self.kernel, "agent_manager"):
-            return self.kernel.agent_manager.resume_agent(agent_id)
-        return False
-    
-    def stop_agent(self, agent_id: str) -> bool:
-        """
-        Stop an agent.
-        
-        Args:
-            agent_id: ID of the agent to stop
-            
-        Returns:
-            True if successful, False otherwise
-        """
-        if hasattr(self.kernel, "agent_manager"):
-            return self.kernel.agent_manager.stop_agent(agent_id)
-        return False
-    
-    def pause_all_agents(self) -> bool:
-        """
-        Pause all agents.
-        
-        Returns:
-            True if successful, False otherwise
-        """
-        if hasattr(self.kernel, "agent_manager"):
-            return self.kernel.agent_manager.pause_all_agents()
-        return False
-    
-    def resume_all_agents(self) -> bool:
-        """
-        Resume all paused agents.
-        
-        Returns:
-            True if successful, False otherwise
-        """
-        if hasattr(self.kernel, "agent_manager"):
-            return self.kernel.agent_manager.resume_all_agents()
-        return False
-    
-    def stop_all_agents(self) -> bool:
-        """
-        Stop all agents.
-        
-        Returns:
-            True if successful, False otherwise
-        """
-        if hasattr(self.kernel, "agent_manager"):
-            return self.kernel.agent_manager.stop_all_agents()
-        return False
-    
-    def stream_agent_view(self, agent_id: str) -> Dict[str, Any]:
-        """
-        Get a streaming view of an agent.
-        
-        Args:
-            agent_id: ID of the agent
-            
-        Returns:
-            Dictionary with streaming view information
-        """
-        # In a real implementation, this would set up a streaming connection
-        # For now, just return basic info
-        
-        if agent_id in self.agent_views:
-            view = self.agent_views[agent_id]
-            if view.external_view_url:
-                return {
-                    "agent_id": agent_id,
-                    "stream_url": view.external_view_url,
-                    "stream_type": "external"
-                }
-            else:
-                return {
-                    "agent_id": agent_id,
-                    "stream_type": "log",
-                    "connect_via": f"ws://localhost:8765/stream/{agent_id}"
-                }
-        
-        return {"error": f"Agent {agent_id} not found or not streaming"}
-    def _send_urgent_notification(self, request: PermissionRequest) -> None:
-        """
-        Send urgent notifications for high-priority permission requests.
-        
-        Args:
-            request: The permission request requiring urgent attention
-        """
-        # request is used in this function
-        # Check if urgent notifications are configured
-        if not self.config.get("urgent_notifications", {}).get("enabled", False):
-            return
-            return
-            
-        notification_methods = self.config.get("urgent_notifications", {}).get("methods", [])
-        
-        for method in notification_methods:
-            if method["type"] == "email" and method.get("enabled", False):
-                self._send_email_notification(
-                    email=method["address"],
-                    subject=f"URGENT: EvoGenesis Permission Request #{request.request_id[:8]}",
-                    body=self._format_notification_body(request)
-                )
-            
-            elif method["type"] == "slack" and method.get("enabled", False):
-                self._send_slack_notification(
-                    webhook_url=method["webhook_url"],
-                    text=self._format_notification_body(request),
-                    channel=method.get("channel")
-                )
-                
-            elif method["type"] == "teams" and method.get("enabled", False):
-                self._send_teams_notification(
-                    webhook_url=method["webhook_url"],
-                    title=f"URGENT: EvoGenesis Permission Request #{request.request_id[:8]}",
-                    text=self._format_notification_body(request)
-                )
-                
-            elif method["type"] == "sms" and method.get("enabled", False):
-                self._send_sms_notification(
-                    phone_number=method["phone_number"],
-                    text=f"URGENT: EvoGenesis permission needed. {request.action_description}"
-                )
-                
-        logging.info(f"Sent urgent notification for permission request {request.request_id}")
-    
-    def _format_notification_body(self, request: PermissionRequest) -> str:
-        """Format a permission request for notification messages."""
-        return f"""
-URGENT: Permission Required from Agent {request.agent_id}
-Action: {request.action_description}
-Risk Level: {request.risk_level.upper()}
-Category: {request.category}
-Rationale: {request.rationale}
-
-Please log in to the EvoGenesis control panel to respond.
-Request ID: {request.request_id}
-"""
-
-    def notify_team_created(self, team_id: str, team_name: str, goal: str) -> None:
-        """
-        Called when a new team is created.
-        
-        Args:
-            team_id: ID of the created team
-            team_name: Name of the created team
-            goal: Goal of the created team
-        """
-        logging.info(f"Team created: {team_id} ({team_name}) with goal: {goal}")
-        
-        # Broadcast to websocket clients if available
-        if self.ws_loop:
-            asyncio.run_coroutine_threadsafe(
-                self._broadcast_update("team_created", {
-                    "team_id": team_id,
-                    "name": team_name,
-                    "goal": goal
-                }),
-                self.ws_loop
-            )
-    
-    def notify_agent_terminated(self, agent_id: str, agent_name: str) -> None:
-        """
-        Called when an agent is terminated.
-        
-        Args:
-            agent_id: ID of the terminated agent
-            agent_name: Name of the terminated agent
-        """
-        logging.info(f"Agent terminated: {agent_id} ({agent_name})")
-        
-        # Broadcast to websocket clients if available
-        if self.ws_loop:
-            asyncio.run_coroutine_threadsafe(
-                self._broadcast_update("agent_terminated", {
-                    "agent_id": agent_id,
-                    "name": agent_name
-                }),
-                self.ws_loop
-            )

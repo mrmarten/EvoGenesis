@@ -1,0 +1,1328 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="wizard-page">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-title">Agent Team Wizard</h1>
+        <a href="/" class="btn btn-outline-secondary">
+            <i class='bx bx-x'></i> Cancel
+        </a>
+    </div>
+    
+    <!-- Progress indicator -->
+    <div class="wizard-progress mb-4">
+        <div class="progress">
+            <div class="progress-bar" role="progressbar" style="width: 25%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">Step 1 of 4</div>
+        </div>
+        <div class="wizard-steps mt-2">
+            <div class="wizard-step active">
+                <div class="step-number">1</div>
+                <div class="step-label">Team Goal</div>
+            </div>
+            <div class="wizard-step">
+                <div class="step-number">2</div>
+                <div class="step-label">Team Composition</div>
+            </div>
+            <div class="wizard-step">
+                <div class="step-number">3</div>
+                <div class="step-label">Roles & Hierarchy</div>
+            </div>
+            <div class="wizard-step">
+                <div class="step-number">4</div>
+                <div class="step-label">Review & Create</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Step 1: Team Goal -->
+    <div id="step-1" class="wizard-step-content active">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Define Team Goal</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-4">Define the primary goal for your agent team. Be as specific as possible about what you want this team to accomplish.</p>
+                
+                <div class="mb-4">
+                    <div class="mb-3">
+                        <label for="team-name" class="form-label">Team Name</label>
+                        <input type="text" class="form-control" id="team-name" placeholder="Enter a name for your team">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="team-goal" class="form-label">Primary Goal</label>
+                        <textarea class="form-control" id="team-goal" rows="4" placeholder="Describe what you want this team to accomplish..."></textarea>
+                        <div class="form-text">EvoGenesis will automatically determine the best team composition based on this goal.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="team-scope" class="form-label">Scope</label>
+                        <select class="form-select" id="team-scope">
+                            <option value="specific">Specific Task (Short-term)</option>
+                            <option value="ongoing">Ongoing Responsibility (Long-term)</option>
+                            <option value="project" selected>Project (Medium-term)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <h6>Team Templates</h6>
+                    <p class="text-muted small">You can also start with a pre-defined team template.</p>
+                    
+                    <div class="team-templates">
+                        <div class="team-template-card" data-template="research">
+                            <div class="template-icon">
+                                <i class='bx bx-search-alt'></i>
+                            </div>
+                            <h5>Research Team</h5>
+                            <p>A team specialized in information gathering, analysis, and synthesis.</p>
+                        </div>
+                        
+                        <div class="team-template-card" data-template="creative">
+                            <div class="template-icon">
+                                <i class='bx bx-palette'></i>
+                            </div>
+                            <h5>Creative Team</h5>
+                            <p>A team focused on content creation, design, and creative problem-solving.</p>
+                        </div>
+                        
+                        <div class="team-template-card" data-template="development">
+                            <div class="template-icon">
+                                <i class='bx bx-code-block'></i>
+                            </div>
+                            <h5>Development Team</h5>
+                            <p>A team built for software development, testing, and deployment.</p>
+                        </div>
+                        
+                        <div class="team-template-card" data-template="strategy">
+                            <div class="template-icon">
+                                <i class='bx bx-target-lock'></i>
+                            </div>
+                            <h5>Strategy Team</h5>
+                            <p>A team designed for planning, strategy formulation, and decision support.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="auto-analyze" checked>
+                    <label class="form-check-label" for="auto-analyze">Use AI to analyze goal and suggest optimal team composition</label>
+                </div>
+            </div>
+            <div class="card-footer d-flex justify-content-between">
+                <a href="/" class="btn btn-outline-secondary">Cancel</a>
+                <button id="analyze-btn" class="btn btn-primary">Analyze & Continue <i class='bx bx-right-arrow-alt'></i></button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Step 2: Team Composition -->
+    <div id="step-2" class="wizard-step-content">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Team Composition</h5>
+            </div>
+            <div class="card-body">
+                <div id="analysis-results" class="mb-4">
+                    <div class="alert alert-info">
+                        <h6 class="alert-heading"><i class='bx bx-bulb'></i> Goal Analysis</h6>
+                        <p id="goal-analysis-result">Based on your goal, we recommend a team of specialized agents with the following capabilities...</p>
+                    </div>
+                </div>
+                
+                <h6>Recommended Team Composition</h6>
+                <div class="table-responsive mb-4">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th style="width: 30px;"></th>
+                                <th>Agent Type</th>
+                                <th>Description</th>
+                                <th>Capabilities</th>
+                                <th>Include</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recommended-agents">
+                            <!-- Will be populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="mb-4">
+                    <h6>Team Size</h6>
+                    <div class="d-flex align-items-center">
+                        <span id="team-size-display" class="me-3">3 Agents</span>
+                        <div class="flex-grow-1">
+                            <input type="range" class="form-range" id="team-size-slider" min="1" max="7" value="3">
+                        </div>
+                    </div>
+                    <div class="form-text">Adjust team size based on complexity and resources. Larger teams have more specialized capabilities but require more coordination.</div>
+                </div>
+                
+                <div class="mb-4">
+                    <h6>Existing Agents</h6>
+                    <p class="text-muted small">Select existing agents to include in this team.</p>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Agent Name</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Add to Team</th>
+                                </tr>
+                            </thead>
+                            <tbody id="existing-agents">
+                                <!-- Will be populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-end mb-3">
+                    <button id="add-custom-agent-btn" class="btn btn-outline-primary">
+                        <i class='bx bx-plus'></i> Add Custom Agent
+                    </button>
+                </div>
+                
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="enable-dynamic-scaling" checked>
+                    <label class="form-check-label" for="enable-dynamic-scaling">Enable dynamic team scaling based on workload</label>
+                </div>
+            </div>
+            <div class="card-footer d-flex justify-content-between">
+                <button id="prev-step-2" class="btn btn-outline-secondary"><i class='bx bx-left-arrow-alt'></i> Previous</button>
+                <button id="next-step-2" class="btn btn-primary">Next <i class='bx bx-right-arrow-alt'></i></button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Step 3: Roles & Hierarchy -->
+    <div id="step-3" class="wizard-step-content">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Team Roles & Hierarchy</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-4">Define the team structure and communication patterns.</p>
+                
+                <div class="mb-4">
+                    <h6>Team Structure</h6>
+                    <div class="d-flex mb-3">
+                        <div class="form-check me-4">
+                            <input class="form-check-input" type="radio" name="team-structure" id="structure-hierarchical" value="hierarchical" checked>
+                            <label class="form-check-label" for="structure-hierarchical">Hierarchical</label>
+                        </div>
+                        <div class="form-check me-4">
+                            <input class="form-check-input" type="radio" name="team-structure" id="structure-flat" value="flat">
+                            <label class="form-check-label" for="structure-flat">Flat</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="team-structure" id="structure-specialist" value="specialist">
+                            <label class="form-check-label" for="structure-specialist">Specialist Network</label>
+                        </div>
+                    </div>
+                    <div class="form-text mb-3">
+                        <strong>Hierarchical:</strong> Team has clear manager and subordinates with defined reporting structure.<br>
+                        <strong>Flat:</strong> All agents are peers with equal standing and collaborative decision-making.<br>
+                        <strong>Specialist Network:</strong> Agents work independently but collaborate based on specialization.
+                    </div>
+                </div>
+                
+                <div id="hierarchical-settings" class="mb-4">
+                    <h6>Team Leadership</h6>
+                    <p class="text-muted small">Select a team lead who will coordinate the team's activities.</p>
+                    
+                    <div class="table-responsive mb-3">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Agent</th>
+                                    <th>Type</th>
+                                    <th>Capabilities</th>
+                                    <th>Role</th>
+                                </tr>
+                            </thead>
+                            <tbody id="team-roles">
+                                <!-- Will be populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div id="team-hierarchy-view" class="mb-3">
+                        <div class="hierarchy-diagram">
+                            <!-- Visualization of team hierarchy will be shown here -->
+                            <div class="hierarchy-node manager">
+                                <div class="node-content">Team Lead</div>
+                                <div class="hierarchy-children">
+                                    <div class="hierarchy-node subordinate">
+                                        <div class="node-content">Agent 1</div>
+                                    </div>
+                                    <div class="hierarchy-node subordinate">
+                                        <div class="node-content">Agent 2</div>
+                                    </div>
+                                    <div class="hierarchy-node subordinate">
+                                        <div class="node-content">Agent 3</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <h6>Communication Protocols</h6>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="protocol-direct" checked>
+                            <label class="form-check-label" for="protocol-direct">Direct Communication</label>
+                            <div class="form-text">Agents can communicate directly with each other</div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="protocol-broadcast" checked>
+                            <label class="form-check-label" for="protocol-broadcast">Broadcast Messages</label>
+                            <div class="form-text">Agents can send messages to the entire team</div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="protocol-mcp" checked>
+                            <label class="form-check-label" for="protocol-mcp">Model Context Protocol</label>
+                            <div class="form-text">Use structured message format for improved reasoning and context sharing</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>Decision Making</h6>
+                    <select class="form-select" id="decision-making">
+                        <option value="lead">Team Lead Makes Decisions</option>
+                        <option value="consensus" selected>Consensus-Based Decisions</option>
+                        <option value="vote">Majority Vote</option>
+                        <option value="specialist">Specialist in Relevant Area Decides</option>
+                    </select>
+                </div>
+            </div>
+            <div class="card-footer d-flex justify-content-between">
+                <button id="prev-step-3" class="btn btn-outline-secondary"><i class='bx bx-left-arrow-alt'></i> Previous</button>
+                <button id="next-step-3" class="btn btn-primary">Next <i class='bx bx-right-arrow-alt'></i></button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Step 4: Review & Create -->
+    <div id="step-4" class="wizard-step-content">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title">Review & Create Team</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-4">Review your team configuration before creating it.</p>
+                
+                <div class="review-section mb-4">
+                    <h6>Team Information</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr>
+                                    <th style="width: 30%;">Team Name</th>
+                                    <td id="review-team-name">-</td>
+                                </tr>
+                                <tr>
+                                    <th>Primary Goal</th>
+                                    <td id="review-team-goal">-</td>
+                                </tr>
+                                <tr>
+                                    <th>Team Size</th>
+                                    <td id="review-team-size">-</td>
+                                </tr>
+                                <tr>
+                                    <th>Team Structure</th>
+                                    <td id="review-team-structure">-</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="review-section mb-4">
+                    <h6>Team Members</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Agent Name</th>
+                                    <th>Type</th>
+                                    <th>Role</th>
+                                </tr>
+                            </thead>
+                            <tbody id="review-team-members">
+                                <!-- Will be populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="review-section mb-4">
+                    <h6>Communication & Decision Making</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr>
+                                    <th style="width: 30%;">Communication Protocols</th>
+                                    <td id="review-protocols">-</td>
+                                </tr>
+                                <tr>
+                                    <th>Decision Making</th>
+                                    <td id="review-decision-making">-</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>Initial Tasks</h6>
+                    <p class="text-muted small">EvoGenesis will automatically generate initial tasks for the team based on the goal.</p>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="generate-tasks" checked>
+                        <label class="form-check-label" for="generate-tasks">
+                            Generate initial tasks automatically
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-check mb-4">
+                    <input class="form-check-input" type="checkbox" id="auto-start-team" checked>
+                    <label class="form-check-label" for="auto-start-team">
+                        Activate team immediately after creation
+                    </label>
+                </div>
+            </div>
+            <div class="card-footer d-flex justify-content-between">
+                <button id="prev-step-4" class="btn btn-outline-secondary"><i class='bx bx-left-arrow-alt'></i> Previous</button>
+                <button id="create-team-btn" class="btn btn-success">
+                    <i class='bx bx-check'></i> Create Team
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Custom Agent Modal -->
+<div class="modal fade" id="addCustomAgentModal" tabindex="-1" aria-labelledby="addCustomAgentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addCustomAgentModalLabel">Add Custom Agent</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="add-custom-agent-form">
+                    <div class="mb-3">
+                        <label for="custom-agent-name" class="form-label">Agent Name</label>
+                        <input type="text" class="form-control" id="custom-agent-name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="custom-agent-type" class="form-label">Agent Type</label>
+                        <select class="form-select" id="custom-agent-type" required>
+                            <option value="">Select a type</option>
+                            <option value="assistant">Assistant</option>
+                            <option value="researcher">Researcher</option>
+                            <option value="developer">Developer</option>
+                            <option value="coordinator">Coordinator</option>
+                            <option value="planner">Planner</option>
+                            <option value="critic">Critic</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="custom-agent-description" class="form-label">Description</label>
+                        <textarea class="form-control" id="custom-agent-description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="custom-agent-capabilities" class="form-label">Capabilities (comma-separated)</label>
+                        <input type="text" class="form-control" id="custom-agent-capabilities">
+                    </div>
+                    <div class="mb-3">
+                        <label for="custom-agent-role" class="form-label">Role in Team</label>
+                        <input type="text" class="form-control" id="custom-agent-role" placeholder="e.g., Lead, Assistant, Specialist">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="add-custom-agent-submit">Add Agent</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Team configuration data
+    let teamConfig = {
+        teamName: "",
+        teamGoal: "",
+        teamScope: "project",
+        teamTemplate: "",
+        teamSize: 3,
+        teamStructure: "hierarchical",
+        agents: [],
+        existingAgents: [],
+        dynamicScaling: true,
+        communicationProtocols: {
+            direct: true,
+            broadcast: true,
+            mcp: true
+        },
+        decisionMaking: "consensus",
+        autoGenerateTasks: true,
+        autoStart: true
+    };
+    
+    // Agent type recommendations based on team templates
+    const teamTemplates = {
+        research: {
+            goal: "Conduct comprehensive research and analysis on specific topics or domains.",
+            agents: [
+                { name: "Research Coordinator", type: "coordinator", capabilities: ["coordination", "planning", "communication"], role: "Lead" },
+                { name: "Information Analyst", type: "researcher", capabilities: ["web_research", "data_analysis", "summarization"], role: "Researcher" },
+                { name: "Knowledge Manager", type: "assistant", capabilities: ["knowledge_organization", "report_generation", "visualization"], role: "Assistant" }
+            ]
+        },
+        creative: {
+            goal: "Generate creative content, designs, and ideas for specific projects or campaigns.",
+            agents: [
+                { name: "Creative Director", type: "coordinator", capabilities: ["coordination", "ideation", "feedback"], role: "Lead" },
+                { name: "Content Creator", type: "assistant", capabilities: ["content_generation", "editing", "formatting"], role: "Creator" },
+                { name: "Design Specialist", type: "assistant", capabilities: ["visual_design", "layout", "styling"], role: "Designer" }
+            ]
+        },
+        development: {
+            goal: "Design, develop, and deploy software solutions or technical systems.",
+            agents: [
+                { name: "Development Lead", type: "coordinator", capabilities: ["coordination", "planning", "code_review"], role: "Lead" },
+                { name: "Code Generator", type: "developer", capabilities: ["code_generation", "testing", "debugging"], role: "Developer" },
+                { name: "QA Specialist", type: "critic", capabilities: ["testing", "quality_assurance", "feedback"], role: "QA" }
+            ]
+        },
+        strategy: {
+            goal: "Develop strategic plans, analyze opportunities, and provide decision support.",
+            agents: [
+                { name: "Strategy Lead", type: "planner", capabilities: ["strategic_planning", "analysis", "decision_support"], role: "Lead" },
+                { name: "Data Analyst", type: "researcher", capabilities: ["data_analysis", "market_research", "trend_analysis"], role: "Analyst" },
+                { name: "Implementation Advisor", type: "assistant", capabilities: ["plan_development", "resource_allocation", "timeline_management"], role: "Advisor" }
+            ]
+        }
+    };
+    
+    // Sample existing agents (would come from API in a real implementation)
+    const existingAgentsData = [
+        { id: "a1", name: "Research Assistant", type: "researcher", status: "active" },
+        { id: "a2", name: "Development Lead", type: "developer", status: "active" },
+        { id: "a3", name: "System Coordinator", type: "coordinator", status: "active" },
+        { id: "a4", name: "Content Writer", type: "assistant", status: "idle" }
+    ];
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize the wizard
+        initializeWizard();
+        loadExistingAgents();
+        
+        // Set up event listeners for team template selection
+        const teamTemplateCards = document.querySelectorAll('.team-template-card');
+        teamTemplateCards.forEach(card => {
+            card.addEventListener('click', function() {
+                // Deselect all cards
+                teamTemplateCards.forEach(c => c.classList.remove('selected'));
+                
+                // Select this card
+                this.classList.add('selected');
+                
+                // Update team template and pre-fill fields
+                const template = this.getAttribute('data-template');
+                teamConfig.teamTemplate = template;
+                
+                const templateData = teamTemplates[template];
+                if (templateData) {
+                    document.getElementById('team-goal').value = templateData.goal;
+                    
+                    // Update team name if not set by user
+                    if (!document.getElementById('team-name').value) {
+                        document.getElementById('team-name').value = template.charAt(0).toUpperCase() + template.slice(1) + " Team";
+                    }
+                }
+            });
+        });
+        
+        // Team size slider
+        document.getElementById('team-size-slider').addEventListener('input', function() {
+            const size = parseInt(this.value);
+            teamConfig.teamSize = size;
+            document.getElementById('team-size-display').textContent = `${size} Agent${size > 1 ? 's' : ''}`;
+        });
+        
+        // Team structure radio buttons
+        document.querySelectorAll('input[name="team-structure"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                teamConfig.teamStructure = this.value;
+                
+                // Show/hide hierarchical settings
+                if (this.value === 'hierarchical') {
+                    document.getElementById('hierarchical-settings').style.display = 'block';
+                } else {
+                    document.getElementById('hierarchical-settings').style.display = 'none';
+                }
+                
+                // Update team structure visualization
+                updateTeamStructureVisualization();
+            });
+        });
+        
+        // Communication protocol checkboxes
+        document.getElementById('protocol-direct').addEventListener('change', function() {
+            teamConfig.communicationProtocols.direct = this.checked;
+        });
+        
+        document.getElementById('protocol-broadcast').addEventListener('change', function() {
+            teamConfig.communicationProtocols.broadcast = this.checked;
+        });
+        
+        document.getElementById('protocol-mcp').addEventListener('change', function() {
+            teamConfig.communicationProtocols.mcp = this.checked;
+        });
+        
+        // Decision making select
+        document.getElementById('decision-making').addEventListener('change', function() {
+            teamConfig.decisionMaking = this.value;
+        });
+        
+        // Dynamic scaling checkbox
+        document.getElementById('enable-dynamic-scaling').addEventListener('change', function() {
+            teamConfig.dynamicScaling = this.checked;
+        });
+        
+        // Generate tasks checkbox
+        document.getElementById('generate-tasks').addEventListener('change', function() {
+            teamConfig.autoGenerateTasks = this.checked;
+        });
+        
+        // Auto start checkbox
+        document.getElementById('auto-start-team').addEventListener('change', function() {
+            teamConfig.autoStart = this.checked;
+        });
+        
+        // Add custom agent button
+        document.getElementById('add-custom-agent-btn').addEventListener('click', function() {
+            const modal = new bootstrap.Modal(document.getElementById('addCustomAgentModal'));
+            modal.show();
+        });
+        
+        // Add custom agent submit
+        document.getElementById('add-custom-agent-submit').addEventListener('click', function() {
+            const name = document.getElementById('custom-agent-name').value;
+            const type = document.getElementById('custom-agent-type').value;
+            const description = document.getElementById('custom-agent-description').value;
+            const capabilities = document.getElementById('custom-agent-capabilities').value
+                              .split(',')
+                              .map(cap => cap.trim())
+                              .filter(cap => cap);
+            const role = document.getElementById('custom-agent-role').value || "Specialist";
+            
+            if (!name || !type) {
+                showNotification('Agent name and type are required', 'warning');
+                return;
+            }
+            
+            // Add to team agents
+            const newAgent = {
+                name: name,
+                type: type,
+                description: description,
+                capabilities: capabilities,
+                role: role,
+                custom: true
+            };
+            
+            teamConfig.agents.push(newAgent);
+            
+            // Add to UI
+            addAgentToRecommendations(newAgent, true);
+            updateTeamRoles();
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addCustomAgentModal'));
+            modal.hide();
+            
+            // Clear form
+            document.getElementById('add-custom-agent-form').reset();
+            
+            showNotification(`Custom agent "${name}" added to team`, 'success');
+        });
+        
+        // Analyze & Continue button (Step 1)
+        document.getElementById('analyze-btn').addEventListener('click', function() {
+            const teamName = document.getElementById('team-name').value;
+            const teamGoal = document.getElementById('team-goal').value;
+            const teamScope = document.getElementById('team-scope').value;
+            
+            if (!teamName) {
+                showNotification('Please enter a team name', 'warning');
+                return;
+            }
+            
+            if (!teamGoal) {
+                showNotification('Please define a team goal', 'warning');
+                return;
+            }
+            
+            // Save values
+            teamConfig.teamName = teamName;
+            teamConfig.teamGoal = teamGoal;
+            teamConfig.teamScope = teamScope;
+            
+            // If auto-analyze is checked or a template is selected
+            if (document.getElementById('auto-analyze').checked || teamConfig.teamTemplate) {
+                analyzeGoalAndSuggestTeam();
+            }
+            
+            // Move to step 2
+            goToStep(2);
+        });
+        
+        // Previous/Next buttons
+        document.getElementById('prev-step-2').addEventListener('click', function() {
+            goToStep(1);
+        });
+        
+        document.getElementById('next-step-2').addEventListener('click', function() {
+            // Make sure we have at least one agent
+            if (teamConfig.agents.length === 0) {
+                showNotification('Please select at least one agent for your team', 'warning');
+                return;
+            }
+            
+            // Update team roles UI
+            updateTeamRoles();
+            
+            // Move to step 3
+            goToStep(3);
+        });
+        
+        document.getElementById('prev-step-3').addEventListener('click', function() {
+            goToStep(2);
+        });
+        
+        document.getElementById('next-step-3').addEventListener('click', function() {
+            // Update review page
+            updateReviewPage();
+            
+            // Move to step 4
+            goToStep(4);
+        });
+        
+        document.getElementById('prev-step-4').addEventListener('click', function() {
+            goToStep(3);
+        });
+        
+        // Create team button
+        document.getElementById('create-team-btn').addEventListener('click', function() {
+            // Show loading state
+            const button = this;
+            button.disabled = true;
+            button.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> Creating Team...';
+            
+            // Simulate team creation (would be an API call in a real implementation)
+            setTimeout(() => {
+                // Reset button
+                button.disabled = false;
+                button.innerHTML = '<i class="bx bx-check"></i> Create Team';
+                
+                createTeam();
+            }, 2500);
+        });
+    });
+    
+    // Initialize the wizard
+    function initializeWizard() {
+        // Hide all steps except the first one
+        document.querySelectorAll('.wizard-step-content').forEach(step => {
+            step.classList.remove('active');
+        });
+        document.getElementById('step-1').classList.add('active');
+    }
+    
+    // Go to a specific step in the wizard
+    function goToStep(stepNumber) {
+        // Update progress bar
+        const progressBar = document.querySelector('.progress-bar');
+        progressBar.style.width = (stepNumber * 25) + '%';
+        progressBar.setAttribute('aria-valuenow', stepNumber * 25);
+        progressBar.textContent = 'Step ' + stepNumber + ' of 4';
+        
+        // Update step indicators
+        document.querySelectorAll('.wizard-step').forEach((step, index) => {
+            if (index < stepNumber) {
+                step.classList.add('active');
+                step.classList.add('completed');
+            } else if (index === stepNumber - 1) {
+                step.classList.add('active');
+                step.classList.remove('completed');
+            } else {
+                step.classList.remove('active');
+                step.classList.remove('completed');
+            }
+        });
+        
+        // Show the correct step content
+        document.querySelectorAll('.wizard-step-content').forEach(step => {
+            step.classList.remove('active');
+        });
+        document.getElementById('step-' + stepNumber).classList.add('active');
+    }
+    
+    // Analyze the goal and suggest team composition
+    function analyzeGoalAndSuggestTeam() {
+        // Show loading state
+        const analysisResults = document.getElementById('analysis-results');
+        analysisResults.innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Analyzing team goal...</p>
+            </div>
+        `;
+        
+        // Use template data if a template is selected, otherwise simulate AI analysis
+        setTimeout(() => {
+            // Get goal analysis based on template or AI
+            let suggestedAgents = [];
+            let analysisText = "";
+            
+            if (teamConfig.teamTemplate && teamTemplates[teamConfig.teamTemplate]) {
+                // Use template recommendations
+                const template = teamTemplates[teamConfig.teamTemplate];
+                suggestedAgents = template.agents;
+                analysisText = `Based on your selection of a <strong>${teamConfig.teamTemplate} team</strong>, we recommend a team structure with ${suggestedAgents.length} specialized agents. This composition is optimized for ${teamConfig.teamGoal}`;
+            } else {
+                // Simulate AI analysis
+                analysisText = `Based on your goal: <em>"${teamConfig.teamGoal}"</em>, we've identified key requirements that suggest a team of ${teamConfig.teamSize} specialized agents. The team would benefit from capabilities in coordination, research, and implementation.`;
+                
+                // Create generic recommended agents
+                suggestedAgents = [
+                    { name: "Team Coordinator", type: "coordinator", capabilities: ["coordination", "planning", "oversight"], role: "Lead" },
+                    { name: "Domain Specialist", type: "researcher", capabilities: ["domain_knowledge", "analysis", "recommendation"], role: "Specialist" },
+                    { name: "Implementation Agent", type: "assistant", capabilities: ["execution", "reporting", "adaptation"], role: "Assistant" }
+                ];
+            }
+            
+            // Update analysis results
+            analysisResults.innerHTML = `
+                <div class="alert alert-info">
+                    <h6 class="alert-heading"><i class='bx bx-bulb'></i> Goal Analysis</h6>
+                    <p id="goal-analysis-result">${analysisText}</p>
+                </div>
+            `;
+            
+            // Clear recommended agents list
+            const recommendedAgentsList = document.getElementById('recommended-agents');
+            recommendedAgentsList.innerHTML = '';
+            
+            // Clear team config agents and add new recommendations
+            teamConfig.agents = [];
+            
+            // Add recommended agents to UI and config
+            suggestedAgents.forEach(agent => {
+                teamConfig.agents.push(agent);
+                addAgentToRecommendations(agent, true);
+            });
+        }, 2000);
+    }
+    
+    // Add an agent to the recommendations table
+    function addAgentToRecommendations(agent, checked = false) {
+        const recommendedAgentsList = document.getElementById('recommended-agents');
+        
+        const row = document.createElement('tr');
+        row.setAttribute('data-agent-name', agent.name);
+        
+        // Agent icon based on type
+        let icon = 'bx-bot';
+        if (agent.type === 'coordinator') icon = 'bx-network-chart';
+        else if (agent.type === 'researcher') icon = 'bx-search-alt';
+        else if (agent.type === 'developer') icon = 'bx-code-alt';
+        else if (agent.type === 'planner') icon = 'bx-calendar';
+        else if (agent.type === 'critic') icon = 'bx-message-square-detail';
+        
+        row.innerHTML = `
+            <td><i class='bx ${icon}'></i></td>
+            <td>${agent.name} <span class="badge bg-secondary">${agent.type}</span></td>
+            <td>${agent.description || `Specialized ${agent.type} for ${agent.role} role`}</td>
+            <td>${agent.capabilities.map(cap => `<span class="badge bg-light text-dark">${cap}</span>`).join(' ')}</td>
+            <td>
+                <div class="form-check">
+                    <input class="form-check-input agent-checkbox" type="checkbox" ${checked ? 'checked' : ''} 
+                           data-agent-name="${agent.name}">
+                </div>
+            </td>
+        `;
+        
+        recommendedAgentsList.appendChild(row);
+        
+        // Add event listener for checkbox
+        row.querySelector('.agent-checkbox').addEventListener('change', function() {
+            if (this.checked) {
+                // Add to teamConfig if not already there
+                if (!teamConfig.agents.some(a => a.name === agent.name)) {
+                    teamConfig.agents.push(agent);
+                }
+            } else {
+                // Remove from teamConfig
+                teamConfig.agents = teamConfig.agents.filter(a => a.name !== agent.name);
+            }
+        });
+    }
+    
+    // Load existing agents from system
+    function loadExistingAgents() {
+        const existingAgentsList = document.getElementById('existing-agents');
+        existingAgentsList.innerHTML = '';
+        
+        // In a real implementation, this would be an API call
+        if (existingAgentsData.length > 0) {
+            existingAgentsData.forEach(agent => {
+                const row = document.createElement('tr');
+                
+                const statusClass = agent.status === 'active' ? 'success' : 'warning';
+                
+                row.innerHTML = `
+                    <td>${agent.name}</td>
+                    <td>${agent.type}</td>
+                    <td><span class="badge bg-${statusClass}">${agent.status}</span></td>
+                    <td>
+                        <div class="form-check">
+                            <input class="form-check-input existing-agent-checkbox" type="checkbox" 
+                                   data-agent-id="${agent.id}" data-agent-name="${agent.name}"
+                                   data-agent-type="${agent.type}">
+                        </div>
+                    </td>
+                `;
+                
+                existingAgentsList.appendChild(row);
+                
+                // Add event listener for checkbox
+                row.querySelector('.existing-agent-checkbox').addEventListener('change', function() {
+                    const agentId = this.getAttribute('data-agent-id');
+                    const agentName = this.getAttribute('data-agent-name');
+                    const agentType = this.getAttribute('data-agent-type');
+                    
+                    if (this.checked) {
+                        // Add to teamConfig existingAgents if not already there
+                        if (!teamConfig.existingAgents.some(a => a.id === agentId)) {
+                            teamConfig.existingAgents.push({
+                                id: agentId,
+                                name: agentName,
+                                type: agentType
+                            });
+                        }
+                    } else {
+                        // Remove from teamConfig existingAgents
+                        teamConfig.existingAgents = teamConfig.existingAgents.filter(a => a.id !== agentId);
+                    }
+                });
+            });
+        } else {
+            existingAgentsList.innerHTML = `
+                <tr>
+                    <td colspan="4" class="text-center">No existing agents found</td>
+                </tr>
+            `;
+        }
+    }
+    
+    // Update team roles in the hierarchy view
+    function updateTeamRoles() {
+        const teamRolesList = document.getElementById('team-roles');
+        teamRolesList.innerHTML = '';
+        
+        // Add all selected agents to the roles table
+        teamConfig.agents.forEach((agent, index) => {
+            const row = document.createElement('tr');
+            
+            let role = agent.role;
+            // For first agent in hierarchical structure, default to lead
+            if (index === 0 && teamConfig.teamStructure === 'hierarchical') {
+                role = 'Lead';
+            }
+            
+            row.innerHTML = `
+                <td>${agent.name}</td>
+                <td>${agent.type}</td>
+                <td>${agent.capabilities.map(cap => `<span class="badge bg-light text-dark">${cap}</span>`).join(' ')}</td>
+                <td>
+                    <select class="form-select form-select-sm agent-role-select" data-agent-name="${agent.name}">
+                        <option value="Lead" ${role === 'Lead' ? 'selected' : ''}>Lead</option>
+                        <option value="Specialist" ${role === 'Specialist' ? 'selected' : ''}>Specialist</option>
+                        <option value="Assistant" ${role === 'Assistant' ? 'selected' : ''}>Assistant</option>
+                        <option value="Consultant" ${role === 'Consultant' ? 'selected' : ''}>Consultant</option>
+                    </select>
+                </td>
+            `;
+            
+            teamRolesList.appendChild(row);
+            
+            // Update agent role in config
+            agent.role = role;
+            
+            // Add event listener for role select
+            row.querySelector('.agent-role-select').addEventListener('change', function() {
+                const agentName = this.getAttribute('data-agent-name');
+                const newRole = this.value;
+                
+                // Update role in teamConfig
+                const agent = teamConfig.agents.find(a => a.name === agentName);
+                if (agent) {
+                    agent.role = newRole;
+                }
+                
+                // Update hierarchy visualization
+                updateTeamStructureVisualization();
+            });
+        });
+        
+        // Update visualization
+        updateTeamStructureVisualization();
+    }
+    
+    // Update team structure visualization
+    function updateTeamStructureVisualization() {
+        const hierarchyView = document.getElementById('team-hierarchy-view');
+        const teamStructure = teamConfig.teamStructure;
+        
+        // Create visualization based on structure
+        if (teamStructure === 'hierarchical') {
+            // Find the lead agent
+            const leadAgent = teamConfig.agents.find(a => a.role === 'Lead');
+            const otherAgents = teamConfig.agents.filter(a => a.role !== 'Lead');
+            
+            if (leadAgent) {
+                hierarchyView.innerHTML = `
+                    <div class="hierarchy-diagram">
+                        <div class="hierarchy-node manager">
+                            <div class="node-content">${leadAgent.name}</div>
+                            <div class="hierarchy-children">
+                                ${otherAgents.map(agent => `
+                                    <div class="hierarchy-node subordinate">
+                                        <div class="node-content">${agent.name}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (teamConfig.agents.length > 0) {
+                // If no lead is defined but agents exist, use the first agent as lead
+                const firstAgent = teamConfig.agents[0];
+                const otherAgents = teamConfig.agents.slice(1);
+                
+                hierarchyView.innerHTML = `
+                    <div class="hierarchy-diagram">
+                        <div class="hierarchy-node manager">
+                            <div class="node-content">${firstAgent.name}</div>
+                            <div class="hierarchy-children">
+                                ${otherAgents.map(agent => `
+                                    <div class="hierarchy-node subordinate">
+                                        <div class="node-content">${agent.name}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                hierarchyView.innerHTML = `<p class="text-center">No agents selected</p>`;
+            }
+        } else if (teamStructure === 'flat') {
+            hierarchyView.innerHTML = `
+                <div class="flat-diagram">
+                    ${teamConfig.agents.map(agent => `
+                        <div class="flat-node">
+                            <div class="node-content">${agent.name}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        } else if (teamStructure === 'specialist') {
+            hierarchyView.innerHTML = `
+                <div class="network-diagram">
+                    ${teamConfig.agents.map(agent => `
+                        <div class="network-node">
+                            <div class="node-content">${agent.name}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+    }
+    
+    // Update the review page with the current configuration
+    function updateReviewPage() {
+        // Team information
+        document.getElementById('review-team-name').textContent = teamConfig.teamName;
+        document.getElementById('review-team-goal').textContent = teamConfig.teamGoal;
+        document.getElementById('review-team-size').textContent = `${teamConfig.agents.length} Agents`;
+        
+        // Team structure
+        let structureText = '';
+        if (teamConfig.teamStructure === 'hierarchical') {
+            structureText = 'Hierarchical (Manager + Subordinates)';
+        } else if (teamConfig.teamStructure === 'flat') {
+            structureText = 'Flat (Equal Peers)';
+        } else {
+            structureText = 'Specialist Network (Expertise-based)';
+        }
+        document.getElementById('review-team-structure').textContent = structureText;
+        
+        // Team members
+        const teamMembersList = document.getElementById('review-team-members');
+        teamMembersList.innerHTML = '';
+        
+        if (teamConfig.agents.length > 0) {
+            teamConfig.agents.forEach(agent => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${agent.name}</td>
+                    <td>${agent.type}</td>
+                    <td>${agent.role}</td>
+                `;
+                teamMembersList.appendChild(row);
+            });
+        } else {
+            const row = document.createElement('tr');
+            row.innerHTML = '<td colspan="3" class="text-center">No team members selected</td>';
+            teamMembersList.appendChild(row);
+        }
+        
+        // Communication protocols
+        const protocols = [];
+        if (teamConfig.communicationProtocols.direct) protocols.push('Direct Communication');
+        if (teamConfig.communicationProtocols.broadcast) protocols.push('Broadcast Messages');
+        if (teamConfig.communicationProtocols.mcp) protocols.push('Model Context Protocol');
+        
+        document.getElementById('review-protocols').textContent = protocols.join(', ');
+        
+        // Decision making
+        let decisionText = '';
+        switch (teamConfig.decisionMaking) {
+            case 'lead':
+                decisionText = 'Team Lead Makes Decisions';
+                break;
+            case 'consensus':
+                decisionText = 'Consensus-Based Decisions';
+                break;
+            case 'vote':
+                decisionText = 'Majority Vote';
+                break;
+            case 'specialist':
+                decisionText = 'Specialist in Relevant Area Decides';
+                break;
+        }
+        document.getElementById('review-decision-making').textContent = decisionText;
+        
+        // Auto-start checkbox
+        document.getElementById('auto-start-team').checked = teamConfig.autoStart;
+        document.getElementById('generate-tasks').checked = teamConfig.autoGenerateTasks;
+    }
+    
+    // Create the team
+    function createTeam() {
+        // In a real implementation, this would send the teamConfig to the API
+        console.log('Creating team with configuration:', teamConfig);
+        
+        // Show success message
+        showNotification(`Team "${teamConfig.teamName}" created successfully!`, 'success');
+        
+        // Redirect to the teams page after a short delay
+        setTimeout(() => {
+            window.location.href = '/teams';
+        }, 1500);
+    }
+    
+    // Show a notification
+    function showNotification(message, type = 'info') {
+        // Create toast container if it doesn't exist
+        let toastContainer = document.querySelector('.toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            document.body.appendChild(toastContainer);
+        }
+        
+        // Create the toast
+        const toastId = 'toast-' + Date.now();
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.setAttribute('role', 'alert');
+        toast.setAttribute('aria-live', 'assertive');
+        toast.setAttribute('aria-atomic', 'true');
+        toast.id = toastId;
+        
+        // Set the toast content
+        toast.innerHTML = `
+            <div class="toast-header">
+                <strong class="me-auto">${type.charAt(0).toUpperCase() + type.slice(1)}</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+                ${message}
+            </div>
+        `;
+        
+        // Add type-specific styling
+        if (type === 'success') {
+            toast.querySelector('.toast-header').classList.add('text-success');
+        } else if (type === 'warning') {
+            toast.querySelector('.toast-header').classList.add('text-warning');
+        } else if (type === 'error') {
+            toast.querySelector('.toast-header').classList.add('text-danger');
+        }
+        
+        // Add the toast to the container
+        toastContainer.appendChild(toast);
+        
+        // Initialize and show the toast
+        const bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
+        
+        // Remove toast after it's hidden
+        toast.addEventListener('hidden.bs.toast', function() {
+            toast.remove();
+        });
+    }
+</script>
+
+<style>
+    /* Team wizard-specific styles */
+    .team-templates {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .team-template-card {
+        border: 1px solid var(--border-color);
+        border-radius: var(--card-border-radius);
+        padding: 1.25rem;
+        transition: all 0.2s;
+        cursor: pointer;
+        text-align: center;
+    }
+    
+    .team-template-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .team-template-card.selected {
+        border-color: var(--primary-color);
+        box-shadow: 0 5px 15px rgba(0, 120, 212, 0.2);
+    }
+    
+    .template-icon {
+        font-size: 2rem;
+        color: var(--primary-color);
+        margin-bottom: 0.75rem;
+    }
+    
+    .team-template-card h5 {
+        margin-bottom: 0.5rem;
+        font-size: 1.1rem;
+    }
+    
+    .team-template-card p {
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+        margin-bottom: 0;
+    }
+    
+    /* Hierarchy visualization */
+    .hierarchy-diagram {
+        padding: 2rem 0;
+        display: flex;
+        justify-content: center;
+    }
+    
+    .hierarchy-node {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .node-content {
+        padding: 0.75rem 1.25rem;
+        background-color: var(--card-color);
+        border: 1px solid var(--border-color);
+        border-radius: var(--card-border-radius);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+        min-width: 150px;
+        text-align: center;
+    }
+    
+    .hierarchy-node.manager > .node-content {
+        background-color: var(--primary-color);
+        color: white;
+    }
+    
+    .hierarchy-children {
+        display: flex;
+        gap: 1.5rem;
+    }
+    
+    .hierarchy-node::before {
+        content: '';
+        width: 1px;
+        height: 1.5rem;
+        background-color: var(--border-color);
+        position: relative;
+    }
+    
+    .hierarchy-node:first-child::before {
+        display: none;
+    }
+    
+    /* Flat team visualization */
+    .flat-diagram {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 1rem;
+        padding: 2rem 0;
+    }
+    
+    .flat-node .node-content {
+        background-color: var(--card-color);
+    }
+    
+    /* Network diagram */
+    .network-diagram {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        padding: 2rem 0;
+        position: relative;
+    }
+    
+    .network-node .node-content {
+        background-color: var(--card-color);
+        border: 1px solid var(--primary-color);
+    }
+</style>
+{% endblock %}

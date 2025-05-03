@@ -1,0 +1,29 @@
+evolution:
+  evolution_cycle_days: 7
+  mutation_rate: 0.1
+  population_size: 50
+  selection_pressure: 0.7
+governance:
+  approval_threshold: 0.6
+  min_votes_required: 3
+miners:
+  max_concurrent_miners: 15
+  max_miners_per_heuristic: 3
+  min_confidence_threshold: 0.4
+reasoning:
+  consolidation_similarity_threshold: 0.75
+  min_evidence_count: 3
+signals:
+  batch_size: 100
+  max_signal_age_days: 30
+  min_update_frequency: 3600
+simulation:
+  monte_carlo_iterations: 1000
+  sensitivity_variables:
+  - market_growth
+  - competition
+  - adoption_rate
+valuation:
+  discount_rate: 0.1
+  projection_years: 5
+  terminal_growth_rate: 0.02

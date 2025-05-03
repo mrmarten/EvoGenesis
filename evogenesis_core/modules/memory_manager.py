@@ -43,6 +43,105 @@ try:
 except ImportError:
     WEAVIATE_AVAILABLE = False
 
+# Base class for Vector Memory implementations
+class VectorMemoryBase:
+    """
+    Base class for vector memory implementations.
+    
+    This abstract class defines the interface that all vector memory implementations
+    must follow to be compatible with the EvoGenesis memory system.
+    """
+    
+    def __init__(self):
+        """Initialize the vector memory base."""
+        pass
+    
+    def store(self, namespace: str, embedding: List[float], 
+              metadata: Dict[str, Any], content: str, 
+              doc_id: Optional[str] = None) -> str:
+        """
+        Store a document in the vector memory.
+        
+        Args:
+            namespace: Namespace for multi-tenancy or project separation
+            embedding: Vector embedding of the content
+            metadata: Additional metadata for the document
+            content: Text content of the document
+            doc_id: Optional document ID (generated if not provided)
+            
+        Returns:
+            Document ID
+        """
+        raise NotImplementedError("Subclasses must implement store()")
+    
+    def search(self, namespace: str, query_embedding: List[float], 
+               limit: int = 5, 
+               filter_metadata: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+        """
+        Search for similar vectors in the vector memory.
+        
+        Args:
+            namespace: Namespace to search in
+            query_embedding: Query vector embedding
+            limit: Maximum number of results to return
+            filter_metadata: Optional filter for metadata fields
+            
+        Returns:
+            List of matches with content, metadata and similarity scores
+        """
+        raise NotImplementedError("Subclasses must implement search()")
+    
+    def delete(self, namespace: str, doc_id: str) -> bool:
+        """
+        Delete a document from the vector memory.
+        
+        Args:
+            namespace: Namespace the document belongs to
+            doc_id: Document ID to delete
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        raise NotImplementedError("Subclasses must implement delete()")
+    
+    def get(self, namespace: str, doc_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get a document by ID from the vector memory.
+        
+        Args:
+            namespace: Namespace the document belongs to
+            doc_id: Document ID to retrieve
+            
+        Returns:
+            Document data if found, None otherwise
+        """
+        raise NotImplementedError("Subclasses must implement get()")
+    
+    def list_namespaces(self) -> List[str]:
+        """
+        List all namespaces in the vector memory.
+        
+        Returns:
+            List of namespace names
+        """
+        raise NotImplementedError("Subclasses must implement list_namespaces()")
+    
+    def count_documents(self, namespace: str) -> int:
+        """
+        Count documents in a namespace.
+        
+        Args:
+            namespace: Namespace to count documents in
+            
+        Returns:
+            Number of documents in the namespace
+        """
+        raise NotImplementedError("Subclasses must implement count_documents()")
+    
+    def close(self):
+        """Close connections and clean up resources."""
+        pass
+
 
 class MemoryType(str, Enum):
     """Types of memory stored in the system."""

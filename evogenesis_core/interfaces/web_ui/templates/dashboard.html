@@ -56,7 +56,72 @@
         </div>
     </div>
     
-    <!-- Active Teams Section -->
+    <!-- Quick Actions Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Quick Actions</h5>
+                    <div class="quick-actions">
+                        <button id="btn-create-agent" class="btn btn-primary quick-action">
+                            <i class='bx bx-bot'></i>
+                            <span>Create Agent</span>
+                        </button>
+                        <button id="btn-new-task" class="btn btn-primary quick-action">
+                            <i class='bx bx-task'></i>
+                            <span>Create Task</span>
+                        </button>
+                        <button id="btn-auto-team" class="btn btn-primary quick-action">
+                            <i class='bx bx-group'></i>
+                            <span>Auto-Create Team</span>
+                        </button>
+                        <button id="btn-tools" class="btn btn-primary quick-action">
+                            <i class='bx bx-wrench'></i>
+                            <span>Manage Tools</span>
+                        </button>
+                        <button id="btn-scan-opportunities" class="btn btn-primary quick-action">
+                            <i class='bx bx-search-alt'></i>
+                            <span>Scan Opportunities</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Guided Setup Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Guided Setup</h5>
+                    <p>New to EvoGenesis? Let us help you get started with guided wizards:</p>
+                    <div class="guided-wizards">
+                        <div class="wizard-card" id="wizard-new-project">
+                            <i class='bx bx-bulb'></i>
+                            <h4>New Project</h4>
+                            <p>Create a new AI project with auto-generated components</p>
+                            <button class="btn btn-outline-primary">Start</button>
+                        </div>
+                        <div class="wizard-card" id="wizard-agent-team">
+                            <i class='bx bx-group'></i>
+                            <h4>Agent Team</h4>
+                            <p>Build a specialized team of agents for your specific goal</p>
+                            <button class="btn btn-outline-primary">Start</button>
+                        </div>
+                        <div class="wizard-card" id="wizard-tool-integration">
+                            <i class='bx bx-link'></i>
+                            <h4>Tool Integration</h4>
+                            <p>Connect external tools and services to your agents</p>
+                            <button class="btn btn-outline-primary">Start</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Active Teams and Recent Activities Section -->
     <div class="row mb-4">
         <div class="col-md-6">
             <div class="card">
@@ -155,21 +220,7 @@
         </div>
     </div>
     
-    <!-- System Performance Graph -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title">System Performance</h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="performanceChart" height="100"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Task Execution and Agent Network -->
+    <!-- System Performance and Agent Network Section -->
     <div class="row mb-4">
         <div class="col-md-6">
             <div class="card">
@@ -186,14 +237,122 @@
         </div>
         <div class="col-md-6">
             <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title">Agent Network</h5>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title">AI Assistant</h5>
+                    <span class="badge bg-success">Online</span>
                 </div>
                 <div class="card-body">
-                    <div id="agent-network"></div>
+                    <div class="assistant-container">
+                        <div class="assistant-history" id="assistant-history">
+                            <div class="assistant-message">
+                                <div class="assistant-icon">
+                                    <i class='bx bx-bot'></i>
+                                </div>
+                                <div class="message-content">
+                                    <p>Hello! I'm your EvoGenesis AI Assistant. How can I help you today?</p>
+                                    <p>You can ask me to:</p>
+                                    <ul>
+                                        <li>Create agents or teams for specific tasks</li>
+                                        <li>Set up automated workflows</li>
+                                        <li>Process and analyze data</li>
+                                        <li>Explain system features and capabilities</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="assistant-input">
+                            <form id="assistant-form">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="assistant-prompt" placeholder="Ask anything about EvoGenesis or what you want to accomplish...">
+                                    <button class="btn btn-primary" type="submit">
+                                        <i class='bx bx-send'></i>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-footer">
-                    <a href="/agents" class="btn btn-sm btn-primary">View All Agents</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity and Evolution Status -->
+    <div class="row mb-4">
+        <div class="col-md-7">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Recent Activity</h5>
+                    <div class="activity-feed" id="activity-feed">
+                        <div class="loading-spinner">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                        <!-- Activity items will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-5">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">System Evolution</h5>
+                    <div class="evolution-status">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6>Self-Evolution Status</h6>
+                                <p id="evolution-status">Active (Auto)</p>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="evolution-toggle" checked>
+                                <label class="form-check-label" for="evolution-toggle">Auto-Evolve</label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <h6>Current Improvement Focus</h6>
+                            <div class="focus-tags" id="improvement-focus">
+                                <span class="badge bg-primary">Performance</span>
+                                <span class="badge bg-success">Reliability</span>
+                                <span class="badge bg-info">Tool Integration</span>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <h6>Pending Opportunities</h6>
+                            <p id="pending-opportunities">5 opportunities need your review</p>
+                            <a href="/self-evolution" class="btn btn-sm btn-outline-primary">Review</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5 class="card-title">Strategic Observatory</h5>
+                    <div class="observatory-status">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6>Opportunity Detection</h6>
+                                <p id="observatory-status">Active (Scanning)</p>
+                            </div>
+                            <div>
+                                <span class="badge bg-success">5 Signal Sources</span>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <h6>Latest Opportunities</h6>
+                            <ul class="list-group list-group-flush observatory-list" id="latest-opportunities">
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    New market trend detected
+                                    <span class="badge bg-primary rounded-pill">High</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    Potential API integration
+                                    <span class="badge bg-info rounded-pill">Medium</span>
+                                </li>
+                            </ul>
+                            <a href="/observatory" class="btn btn-sm btn-outline-primary mt-2">View All</a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -201,291 +360,228 @@
 </div>
 {% endblock %}
 
-{% block extra_scripts %}
+{% block scripts %}
 <script>
-    // WebSocket connection for real-time updates
-    const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${wsProtocol}//${location.host}/ws`;
-    const socket = new WebSocket(wsUrl);
-    
-    socket.onopen = function(e) {
-        console.log("WebSocket connection established");
-        // Subscribe to relevant topics
-        socket.send(JSON.stringify({
-            subscribe: ["system", "system.status", "agents", "tasks", "activities"]
-        }));
-    };
-    
-    socket.onmessage = function(event) {
-        const data = JSON.parse(event.data);
-        console.log("WebSocket message received:", data);
+    // Subscribe to WebSocket events
+    document.addEventListener('ws-message', function(event) {
+        const message = event.detail;
         
-        // Handle different types of messages
-        if (data.topic === "system.status") {
-            updateSystemStatus(data.data);
-        } else if (data.topic === "activities") {
-            addActivity(data.data);
-        } else if (data.topic === "agents") {
-            updateAgents(data.data);
-        } else if (data.topic === "tasks") {
-            updateTasks(data.data);
+        // Handle different message topics
+        if (message.topic === 'metrics') {
+            updateDashboardMetrics(message.data);
+        } else if (message.topic === 'tasks.status') {
+            addActivityFromTaskEvent(message.data);
+        } else if (message.topic === 'system.status') {
+            updateSystemStatus(message.data);
         }
-    };
-    
-    socket.onclose = function(event) {
-        if (event.wasClean) {
-            console.log(`WebSocket connection closed cleanly, code=${event.code} reason=${event.reason}`);
-        } else {
-            console.log('WebSocket connection died');
-            // Try to reconnect after a delay
-            setTimeout(() => {
-                location.reload();
-            }, 5000);
-        }
-    };
-    
-    socket.onerror = function(error) {
-        console.error(`WebSocket error: ${error.message}`);
-    };
-    
-    // Function to update system status
-    function updateSystemStatus(status) {
-        // Update health indicator
-        const healthIndicator = document.getElementById('system-health-indicator');
-        const healthPercentage = document.getElementById('system-health-percentage');
-        const statusMessage = document.getElementById('system-status-message');
-        
-        if (status.health >= 90) {
-            healthIndicator.className = 'status-indicator active';
-            statusMessage.textContent = 'All systems operational';
-        } else if (status.health >= 70) {
-            healthIndicator.className = 'status-indicator warning';
-            statusMessage.textContent = 'Some components need attention';
-        } else {
-            healthIndicator.className = 'status-indicator error';
-            statusMessage.textContent = 'System experiencing issues';
-        }
-        
-        healthPercentage.textContent = `${Math.round(status.health)}%`;
-        
-        // Update metrics
-        document.getElementById('active-agents-count').textContent = status.active_agents;
-        document.getElementById('running-tasks-count').textContent = status.running_tasks;
-        
-        // Update system indicator in sidebar
-        const sidebarIndicator = document.getElementById('system-status-indicator');
-        const sidebarText = document.getElementById('system-status-text');
-        
-        if (status.status === 'active') {
-            sidebarIndicator.className = 'status-indicator active';
-            sidebarText.textContent = 'System Active';
-        } else if (status.status === 'paused') {
-            sidebarIndicator.className = 'status-indicator warning';
-            sidebarText.textContent = 'System Paused';
-        } else {
-            sidebarIndicator.className = 'status-indicator error';
-            sidebarText.textContent = 'System Stopped';
-        }
-    }
-    
-    // Function to add a new activity to the feed
-    function addActivity(activity) {
-        const activityFeed = document.getElementById('activity-feed');
-        const activityItem = document.createElement('div');
-        activityItem.className = 'activity-item';
-        
-        let iconClass = 'bx-info-circle';
-        switch (activity.type) {
-            case 'task_completed':
-                iconClass = 'bx-check-circle';
-                break;
-            case 'task_started':
-                iconClass = 'bx-play-circle';
-                break;
-            case 'memory_updated':
-                iconClass = 'bx-refresh';
-                break;
-            case 'tool_added':
-                iconClass = 'bx-plus-circle';
-                break;
-            case 'error':
-                iconClass = 'bx-error-circle';
-                break;
-        }
-        
-        activityItem.innerHTML = `
-            <div class="activity-icon">
-                <i class='bx ${iconClass}'></i>
-            </div>
-            <div class="activity-content">
-                <div class="activity-header">
-                    <span class="activity-title">${activity.title}</span>
-                    <span class="activity-time">${new Date(activity.timestamp).toLocaleTimeString()}</span>
-                </div>
-                <p>${activity.message}</p>
-            </div>
-        `;
-        
-        // Add to the beginning of the feed
-        activityFeed.insertBefore(activityItem, activityFeed.firstChild);
-        
-        // Limit to 5 items
-        if (activityFeed.children.length > 5) {
-            activityFeed.removeChild(activityFeed.lastChild);
-        }
-    }
-    
-    // Initial data loading
-    document.addEventListener('DOMContentLoaded', function() {
-        // Load system status
-        fetch('/api/system/status')
-            .then(response => response.json())
-            .then(data => {
-                updateSystemStatus(data);
-            })
-            .catch(error => console.error('Error loading system status:', error));
-        
-        // Load teams
-        fetch('/api/teams')
-            .then(response => response.json())
-            .then(data => {
-                const teamsContainer = document.getElementById('active-teams-container');
-                teamsContainer.innerHTML = '';
-                
-                data.forEach(team => {
-                    const teamCard = document.createElement('div');
-                    teamCard.className = 'team-card';
-                    teamCard.innerHTML = `
-                        <div class="team-header">
-                            <h6>${team.name}</h6>
-                            <span class="badge bg-success">${team.status}</span>
-                        </div>
-                        <p>${team.goal}</p>
-                        <div class="progress">
-                            <div class="progress-bar" role="progressbar" style="width: 50%;" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100">50%</div>
-                        </div>
-                        <div class="team-footer">
-                            <span><i class='bx bx-bot'></i> ${team.agent_count} agents</span>
-                            <span><i class='bx bx-task'></i> 0 tasks</span>
-                        </div>
-                    `;
-                    teamsContainer.appendChild(teamCard);
-                });
-                
-                // If no teams, show a message
-                if (data.length === 0) {
-                    teamsContainer.innerHTML = '<p class="text-center">No active teams</p>';
-                }
-            })
-            .catch(error => console.error('Error loading teams:', error));
-        
-        // Initialize performance chart
-        const ctx = document.getElementById('performanceChart').getContext('2d');
-        const performanceChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: Array.from({length: 24}, (_, i) => `${i}:00`),
-                datasets: [{
-                    label: 'System Health',
-                    data: [98, 98, 97, 98, 99, 99, 97, 96, 95, 94, 95, 98, 99, 98, 98, 97, 96, 95, 94, 96, 97, 98, 99, 98],
-                    borderColor: 'rgba(75, 192, 192, 1)',
-                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                    tension: 0.4
-                }, {
-                    label: 'Task Completion Rate',
-                    data: [85, 86, 84, 83, 85, 86, 88, 89, 90, 88, 87, 86, 85, 84, 85, 87, 89, 90, 91, 92, 90, 89, 88, 87],
-                    borderColor: 'rgba(153, 102, 255, 1)',
-                    backgroundColor: 'rgba(153, 102, 255, 0.2)',
-                    tension: 0.4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: false,
-                        suggestedMin: 80,
-                        suggestedMax: 100
-                    }
-                }
-            }
-        });
-        
-        // Initialize task timeline
-        const taskTimeline = document.getElementById('task-timeline');
-        Plotly.newPlot(taskTimeline, [{
-            x: ['Research', 'Analysis', 'Development', 'Testing', 'Deployment'],
-            y: [0, 1, 2, 3, 4],
-            mode: 'markers',
-            type: 'scatter',
-            name: 'Task Status',
-            text: ['Complete', 'Complete', 'In Progress', 'Pending', 'Pending'],
-            marker: {
-                color: ['green', 'green', 'blue', 'gray', 'gray'],
-                size: 12
-            }
-        }], {
-            height: 250,
-            margin: { l: 50, r: 50, b: 50, t: 30, pad: 4 },
-            title: {
-                text: 'Current Project Progress',
-                font: { size: 14 }
-            },
-            xaxis: { title: 'Task' },
-            yaxis: { title: 'Phase', showticklabels: false }
-        });
-        
-        // Initialize agent network
-        const agentNetwork = document.getElementById('agent-network');
-        Plotly.newPlot(agentNetwork, [{
-            x: [0, 1, 2, 0, 1, 2],
-            y: [0, 0, 0, 1, 1, 1],
-            mode: 'markers',
-            type: 'scatter',
-            name: 'Agents',
-            text: ['Agent A', 'Agent B', 'Agent C', 'Agent D', 'Agent E', 'Agent F'],
-            marker: {
-                color: ['red', 'blue', 'green', 'purple', 'orange', 'cyan'],
-                size: 15
-            }
-        }], {
-            height: 250,
-            margin: { l: 40, r: 40, b: 40, t: 30, pad: 4 },
-            title: {
-                text: 'Agent Collaboration Network',
-                font: { size: 14 }
-            },
-            xaxis: { showticklabels: false },
-            yaxis: { showticklabels: false }
-        });
-        
-        // Set up control buttons
-        document.getElementById('start-system').addEventListener('click', function() {
-            fetch('/api/system/start', { method: 'POST' })
-                .then(response => response.json())
-                .then(data => console.log('System started:', data))
-                .catch(error => console.error('Error starting system:', error));
-        });
-        
-        document.getElementById('pause-system').addEventListener('click', function() {
-            fetch('/api/system/pause', { method: 'POST' })
-                .then(response => response.json())
-                .then(data => console.log('System paused:', data))
-                .catch(error => console.error('Error pausing system:', error));
-        });
-        
-        document.getElementById('stop-system').addEventListener('click', function() {
-            fetch('/api/system/stop', { method: 'POST' })
-                .then(response => response.json())
-                .then(data => console.log('System stopped:', data))
-                .catch(error => console.error('Error stopping system:', error));
-        });
-        
-        // Toggle sidebar
-        document.getElementById('sidebarCollapse').addEventListener('click', function() {
-            document.getElementById('sidebar').classList.toggle('active');
-        });
     });
+    
+    // Initialize WebSocket connection
+    if (typeof EvoGenesis !== 'undefined' && EvoGenesis.ws) {
+        EvoGenesis.ws.subscribe(['metrics', 'tasks.status', 'system.status']);
+    }
+    
+    function updateDashboardMetrics(metrics) {
+        // Update agent metrics
+        if (metrics.agents) {
+            $('#active-agents-count').text(metrics.agents.active);
+            $('#total-agents-count').text(metrics.agents.total);
+        }
+        
+        // Update task metrics
+        if (metrics.tasks) {
+            $('#running-tasks-count').text(metrics.tasks.running);
+            $('#total-tasks-count').text(metrics.tasks.total);
+        }
+        
+        // Update memory usage
+        if (metrics.memory) {
+            const memoryPercentage = Math.round(metrics.memory.usage_percent);
+            $('#memory-usage-percentage').text(`${memoryPercentage}%`);
+            
+            const memoryUsageGB = (metrics.memory.usage_mb / 1024).toFixed(1);
+            $('#memory-usage-count').text(memoryUsageGB);
+        }
+        
+        // Update recent activities
+        if (metrics.activities && metrics.activities.length > 0) {
+            const activityFeed = $('#activity-feed');
+            activityFeed.empty();
+            
+            metrics.activities.forEach(activity => {
+                addActivityItem({
+                    icon: getIconForActivityType(activity.type),
+                    title: activity.title,
+                    message: activity.message,
+                    time: new Date(activity.timestamp * 1000).toLocaleTimeString()
+                });
+            });
+        }
+    }
+    
+    function getIconForActivityType(type) {
+        switch (type) {
+            case 'task_created':
+                return 'bx bx-plus-circle';
+            case 'task_started':
+                return 'bx bx-play-circle';
+            case 'task_completed':
+                return 'bx bx-check-circle';
+            case 'task_failed':
+                return 'bx bx-error-circle';
+            case 'agent_created':
+                return 'bx bx-bot';
+            case 'memory_updated':
+                return 'bx bx-memory-card';
+            case 'system_started':
+                return 'bx bx-power-off';
+            case 'system_stopped':
+                return 'bx bx-stop-circle';
+            default:
+                return 'bx bx-info-circle';
+        }
+    }
+    
+    function addActivityFromTaskEvent(data) {
+        let title = 'Task Update';
+        let message = `Task updated: ${data.task_id}`;
+        let icon = 'bx bx-task';
+        
+        if (data.event === 'task_started') {
+            title = 'Task Started';
+            message = `Task ${data.task_id} started`;
+            icon = 'bx bx-play-circle';
+        } else if (data.event === 'task_paused') {
+            title = 'Task Paused';
+            message = `Task ${data.task_id} paused`;
+            icon = 'bx bx-pause-circle';
+        } else if (data.event === 'task_stopped') {
+            title = 'Task Stopped';
+            message = `Task ${data.task_id} stopped`;
+            icon = 'bx bx-stop-circle';
+        } else if (data.event === 'task_completed') {
+            title = 'Task Completed';
+            message = `Task ${data.task_id} completed`;
+            icon = 'bx bx-check-circle';
+        }
+        
+        addActivityItem({
+            icon: icon,
+            title: title,
+            message: message,            time: new Date().toLocaleTimeString()
+        });
+    }
+    
+    // Subscribe to WebSocket events
+    document.addEventListener('ws-message', function(event) {
+        const message = event.detail;
+        
+        // Handle different message topics
+        if (message.topic === 'metrics') {
+            updateDashboardMetrics(message.data);
+        } else if (message.topic === 'tasks.status') {
+            addActivityFromTaskEvent(message.data);
+        } else if (message.topic === 'system.status') {
+            updateSystemStatus(message.data);
+        }
+    });
+    
+    // Initialize WebSocket connection
+    if (typeof EvoGenesis !== 'undefined' && EvoGenesis.ws) {
+        EvoGenesis.ws.subscribe(['metrics', 'tasks.status', 'system.status']);
+    }
+    
+    function updateDashboardMetrics(metrics) {
+        // Update agent metrics
+        if (metrics.agents) {
+            $('#active-agents-count').text(metrics.agents.active);
+            $('#total-agents-count').text(metrics.agents.total);
+        }
+        
+        // Update task metrics
+        if (metrics.tasks) {
+            $('#running-tasks-count').text(metrics.tasks.running);
+            $('#total-tasks-count').text(metrics.tasks.total);
+        }
+        
+        // Update memory usage
+        if (metrics.memory) {
+            const memoryPercentage = Math.round(metrics.memory.usage_percent);
+            $('#memory-usage-percentage').text(`${memoryPercentage}%`);
+            
+            const memoryUsageGB = (metrics.memory.usage_mb / 1024).toFixed(1);
+            $('#memory-usage-count').text(memoryUsageGB);
+        }
+        
+        // Update recent activities
+        if (metrics.activities && metrics.activities.length > 0) {
+            const activityFeed = $('#activity-feed');
+            activityFeed.empty();
+            
+            metrics.activities.forEach(activity => {
+                addActivityItem({
+                    icon: getIconForActivityType(activity.type),
+                    title: activity.title,
+                    message: activity.message,
+                    time: new Date(activity.timestamp * 1000).toLocaleTimeString()
+                });
+            });
+        }
+    }
+    
+    function getIconForActivityType(type) {
+        switch (type) {
+            case 'task_created':
+                return 'bx bx-plus-circle';
+            case 'task_started':
+                return 'bx bx-play-circle';
+            case 'task_completed':
+                return 'bx bx-check-circle';
+            case 'task_failed':
+                return 'bx bx-error-circle';
+            case 'agent_created':
+                return 'bx bx-bot';
+            case 'memory_updated':
+                return 'bx bx-memory-card';
+            case 'system_started':
+                return 'bx bx-power-off';
+            case 'system_stopped':
+                return 'bx bx-stop-circle';
+            default:
+                return 'bx bx-info-circle';
+        }
+    }
+    
+    function addActivityFromTaskEvent(data) {
+        let title = 'Task Update';
+        let message = `Task updated: ${data.task_id}`;
+        let icon = 'bx bx-task';
+        
+        if (data.event === 'task_started') {
+            title = 'Task Started';
+            message = `Task ${data.task_id} started`;
+            icon = 'bx bx-play-circle';
+        } else if (data.event === 'task_paused') {
+            title = 'Task Paused';
+            message = `Task ${data.task_id} paused`;
+            icon = 'bx bx-pause-circle';
+        } else if (data.event === 'task_stopped') {
+            title = 'Task Stopped';
+            message = `Task ${data.task_id} stopped`;
+            icon = 'bx bx-stop-circle';
+        } else if (data.event === 'task_completed') {
+            title = 'Task Completed';
+            message = `Task ${data.task_id} completed`;
+            icon = 'bx bx-check-circle';
+        }
+        
+        addActivityItem({
+            icon: icon,
+            title: title,
+            message: message,
+            time: new Date().toLocaleTimeString()
+        });
+    }
+});
 </script>
 {% endblock %}

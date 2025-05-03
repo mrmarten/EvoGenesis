@@ -1,0 +1,25 @@
+{
+  "signals": {
+    "max_signal_age_days": 30,
+    "min_update_frequency": 3600,
+    "batch_size": 100
+  },
+  "miners": {
+    "min_confidence_threshold": 0.4,
+    "max_miners_per_heuristic": 3,
+    "max_concurrent_miners": 15
+  },
+  "reasoning": {
+    "consolidation_similarity_threshold": 0.75,
+    "min_evidence_count": 3
+  },
+  "simulation": {
+    "monte_carlo_iterations": 1000,
+    "sensitivity_variables": ["market_growth", "competition", "adoption_rate"]
+  },
+  "valuation": {
+    "discount_rate": 0.1,
+    "projection_years": 5,
+    "terminal_growth_rate": 0.02
+  }
+}

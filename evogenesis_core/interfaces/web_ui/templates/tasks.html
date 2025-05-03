@@ -4,9 +4,11 @@
 <div class="tasks-view">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="page-title">Tasks</h1>
-        <button id="create-task-btn" class="btn btn-primary">
-            <i class='bx bx-plus'></i> Create Task
-        </button>
+        <div>
+            <button id="create-task-btn" class="btn btn-primary">
+                <i class='bx bx-plus'></i> Create Task
+            </button>
+        </div>
     </div>
     
     <!-- Task Overview Cards -->
@@ -162,76 +164,6 @@
 
 {% block extra_scripts %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Load tasks data
-        loadTasks();
-        
-        // Subscribe to task-related WebSocket events
-        EvoGenesis.ws.subscribe(['tasks', 'tasks.status']);
-        
-        // Setup event listeners
-        document.getElementById('create-task-btn').addEventListener('click', function() {
-            // Load agents for assignment dropdown
-            loadAgentsForAssignment();
-            
-            const modal = new bootstrap.Modal(document.getElementById('createTaskModal'));
-            modal.show();
-        });
-        
-        document.getElementById('create-task-submit').addEventListener('click', createTask);
-        
-        document.getElementById('task-search').addEventListener('input', function() {
-            filterTasks(this.value);
-        });
-    });
-    
-    async function loadTasks() {
-        try {
-            const tasks = await EvoGenesis.api.fetch('/api/tasks');
-            if (!tasks) return;
-            
-            updateTaskCounters(tasks);
-            renderTaskList(tasks);
-        } catch (error) {
-            console.error('Error loading tasks:', error);
-            EvoGenesis.ui.showNotification('Failed to load tasks', 'error');
-        }
-    }
-    
-    async function loadAgentsForAssignment() {
-        try {
-            const agents = await EvoGenesis.api.fetch('/api/agents');
-            if (!agents) return;
-            
-            const selectElement = document.getElementById('task-assign-select');
-            // Keep the first option (auto-assign)
-            selectElement.innerHTML = '<option value="">Auto-assign</option>';
-            
-            agents.forEach(agent => {
-                if (agent.status === 'active' || agent.status === 'idle') {
-                    const option = document.createElement('option');
-                    option.value = agent.id;
-                    option.textContent = agent.name;
-                    selectElement.appendChild(option);
-                }
-            });
-        } catch (error) {
-            console.error('Error loading agents for assignment:', error);
-        }
-    }
-    
-    function updateTaskCounters(tasks) {
-        const totalTasks = tasks.length;
-        const activeTasks = tasks.filter(t => t.status === 'in_progress').length;
-        const completedTasks = tasks.filter(t => t.status === 'completed').length;
-        const pendingTasks = tasks.filter(t => t.status === 'pending').length;
-        
-        document.getElementById('total-tasks').textContent = totalTasks;
-        document.getElementById('active-tasks').textContent = activeTasks;
-        document.getElementById('completed-tasks').textContent = completedTasks;
-        document.getElementById('pending-tasks').textContent = pendingTasks;
-    }
-    
     function renderTaskList(tasks) {
         const taskList = document.getElementById('task-list');
         taskList.innerHTML = '';
@@ -245,16 +177,22 @@
         
         tasks.forEach(task => {
             const row = document.createElement('tr');
+            row.dataset.taskId = task.id; // Add task ID to the row for easier access
             
             // Status class
-            const statusClass = task.status === 'completed' ? 'success' : 
-                             task.status === 'in_progress' ? 'warning' : 
+            const statusClass = task.status === 'completed' ? 'success' :
+                             task.status === 'in_progress' ? 'warning' :
                              task.status === 'failed' ? 'danger' : 'secondary';
             
             // Priority class
-            const priorityClass = task.priority === 'high' ? 'danger' : 
+            const priorityClass = task.priority === 'high' ? 'danger' :
                                task.priority === 'medium' ? 'warning' : 'info';
             
+            // Determine button states based on task status
+            const canStart = task.status === 'pending' || task.status === 'paused';
+            const canPause = task.status === 'in_progress';
+            const canStop = task.status === 'in_progress' || task.status === 'paused';
+
             row.innerHTML = `
                 <td>${task.name}</td>
                 <td><span class="badge bg-${statusClass}">${task.status.replace('_', ' ')}</span></td>
@@ -271,13 +209,22 @@
                 </td>
                 <td>
                     <div class="btn-group">
-                        <button class="btn btn-sm btn-outline-primary" data-task-id="${task.id}">
+                        <button class="btn btn-sm btn-outline-success btn-start-task" data-task-id="${task.id}" ${!canStart ? 'disabled' : ''} title="Start Task">
+                            <i class='bx bx-play'></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-warning btn-pause-task" data-task-id="${task.id}" ${!canPause ? 'disabled' : ''} title="Pause Task">
+                            <i class='bx bx-pause'></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger btn-stop-task" data-task-id="${task.id}" ${!canStop ? 'disabled' : ''} title="Stop Task">
+                            <i class='bx bx-stop'></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary btn-task-details" data-task-id="${task.id}" title="View Details">
                             <i class='bx bx-info-circle'></i>
                         </button>
-                        <button class="btn btn-sm btn-outline-secondary" data-task-id="${task.id}">
+                        <button class="btn btn-sm btn-outline-secondary btn-task-logs" data-task-id="${task.id}" title="View Logs">
                             <i class='bx bx-message-square-detail'></i>
                         </button>
-                        <button class="btn btn-sm btn-outline-danger" data-task-id="${task.id}">
+                        <button class="btn btn-sm btn-outline-danger btn-delete-task" data-task-id="${task.id}" title="Delete Task">
                             <i class='bx bx-x'></i>
                         </button>
                     </div>
@@ -357,6 +304,154 @@
             console.error('Error creating task:', error);
             EvoGenesis.ui.showNotification('Failed to create task', 'error');
         }
+    }
+
+    // Add functions to handle per-task actions
+    async function startTask(taskId) {
+        try {
+            const result = await EvoGenesis.api.fetch(`/api/tasks/${taskId}/start`, { method: 'POST' });
+            if (result && result.success) {
+                EvoGenesis.ui.showNotification(`Task ${taskId} started`, 'success');
+                loadTasks(); // Refresh the task list
+            } else {
+                throw new Error(result?.message || 'Failed to start task');
+            }
+        } catch (error) {
+            console.error(`Error starting task ${taskId}:`, error);
+            EvoGenesis.ui.showNotification(`Failed to start task ${taskId}: ${error.message}`, 'error');
+        }
+    }
+
+    async function pauseTask(taskId) {
+        try {
+            const result = await EvoGenesis.api.fetch(`/api/tasks/${taskId}/pause`, { method: 'POST' });
+             if (result && result.success) {
+                EvoGenesis.ui.showNotification(`Task ${taskId} paused`, 'warning');
+                loadTasks(); // Refresh the task list
+            } else {
+                throw new Error(result?.message || 'Failed to pause task');
+            }
+        } catch (error) {
+            console.error(`Error pausing task ${taskId}:`, error);
+            EvoGenesis.ui.showNotification(`Failed to pause task ${taskId}: ${error.message}`, 'error');
+        }
+    }
+
+    async function stopTask(taskId) {
+         try {
+            const result = await EvoGenesis.api.fetch(`/api/tasks/${taskId}/stop`, { method: 'POST' });
+             if (result && result.success) {
+                EvoGenesis.ui.showNotification(`Task ${taskId} stopped`, 'info');
+                loadTasks(); // Refresh the task list
+            } else {
+                throw new Error(result?.message || 'Failed to stop task');
+            }
+        } catch (error) {
+            console.error(`Error stopping task ${taskId}:`, error);
+            EvoGenesis.ui.showNotification(`Failed to stop task ${taskId}: ${error.message}`, 'error');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Load tasks data
+        loadTasks();
+        
+        // Subscribe to task-related WebSocket events
+        EvoGenesis.ws.subscribe(['tasks', 'tasks.status']);
+        
+        // Setup event listeners
+        document.getElementById('create-task-btn').addEventListener('click', function() {
+            // Load agents for assignment dropdown
+            loadAgentsForAssignment();
+            
+            const modal = new bootstrap.Modal(document.getElementById('createTaskModal'));
+            modal.show();
+        });
+        
+        document.getElementById('create-task-submit').addEventListener('click', createTask);
+        
+        document.getElementById('task-search').addEventListener('input', function() {
+            filterTasks(this.value);
+        });
+
+        // Add listener for task list actions using event delegation
+        const taskListElement = document.getElementById('task-list');
+        if (taskListElement) {
+            taskListElement.addEventListener('click', function(event) {
+                const button = event.target.closest('button');
+                if (!button) return; // Exit if click wasn't on a button
+
+                const taskId = button.dataset.taskId;
+                if (!taskId) return; // Exit if button doesn't have a task ID
+
+                if (button.classList.contains('btn-start-task')) {
+                    startTask(taskId);
+                } else if (button.classList.contains('btn-pause-task')) {
+                    pauseTask(taskId);
+                } else if (button.classList.contains('btn-stop-task')) {
+                    stopTask(taskId);
+                } else if (button.classList.contains('btn-task-details')) {
+                    // TODO: Implement view task details functionality
+                    console.log(`View details for task ${taskId}`);
+                    EvoGenesis.ui.showNotification(`Details for task ${taskId} (not implemented yet)`, 'info');
+                } else if (button.classList.contains('btn-task-logs')) {
+                    // TODO: Implement view task logs functionality
+                    console.log(`View logs for task ${taskId}`);
+                     EvoGenesis.ui.showNotification(`Logs for task ${taskId} (not implemented yet)`, 'info');
+                } else if (button.classList.contains('btn-delete-task')) {
+                    // TODO: Implement delete task functionality (with confirmation)
+                    console.log(`Delete task ${taskId}`);
+                     EvoGenesis.ui.showNotification(`Delete task ${taskId} (not implemented yet)`, 'info');
+                }
+            });
+        }
+    });
+
+    async function loadTasks() {
+        try {
+            const tasks = await EvoGenesis.api.fetch('/api/tasks');
+            if (!tasks) return;
+            
+            updateTaskCounters(tasks);
+            renderTaskList(tasks);
+        } catch (error) {
+            console.error('Error loading tasks:', error);
+            EvoGenesis.ui.showNotification('Failed to load tasks', 'error');
+        }
+    }
+    
+    async function loadAgentsForAssignment() {
+        try {
+            const agents = await EvoGenesis.api.fetch('/api/agents');
+            if (!agents) return;
+            
+            const selectElement = document.getElementById('task-assign-select');
+            // Keep the first option (auto-assign)
+            selectElement.innerHTML = '<option value="">Auto-assign</option>';
+            
+            agents.forEach(agent => {
+                if (agent.status === 'active' || agent.status === 'idle') {
+                    const option = document.createElement('option');
+                    option.value = agent.id;
+                    option.textContent = agent.name;
+                    selectElement.appendChild(option);
+                }
+            });
+        } catch (error) {
+            console.error('Error loading agents for assignment:', error);
+        }
+    }
+    
+    function updateTaskCounters(tasks) {
+        const totalTasks = tasks.length;
+        const activeTasks = tasks.filter(t => t.status === 'in_progress').length;
+        const completedTasks = tasks.filter(t => t.status === 'completed').length;
+        const pendingTasks = tasks.filter(t => t.status === 'pending').length;
+        
+        document.getElementById('total-tasks').textContent = totalTasks;
+        document.getElementById('active-tasks').textContent = activeTasks;
+        document.getElementById('completed-tasks').textContent = completedTasks;
+        document.getElementById('pending-tasks').textContent = pendingTasks;
     }
 </script>
 {% endblock %}

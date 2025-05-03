@@ -1,0 +1,839 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="h3 mb-4 text-gray-800">Strategic Opportunity Observatory</h1>
+    
+    <!-- Overview Section -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Total Opportunities</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="total-opportunities">0</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bx bx-search-alt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Active Miners</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="active-miners">0</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bx bx-bot fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Signal Sources</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="signal-sources">0</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bx bx-broadcast fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Success Rate</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="success-rate">0%</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bx bx-trending-up fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Actions -->
+    <div class="row mb-4">
+        <div class="col-lg-9">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Filters</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="status-filter">Status</label>
+                                <select class="form-control" id="status-filter">
+                                    <option value="all">All Statuses</option>
+                                    <option value="candidate">Candidate</option>
+                                    <option value="evaluating">Under Evaluation</option>
+                                    <option value="validated">Validated</option>
+                                    <option value="simulated">Simulated</option>
+                                    <option value="valued">Valued</option>
+                                    <option value="approved">Approved</option>
+                                    <option value="rejected">Rejected</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="type-filter">Type</label>
+                                <select class="form-control" id="type-filter">
+                                    <option value="all">All Types</option>
+                                    <option value="new_market">New Market</option>
+                                    <option value="new_product">New Product</option>
+                                    <option value="efficiency">Efficiency</option>
+                                    <option value="risk">Risk Mitigation</option>
+                                    <option value="partnership">Partnership</option>
+                                    <option value="acquisition">Acquisition</option>
+                                    <option value="regulation">Regulation</option>
+                                    <option value="technology">Technology</option>
+                                    <option value="talent">Talent</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="confidence-filter">Min. Confidence</label>
+                                <select class="form-control" id="confidence-filter">
+                                    <option value="all">Any Confidence</option>
+                                    <option value="speculative">Speculative</option>
+                                    <option value="plausible">Plausible</option>
+                                    <option value="promising">Promising</option>
+                                    <option value="probable">Probable</option>
+                                    <option value="certain">Certain</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="sort-by">Sort By</label>
+                                <select class="form-control" id="sort-by">
+                                    <option value="score">Combined Score</option>
+                                    <option value="impact">Impact</option>
+                                    <option value="date">Discovery Date</option>
+                                    <option value="tam">Market Size</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <button id="refresh-soo" class="btn btn-primary btn-block">
+                                <i class="bx bx-refresh"></i> Refresh
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <button id="evolve-heuristics" class="btn btn-success btn-block">
+                                <i class="bx bx-atom"></i> Evolve
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Opportunities Table -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Strategic Opportunities</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="opportunities-table" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Confidence</th>
+                            <th>Impact</th>
+                            <th>Feasibility</th>
+                            <th>Risk</th>
+                            <th>Combined Score</th>
+                            <th>Discovered</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="opportunities-tbody">
+                        <!-- Opportunities will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Opportunity Detail Modal -->
+    <div class="modal fade" id="opportunityDetailModal" tabindex="-1" role="dialog" aria-labelledby="opportunityDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="opportunityDetailModalLabel">Opportunity Details</h5>
+                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="container-fluid">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h4 id="detail-title"></h4>
+                                <p class="lead" id="detail-description"></p>
+                                
+                                <div class="mt-4">
+                                    <h5>Evidence</h5>
+                                    <div id="detail-evidence" class="evidence-list">
+                                        <!-- Evidence items will go here -->
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-4">
+                                    <h5>Assumptions</h5>
+                                    <ul id="detail-assumptions">
+                                        <!-- Assumptions will go here -->
+                                    </ul>
+                                </div>
+                                
+                                <div class="mt-4">
+                                    <h5>Required Capabilities</h5>
+                                    <div id="detail-capabilities" class="badge-container">
+                                        <!-- Capability badges will go here -->
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-4" id="simulation-results-container">
+                                    <h5>Simulation Results</h5>
+                                    <div id="detail-simulation">
+                                        <!-- Simulation results will go here -->
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h6 class="m-0 font-weight-bold">Business Metrics</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="metric-item">
+                                            <span class="metric-label">TAM:</span>
+                                            <span class="metric-value" id="detail-tam">$0</span>
+                                        </div>
+                                        <div class="metric-item">
+                                            <span class="metric-label">Growth Rate:</span>
+                                            <span class="metric-value" id="detail-growth">0%</span>
+                                        </div>
+                                        <div class="metric-item">
+                                            <span class="metric-label">NPV:</span>
+                                            <span class="metric-value" id="detail-npv">$0</span>
+                                        </div>
+                                        <div class="metric-item">
+                                            <span class="metric-label">Required Investment:</span>
+                                            <span class="metric-value" id="detail-investment">$0</span>
+                                        </div>
+                                        <div class="metric-item">
+                                            <span class="metric-label">Time to Market:</span>
+                                            <span class="metric-value" id="detail-ttm">0 months</span>
+                                        </div>
+                                        <div class="metric-item">
+                                            <span class="metric-label">Time to Breakeven:</span>
+                                            <span class="metric-value" id="detail-ttb">0 months</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h6 class="m-0 font-weight-bold">Scores</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="progress-label">
+                                            <span>Impact</span>
+                                            <span id="detail-impact-score">0%</span>
+                                        </div>
+                                        <div class="progress mb-3">
+                                            <div id="detail-impact-bar" class="progress-bar bg-success" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                        
+                                        <div class="progress-label">
+                                            <span>Feasibility</span>
+                                            <span id="detail-feasibility-score">0%</span>
+                                        </div>
+                                        <div class="progress mb-3">
+                                            <div id="detail-feasibility-bar" class="progress-bar bg-info" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                        
+                                        <div class="progress-label">
+                                            <span>Risk</span>
+                                            <span id="detail-risk-score">0%</span>
+                                        </div>
+                                        <div class="progress mb-3">
+                                            <div id="detail-risk-bar" class="progress-bar bg-danger" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                        
+                                        <div class="progress-label">
+                                            <span>Combined Score</span>
+                                            <span id="detail-combined-score">0%</span>
+                                        </div>
+                                        <div class="progress">
+                                            <div id="detail-combined-bar" class="progress-bar bg-primary" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h6 class="m-0 font-weight-bold">Actions</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <button id="run-simulation" class="btn btn-info btn-block mb-2">
+                                            <i class="bx bx-chart"></i> Run Simulation
+                                        </button>
+                                        <button id="perform-valuation" class="btn btn-warning btn-block mb-2">
+                                            <i class="bx bx-dollar-circle"></i> Perform Valuation
+                                        </button>
+                                        <button id="approve-opportunity" class="btn btn-success btn-block mb-2">
+                                            <i class="bx bx-check"></i> Approve
+                                        </button>
+                                        <button id="reject-opportunity" class="btn btn-danger btn-block mb-2">
+                                            <i class="bx bx-x"></i> Reject
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// JavaScript to load and display opportunity data
+document.addEventListener('DOMContentLoaded', function() {
+    // Function to fetch and display opportunities
+    function loadOpportunities() {
+        fetch('/api/soo/opportunities')
+            .then(response => response.json())
+            .then(data => {
+                updateOpportunitiesTable(data.opportunities);
+                updateDashboardStats(data.stats);
+            })
+            .catch(error => console.error('Error fetching opportunities:', error));
+    }
+    
+    // Update opportunities table with data
+    function updateOpportunitiesTable(opportunities) {
+        const tbody = document.getElementById('opportunities-tbody');
+        tbody.innerHTML = '';
+        
+        if (!opportunities || opportunities.length === 0) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = '<td colspan="10" class="text-center">No opportunities found</td>';
+            tbody.appendChild(tr);
+            return;
+        }
+        
+        opportunities.forEach(opp => {
+            const tr = document.createElement('tr');
+            
+            // Format dates
+            const discoveredDate = new Date(opp.discovered_at * 1000).toLocaleDateString();
+            
+            // Format scores as percentages
+            const impactScore = opp.impact_score ? Math.round(opp.impact_score * 100) + '%' : 'N/A';
+            const feasibilityScore = opp.feasibility_score ? Math.round(opp.feasibility_score * 100) + '%' : 'N/A';
+            const riskScore = opp.risk_score ? Math.round(opp.risk_score * 100) + '%' : 'N/A';
+            const combinedScore = opp.combined_score ? Math.round(opp.combined_score * 100) + '%' : 'N/A';
+            
+            tr.innerHTML = `
+                <td><a href="#" class="opportunity-link" data-id="${opp.id}">${opp.title}</a></td>
+                <td>${opp.opportunity_type}</td>
+                <td><span class="badge bg-${getStatusBadgeClass(opp.status)}">${opp.status}</span></td>
+                <td><span class="badge bg-${getConfidenceBadgeClass(opp.confidence)}">${opp.confidence}</span></td>
+                <td>${impactScore}</td>
+                <td>${feasibilityScore}</td>
+                <td>${riskScore}</td>
+                <td>${combinedScore}</td>
+                <td>${discoveredDate}</td>
+                <td>
+                    <button class="btn btn-sm btn-primary view-opportunity" data-id="${opp.id}">
+                        <i class="bx bx-show"></i>
+                    </button>
+                </td>
+            `;
+            
+            tbody.appendChild(tr);
+        });
+        
+        // Add event listeners to view buttons
+        document.querySelectorAll('.view-opportunity, .opportunity-link').forEach(el => {
+            el.addEventListener('click', function(e) {
+                e.preventDefault();
+                const oppId = this.getAttribute('data-id');
+                showOpportunityDetails(oppId);
+            });
+        });
+    }
+    
+    // Update dashboard statistics
+    function updateDashboardStats(stats) {
+        document.getElementById('total-opportunities').textContent = stats.total_opportunities;
+        document.getElementById('active-miners').textContent = stats.active_miners;
+        document.getElementById('signal-sources').textContent = stats.signal_sources;
+        document.getElementById('success-rate').textContent = `${Math.round(stats.success_rate * 100)}%`;
+    }
+    
+    // Show opportunity details in modal
+    function showOpportunityDetails(opportunityId) {
+        fetch(`/api/soo/opportunities/${opportunityId}`)
+            .then(response => response.json())
+            .then(opp => {
+                // Fill in the modal with opportunity details
+                document.getElementById('opportunityDetailModalLabel').textContent = `Opportunity: ${opp.title}`;
+                document.getElementById('detail-title').textContent = opp.title;
+                document.getElementById('detail-description').textContent = opp.description;
+                
+                // Business metrics
+                document.getElementById('detail-tam').textContent = opp.estimated_tam ? `$${formatNumber(opp.estimated_tam)}` : 'Not estimated';
+                document.getElementById('detail-growth').textContent = opp.estimated_growth_rate ? `${Math.round(opp.estimated_growth_rate * 100)}%` : 'Not estimated';
+                document.getElementById('detail-npv').textContent = opp.npv ? `$${formatNumber(opp.npv)}` : 'Not calculated';
+                document.getElementById('detail-investment').textContent = opp.required_investment ? `$${formatNumber(opp.required_investment)}` : 'Not estimated';
+                document.getElementById('detail-ttm').textContent = opp.time_to_market ? `${opp.time_to_market} months` : 'Not estimated';
+                document.getElementById('detail-ttb').textContent = opp.time_to_breakeven ? `${opp.time_to_breakeven} months` : 'Not estimated';
+                
+                // Scores
+                updateScoreBar('detail-impact-score', 'detail-impact-bar', opp.impact_score);
+                updateScoreBar('detail-feasibility-score', 'detail-feasibility-bar', opp.feasibility_score);
+                updateScoreBar('detail-risk-score', 'detail-risk-bar', opp.risk_score);
+                updateScoreBar('detail-combined-score', 'detail-combined-bar', opp.combined_score);
+                
+                // Evidence
+                const evidenceContainer = document.getElementById('detail-evidence');
+                evidenceContainer.innerHTML = '';
+                if (opp.evidence && opp.evidence.length > 0) {
+                    opp.evidence.forEach(ev => {
+                        const evidenceItem = document.createElement('div');
+                        evidenceItem.className = 'evidence-item';
+                        evidenceItem.innerHTML = `
+                            <div class="evidence-source">${ev.source}</div>
+                            <div class="evidence-content">${ev.content}</div>
+                            ${ev.url ? `<a href="${ev.url}" target="_blank" class="evidence-link">Source Link</a>` : ''}
+                        `;
+                        evidenceContainer.appendChild(evidenceItem);
+                    });
+                } else {
+                    evidenceContainer.innerHTML = '<p>No evidence recorded</p>';
+                }
+                
+                // Assumptions
+                const assumptionsContainer = document.getElementById('detail-assumptions');
+                assumptionsContainer.innerHTML = '';
+                if (opp.assumptions && opp.assumptions.length > 0) {
+                    opp.assumptions.forEach(assumption => {
+                        const li = document.createElement('li');
+                        li.textContent = assumption;
+                        assumptionsContainer.appendChild(li);
+                    });
+                } else {
+                    assumptionsContainer.innerHTML = '<li>No assumptions recorded</li>';
+                }
+                
+                // Capabilities
+                const capabilitiesContainer = document.getElementById('detail-capabilities');
+                capabilitiesContainer.innerHTML = '';
+                if (opp.required_capabilities && opp.required_capabilities.length > 0) {
+                    opp.required_capabilities.forEach(capability => {
+                        const badge = document.createElement('span');
+                        badge.className = 'badge bg-secondary me-1';
+                        badge.textContent = capability;
+                        capabilitiesContainer.appendChild(badge);
+                    });
+                } else {
+                    capabilitiesContainer.innerHTML = '<p>No required capabilities defined</p>';
+                }
+                
+                // Simulation results
+                const simulationContainer = document.getElementById('detail-simulation');
+                const simulationResultsContainer = document.getElementById('simulation-results-container');
+                
+                if (opp.simulation_results && Object.keys(opp.simulation_results).length > 0) {
+                    simulationResultsContainer.style.display = 'block';
+                    simulationContainer.innerHTML = '<div id="simulation-chart" style="height: 300px;"></div>';
+                      // Render a chart with the simulation results using Chart.js
+                    const ctx = document.getElementById('simulation-chart').getContext('2d');
+                    
+                    // Prepare the data for visualization
+                    const scenarioLabels = ['Pessimistic', 'Expected', 'Optimistic'];
+                    const npvValues = [
+                        opp.simulation_results.pessimistic_npv || 0,
+                        opp.simulation_results.expected_npv || 0,
+                        opp.simulation_results.optimistic_npv || 0
+                    ];
+                    
+                    // Get ROI values if available
+                    let roiValues = [];
+                    if (opp.simulation_results.pessimistic_roi !== undefined) {
+                        roiValues = [
+                            opp.simulation_results.pessimistic_roi || 0,
+                            opp.simulation_results.expected_roi || 0,
+                            opp.simulation_results.optimistic_roi || 0
+                        ];
+                    }
+                    
+                    // Create gradient fill for NPV dataset
+                    const npvGradient = ctx.createLinearGradient(0, 0, 0, 400);
+                    npvGradient.addColorStop(0, 'rgba(54, 162, 235, 0.8)');
+                    npvGradient.addColorStop(1, 'rgba(54, 162, 235, 0.1)');
+                    
+                    // Create datasets array
+                    const datasets = [{
+                        label: 'NPV Scenarios ($)',
+                        data: npvValues,
+                        backgroundColor: npvGradient,
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 2,
+                        borderRadius: 5,
+                        order: 1
+                    }];
+                    
+                    // Add ROI dataset if available
+                    if (roiValues.length > 0) {
+                        datasets.push({
+                            label: 'ROI (%)',
+                            data: roiValues.map(v => v * 100), // Convert to percentage
+                            backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 2,
+                            borderRadius: 5,
+                            type: 'line',
+                            yAxisID: 'y1',
+                            order: 0
+                        });
+                    }
+                    
+                    // Create and render the chart
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: scenarioLabels,
+                            datasets: datasets
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                title: {
+                                    display: true,
+                                    text: 'Financial Impact Simulation',
+                                    font: {
+                                        size: 16
+                                    }
+                                },
+                                tooltip: {
+                                    mode: 'index',
+                                    intersect: false,
+                                    callbacks: {
+                                        label: function(context) {
+                                            let label = context.dataset.label || '';
+                                            if (label) {
+                                                label += ': ';
+                                            }
+                                            if (context.parsed.y !== null) {
+                                                if (context.datasetIndex === 0) {
+                                                    label += new Intl.NumberFormat('en-US', { 
+                                                        style: 'currency', 
+                                                        currency: 'USD',
+                                                        minimumFractionDigits: 0,
+                                                        maximumFractionDigits: 0
+                                                    }).format(context.parsed.y);
+                                                } else {
+                                                    label += context.parsed.y.toFixed(1) + '%';
+                                                }
+                                            }
+                                            return label;
+                                        }
+                                    }
+                                },
+                                legend: {
+                                    display: true,
+                                    position: 'top'
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    title: {
+                                        display: true,
+                                        text: 'Net Present Value ($)'
+                                    },
+                                    ticks: {
+                                        callback: function(value) {
+                                            return new Intl.NumberFormat('en-US', { 
+                                                style: 'currency', 
+                                                currency: 'USD',
+                                                notation: 'compact',
+                                                compactDisplay: 'short'
+                                            }).format(value);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    
+                    // Add additional visualization for probability distribution if available
+                    if (opp.simulation_results.probability_distribution) {
+                        // Create another chart container
+                        simulationContainer.innerHTML += '<div id="probability-chart" style="height: 250px; margin-top: 20px;"></div>';
+                        
+                        const probCtx = document.getElementById('probability-chart').getContext('2d');
+                        const probData = opp.simulation_results.probability_distribution;
+                        
+                        new Chart(probCtx, {
+                            type: 'line',
+                            data: {
+                                labels: Object.keys(probData),
+                                datasets: [{
+                                    label: 'Probability Distribution',
+                                    data: Object.values(probData),
+                                    fill: true,
+                                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                                    borderColor: 'rgba(75, 192, 192, 1)',
+                                    borderWidth: 2,
+                                    tension: 0.4
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    title: {
+                                        display: true,
+                                        text: 'Probability Distribution',
+                                        font: {
+                                            size: 14
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                                    opp.simulation_results.optimistic_npv || 0
+                                ],
+                                backgroundColor: ['rgba(255, 99, 132, 0.2)', 'rgba(54, 162, 235, 0.2)', 'rgba(75, 192, 192, 0.2)'],
+                                borderColor: ['rgb(255, 99, 132)', 'rgb(54, 162, 235)', 'rgb(75, 192, 192)'],
+                                borderWidth: 1
+                            }]
+                        };
+                        
+                        // Render chart (placeholder)
+                        console.log('Would render chart with data:', mockData);
+                    }, 100);
+                } else {
+                    simulationResultsContainer.style.display = 'none';
+                }
+                
+                // Action button event handlers
+                document.getElementById('run-simulation').onclick = function() {
+                    runSimulation(opp.id);
+                };
+                
+                document.getElementById('perform-valuation').onclick = function() {
+                    performValuation(opp.id);
+                };
+                
+                document.getElementById('approve-opportunity').onclick = function() {
+                    recordFeedback(opp.id, true);
+                };
+                
+                document.getElementById('reject-opportunity').onclick = function() {
+                    recordFeedback(opp.id, false);
+                };
+                
+                // Show the modal
+                $('#opportunityDetailModal').modal('show');
+            })
+            .catch(error => console.error('Error fetching opportunity details:', error));
+    }
+    
+    // Helper function to update score bars
+    function updateScoreBar(scoreElementId, barElementId, score) {
+        const scoreElement = document.getElementById(scoreElementId);
+        const barElement = document.getElementById(barElementId);
+        
+        if (score !== null && score !== undefined) {
+            const scorePercent = Math.round(score * 100);
+            scoreElement.textContent = scorePercent + '%';
+            barElement.style.width = scorePercent + '%';
+            barElement.setAttribute('aria-valuenow', scorePercent);
+        } else {
+            scoreElement.textContent = 'N/A';
+            barElement.style.width = '0%';
+            barElement.setAttribute('aria-valuenow', 0);
+        }
+    }
+    
+    // Function to run simulation
+    function runSimulation(opportunityId) {
+        fetch(`/api/soo/opportunities/${opportunityId}/simulate`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(`Simulation queued. Estimated completion time: ${new Date(data.estimated_completion_time * 1000).toLocaleTimeString()}`);
+        })
+        .catch(error => console.error('Error running simulation:', error));
+    }
+    
+    // Function to perform valuation
+    function performValuation(opportunityId) {
+        fetch(`/api/soo/opportunities/${opportunityId}/value`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(`Valuation queued. Estimated completion time: ${new Date(data.estimated_completion_time * 1000).toLocaleTimeString()}`);
+        })
+        .catch(error => console.error('Error performing valuation:', error));
+    }
+    
+    // Function to record feedback
+    function recordFeedback(opportunityId, approved) {
+        const feedback = prompt("Please provide your feedback:");
+        if (feedback === null) return; // User cancelled
+        
+        fetch(`/api/soo/opportunities/${opportunityId}/feedback`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                approved: approved,
+                user_id: "current_user", // This would be dynamic in a real app
+                feedback: feedback
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(`Feedback recorded. ${approved ? 'Opportunity approved.' : 'Opportunity rejected.'}`);
+            $('#opportunityDetailModal').modal('hide');
+            loadOpportunities(); // Refresh the data
+        })
+        .catch(error => console.error('Error recording feedback:', error));
+    }
+    
+    // Function to handle filter changes
+    function applyFilters() {
+        const statusFilter = document.getElementById('status-filter').value;
+        const typeFilter = document.getElementById('type-filter').value;
+        const confidenceFilter = document.getElementById('confidence-filter').value;
+        const sortBy = document.getElementById('sort-by').value;
+        
+        fetch(`/api/soo/opportunities?status=${statusFilter}&type=${typeFilter}&confidence=${confidenceFilter}&sort=${sortBy}`)
+            .then(response => response.json())
+            .then(data => {
+                updateOpportunitiesTable(data.opportunities);
+            })
+            .catch(error => console.error('Error fetching filtered opportunities:', error));
+    }
+    
+    // Helper functions for formatting
+    function formatNumber(num) {
+        if (num >= 1e9) {
+            return (num / 1e9).toFixed(1) + 'B';
+        } else if (num >= 1e6) {
+            return (num / 1e6).toFixed(1) + 'M';
+        } else if (num >= 1e3) {
+            return (num / 1e3).toFixed(1) + 'K';
+        } else {
+            return num.toFixed(0);
+        }
+    }
+    
+    function getStatusBadgeClass(status) {
+        const statusMap = {
+            'candidate': 'secondary',
+            'evaluating': 'info',
+            'validated': 'primary',
+            'simulated': 'warning',
+            'valued': 'light',
+            'approved': 'success',
+            'rejected': 'danger',
+            'archived': 'dark'
+        };
+        return statusMap[status] || 'secondary';
+    }
+    
+    function getConfidenceBadgeClass(confidence) {
+        const confidenceMap = {
+            'speculative': 'secondary',
+            'plausible': 'info',
+            'promising': 'primary',
+            'probable': 'success',
+            'certain': 'dark'
+        };
+        return confidenceMap[confidence] || 'secondary';
+    }
+    
+    // Initialize page
+    loadOpportunities();
+    
+    // Setup event listeners
+    document.getElementById('refresh-soo').addEventListener('click', loadOpportunities);
+    
+    document.getElementById('evolve-heuristics').addEventListener('click', function() {
+        fetch('/api/soo/evolve', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                alert(`Evolution process started. ${data.new_heuristics} new heuristics will be created.`);
+            })
+            .catch(error => console.error('Error triggering evolution:', error));
+    });
+    
+    // Filter change listeners
+    document.getElementById('status-filter').addEventListener('change', applyFilters);
+    document.getElementById('type-filter').addEventListener('change', applyFilters);
+    document.getElementById('confidence-filter').addEventListener('change', applyFilters);
+    document.getElementById('sort-by').addEventListener('change', applyFilters);
+});
+</script>
+{% endblock %}

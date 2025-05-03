@@ -20,6 +20,8 @@ function connectWebSocket() {
         socket.send(JSON.stringify({
             subscribe: ["system", "system.status"]
         }));
+        // Show connection notification
+        showNotification("Connected to EvoGenesis server", "success");
     };
     
     socket.onmessage = function(event) {
@@ -36,8 +38,10 @@ function connectWebSocket() {
     socket.onclose = function(event) {
         if (event.wasClean) {
             console.log(`WebSocket connection closed cleanly, code=${event.code} reason=${event.reason}`);
+            showNotification(`Connection closed: ${event.reason}`, "info");
         } else {
             console.log('WebSocket connection died');
+            showNotification("Connection lost. Attempting to reconnect...", "warning");
             // Try to reconnect after a delay
             setTimeout(connectWebSocket, 5000);
         }
@@ -45,6 +49,7 @@ function connectWebSocket() {
     
     socket.onerror = function(error) {
         console.error(`WebSocket error: ${error.message}`);
+        showNotification("Connection error occurred", "error");
     };
     
     return socket;
@@ -109,20 +114,67 @@ async function stopSystem() {
 
 // UI helper functions
 function showNotification(message, type = 'info') {
-    // This function would show a toast notification
-    // For now, just log to console
+    // Log to console for debugging
     console.log(`[${type.toUpperCase()}] ${message}`);
     
-    // If we had a notification library (like Toastify) we would use it here
-    // For example:
-    // Toastify({
-    //   text: message,
-    //   duration: 3000,
-    //   close: true,
-    //   gravity: "top",
-    //   position: "right",
-    //   backgroundColor: type === 'error' ? "#ef4444" : type === 'success' ? "#22c55e" : type === 'warning' ? "#f59e0b" : "#6366f1",
-    // }).showToast();
+    // Create toast container if it doesn't exist
+    let toastContainer = document.querySelector('.toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+        document.body.appendChild(toastContainer);
+    }
+    
+    // Create toast element
+    const toastId = `toast-${Date.now()}`;
+    const toast = document.createElement('div');
+    toast.className = `toast show`;
+    toast.id = toastId;
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    
+    // Get the appropriate color based on notification type
+    const bgColor = type === 'error' ? 'var(--danger-color)' : 
+                    type === 'success' ? 'var(--success-color)' : 
+                    type === 'warning' ? 'var(--warning-color)' : 
+                    'var(--primary-color)';
+    
+    // Get the appropriate icon
+    const icon = type === 'error' ? 'fa-exclamation-circle' : 
+                type === 'success' ? 'fa-check-circle' : 
+                type === 'warning' ? 'fa-exclamation-triangle' : 
+                'fa-info-circle';
+    
+    // Set toast content
+    toast.innerHTML = `
+        <div class="toast-header" style="background-color: ${bgColor}; color: white;">
+            <i class="fas ${icon} me-2"></i>
+            <strong class="me-auto">${type.charAt(0).toUpperCase() + type.slice(1)}</strong>
+            <small>just now</small>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            ${message}
+        </div>
+    `;
+    
+    // Add toast to container
+    toastContainer.appendChild(toast);
+    
+    // Add event listener for close button
+    const closeButton = toast.querySelector('.btn-close');
+    closeButton.addEventListener('click', function() {
+        toast.remove();
+    });
+    
+    // Auto-remove toast after 5 seconds
+    setTimeout(() => {
+        if (document.getElementById(toastId)) {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }
+    }, 5000);
 }
 
 // Initialize when document is ready

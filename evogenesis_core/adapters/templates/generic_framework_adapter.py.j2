@@ -78,18 +78,178 @@ class {{ framework.name|capitalize }}Adapter(AgentExecutionAdapter):
         try:
             # Generate an ID for this agent
             agent_id = str(uuid.uuid4())
-            
-            # Extract agent configuration
+              # Extract agent configuration
             agent_name = agent_spec.get("name", f"Agent-{agent_id[:8]}")
             agent_type = agent_spec.get("type", "default")
             agent_description = agent_spec.get("description", "A helpful assistant")
             
             # Get LLM config
             llm_config = agent_spec.get("llm_config", {})
+            model_name = llm_config.get("model_name", self.global_config.get("default_model", "gpt-3.5-turbo"))
+            temperature = llm_config.get("temperature", 0.7)
             
-            # Framework-specific agent creation
-            # Replace this with actual framework agent creation
-            framework_agent = None  # This should create a framework-specific agent
+            # Get agent capabilities and tools
+            capabilities = agent_spec.get("capabilities", [])
+            tools = agent_spec.get("tools", [])
+            
+            # Framework-specific agent creation based on detected framework patterns
+            framework_agent = None
+            
+            # Framework-specific agent initialization
+            {% raw %}{% if framework.name == "langchain" %}{% endraw %}
+            # LangChain-specific agent creation
+            from langchain.agents import AgentType, initialize_agent, load_tools
+            from langchain.chat_models import ChatOpenAI
+            
+            # Create the LLM
+            llm = ChatOpenAI(
+                model_name=model_name,
+                temperature=temperature
+            )
+            
+            # Load tools if specified
+            langchain_tools = []
+            if tools:
+                try:
+                    langchain_tools = load_tools(tools, llm=llm)
+                except Exception as tool_e:
+                    logging.warning(f"Error loading tools: {str(tool_e)}")
+            
+            # Determine agent type based on agent_type specified
+            agent_type_map = {
+                "zero-shot": AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+                "conversational": AgentType.CONVERSATIONAL_REACT_DESCRIPTION,
+                "chat": AgentType.CHAT_ZERO_SHOT_REACT_DESCRIPTION,
+                "structured-chat": AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION
+            }
+            
+            agent_type_enum = agent_type_map.get(agent_type, AgentType.ZERO_SHOT_REACT_DESCRIPTION)
+            
+            # Create the agent
+            framework_agent = initialize_agent(
+                tools=langchain_tools,
+                llm=llm,
+                agent=agent_type_enum,
+                verbose=True
+            )
+            
+            {% raw %}{% elif framework.name == "autogen" %}{% endraw %}
+            # AutoGen-specific agent creation
+            import autogen
+            
+            # Configure the LLM
+            config = {
+                "model": model_name,
+                "temperature": temperature,
+                "api_key": os.environ.get("OPENAI_API_KEY")
+            }
+            
+            # Create different types of agents based on agent_type
+            if agent_type == "assistant":
+                framework_agent = autogen.AssistantAgent(
+                    name=agent_name,
+                    llm_config=config,
+                    system_message=agent_description
+                )
+            elif agent_type == "user_proxy":
+                framework_agent = autogen.UserProxyAgent(
+                    name=agent_name,
+                    human_input_mode="NEVER",
+                    max_consecutive_auto_reply=10
+                )
+            else:
+                # Default to assistant
+                framework_agent = autogen.AssistantAgent(
+                    name=agent_name,
+                    llm_config=config,
+                    system_message=agent_description
+                )
+                
+            {% raw %}{% elif framework.name == "semantic_kernel" %}{% endraw %}
+            # Semantic Kernel agent creation
+            import semantic_kernel as sk
+            
+            # Create kernel
+            kernel = sk.Kernel()
+            
+            # Configure LLM service
+            kernel.add_chat_service(
+                service_id=agent_name,
+                service=sk.ChatServiceFactory.create_chat_service(
+                    model_name, 
+                    api_key=os.environ.get("OPENAI_API_KEY")
+                )
+            )
+            
+            # Return the kernel as our agent
+            framework_agent = kernel
+            
+            {% raw %}{% elif framework.name == "crewai" %}{% endraw %}
+            # CrewAI-specific agent creation
+            from crewai import Agent
+            
+            framework_agent = Agent(
+                role=agent_type,
+                goal=agent_spec.get("goal", "Assist the user effectively"),
+                backstory=agent_description,
+                verbose=True,
+                allow_delegation=True
+            )
+            
+            {% raw %}{% else %}{% endraw %}
+            # Generic approach for other frameworks
+            # Try to detect common patterns in the framework
+            
+            # 1. Check if there's an Agent class
+            agent_class = None
+            for class_name in dir({{ module_name }}):
+                if "Agent" in class_name and inspect.isclass(getattr({{ module_name }}, class_name, None)):
+                    agent_class = getattr({{ module_name }}, class_name)
+                    break
+            
+            if agent_class:
+                try:
+                    # Try to instantiate with common parameters
+                    framework_agent = agent_class(
+                        name=agent_name,
+                        description=agent_description,
+                        **llm_config
+                    )
+                except Exception as agent_e:
+                    logging.warning(f"Error creating agent with detected class: {str(agent_e)}")
+                    # Try with minimal parameters
+                    try:
+                        framework_agent = agent_class()
+                    except:
+                        logging.error(f"Could not create agent using {agent_class.__name__}")
+            
+            # 2. If no agent class found or creation failed, try factory functions
+            if not framework_agent:
+                factory_functions = [name for name in dir({{ module_name }})
+                                   if callable(getattr({{ module_name }}, name, None)) and
+                                   ("create" in name.lower() or "initialize" in name.lower()) and
+                                   "agent" in name.lower()]
+                
+                for func_name in factory_functions:
+                    try:
+                        factory_func = getattr({{ module_name }}, func_name)
+                        framework_agent = factory_func(name=agent_name)
+                        break
+                    except Exception as func_e:
+                        logging.warning(f"Error creating agent with {func_name}: {str(func_e)}")
+            
+            # 3. Last resort: create a minimal placeholder
+            if not framework_agent:
+                logging.warning(f"Could not create a proper {{ framework.name }} agent, using placeholder")
+                # Create a minimal placeholder that supports basic operations
+                framework_agent = type('PlaceholderAgent', (), {
+                    'name': agent_name,
+                    'description': agent_description,
+                    'run': lambda x: f"Placeholder response for: {x}",
+                    'execute': lambda x: f"Placeholder response for: {x}",
+                    'close': lambda: None
+                })()
+            {% raw %}{% endif %}{% endraw %}
             
             # Store the agent
             self.agents[agent_id] = framework_agent
@@ -138,16 +298,77 @@ class {{ framework.name|capitalize }}Adapter(AgentExecutionAdapter):
                 "status": "running",
                 "start_time": asyncio.get_event_loop().time()
             }
-            
-            # Extract task information
+              # Extract task information
             task_type = task.get("type", "general")
             task_content = task.get("content", "")
+            task_inputs = task.get("inputs", {})
+            task_parameters = task.get("parameters", {})
+            task_context = task.get("context", [])
+            task_timeout = task.get("timeout", self.global_config.get("default_task_timeout", 300))
             
-            # Framework-specific task execution
-            # Replace this with actual framework task execution
-            result = "Task execution not implemented"
+            # Record task start in metrics
+            start_time = asyncio.get_event_loop().time()
             
-            # Update task and agent status
+            # Framework-specific task execution based on agent type and task type
+            agent_type = self.agent_configs[agent_id].get("type", "default")
+            
+            # Handle different agent and task types with appropriate execution strategies
+            if hasattr(agent, "run") and callable(agent.run):
+                # Most frameworks provide a run method on their agent
+                # Support both synchronous and async run methods
+                if asyncio.iscoroutinefunction(agent.run):
+                    result = await agent.run(task_content)
+                else:
+                    # Run synchronously but in a thread to avoid blocking
+                    result = await asyncio.to_thread(
+                        lambda: agent.run(task_content)
+                    )
+            elif hasattr(agent, "execute") and callable(agent.execute):
+                # Some frameworks use execute instead of run
+                if asyncio.iscoroutinefunction(agent.execute):
+                    result = await agent.execute(task_content, **task_parameters)
+                else:
+                    result = await asyncio.to_thread(
+                        lambda: agent.execute(task_content, **task_parameters)
+                    )
+            elif hasattr(agent, "complete") and callable(agent.complete):
+                # Some completion-based frameworks
+                if asyncio.iscoroutinefunction(agent.complete):
+                    result = await agent.complete(task_content)
+                else:
+                    result = await asyncio.to_thread(
+                        lambda: agent.complete(task_content)
+                    )
+            elif hasattr(agent, "__call__") and callable(agent.__call__):
+                # Some frameworks make the agent directly callable
+                if asyncio.iscoroutinefunction(agent.__call__):
+                    result = await agent(task_content)
+                else:
+                    result = await asyncio.to_thread(
+                        lambda: agent(task_content)
+                    )
+            else:
+                # For other frameworks with custom interfaces
+                # Try to determine the best approach based on framework capabilities
+                {% raw %}{% if framework.capabilities.async_support %}{% endraw %}
+                # This framework supports async execution
+                result = await self._execute_task_with_framework_async(agent, task_content, task_type, task_parameters)
+                {% raw %}{% else %}{% endraw %}
+                # Use synchronous execution in a thread
+                result = await asyncio.to_thread(
+                    self._execute_task_with_framework_sync, agent, task_content, task_type, task_parameters
+                )
+                {% raw %}{% endif %}{% endraw %}
+            
+            # Process result if it's in a special format
+            if isinstance(result, dict) and "output" in result:
+                # Some frameworks return structured output
+                result = result["output"]
+            elif isinstance(result, (list, tuple)) and len(result) > 0:
+                # Some frameworks return lists/tuples with the output as first element
+                result = result[0] if isinstance(result[0], str) else str(result[0])
+            
+            # Update task and agent status with completion information
             self.active_tasks[task_id]["status"] = "completed"
             self.active_tasks[task_id]["end_time"] = asyncio.get_event_loop().time()
             self.active_tasks[task_id]["result"] = result
@@ -273,8 +494,7 @@ class {{ framework.name|capitalize }}Adapter(AgentExecutionAdapter):
             return True
         
         return False
-    
-    async def update_agent(self, agent_id: str, updates: Dict[str, Any]) -> bool:
+      async def update_agent(self, agent_id: str, updates: Dict[str, Any]) -> bool:
         """
         Update a {{ framework.name }} agent's configuration.
         
@@ -289,14 +509,132 @@ class {{ framework.name|capitalize }}Adapter(AgentExecutionAdapter):
             return False
         
         try:
+            # Store original config for rollback if needed
+            original_config = self.agent_configs[agent_id].copy()
+            
             # Update the agent configuration
             self.agent_configs[agent_id].update(updates)
             
-            # Framework-specific update logic
-            # Replace with actual framework update logic
+            # Get the current agent instance
+            current_agent = self.agents[agent_id]
+            
+            # Framework-specific update logic based on framework and agent type
+            agent_type = self.agent_configs[agent_id].get("type", "default")
+            
+            # Determine what type of updates need to be applied
+            has_system_message_update = "system_message" in updates or "description" in updates
+            has_llm_config_update = "llm_config" in updates
+            has_tools_update = "tools" in updates
+            has_name_update = "name" in updates
+            
+            # Handle different update scenarios based on framework
+            {% raw %}{% if framework.name == "langchain" %}{% endraw %}
+            # LangChain-specific update logic
+            if has_system_message_update and hasattr(current_agent, "agent"):
+                # Update system message for the agent
+                system_message = updates.get("system_message", updates.get("description", ""))
+                if hasattr(current_agent.agent, "llm_chain") and hasattr(current_agent.agent.llm_chain, "prompt"):
+                    # Try to update the prompt template
+                    try:
+                        current_agent.agent.llm_chain.prompt.template = system_message
+                        logging.info(f"Updated system message for LangChain agent {agent_id}")
+                    except Exception as e:
+                        logging.warning(f"Could not update system message: {str(e)}")
+            
+            if has_llm_config_update and hasattr(current_agent, "agent") and hasattr(current_agent.agent, "llm_chain"):
+                # Update LLM configuration (typically requires recreation)
+                # We'll just note this for now as most frameworks require recreation
+                logging.info(f"LLM config updated for agent {agent_id} - changes will apply on next initialization")
+            
+            if has_tools_update and hasattr(current_agent, "tools"):
+                # Try to update tools if the framework supports it
+                from langchain.agents import load_tools
+                from langchain.chat_models import ChatOpenAI
+                
+                try:
+                    # Get the LLM to use for tools
+                    llm = None
+                    if hasattr(current_agent, "agent") and hasattr(current_agent.agent, "llm_chain") and hasattr(current_agent.agent.llm_chain, "llm"):
+                        llm = current_agent.agent.llm_chain.llm
+                    else:
+                        # Create a new LLM
+                        llm_config = self.agent_configs[agent_id].get("llm_config", {})
+                        model_name = llm_config.get("model_name", "gpt-3.5-turbo")
+                        temperature = llm_config.get("temperature", 0.7)
+                        llm = ChatOpenAI(model_name=model_name, temperature=temperature)
+                    
+                    # Load the new tools
+                    new_tools = load_tools(updates["tools"], llm=llm)
+                    
+                    # Replace the tools
+                    current_agent.tools = new_tools
+                    logging.info(f"Updated tools for LangChain agent {agent_id}")
+                except Exception as e:
+                    logging.warning(f"Could not update tools: {str(e)}")
+            
+            {% raw %}{% elif framework.name == "autogen" %}{% endraw %}
+            # AutoGen-specific update logic
+            if has_system_message_update and hasattr(current_agent, "system_message"):
+                # Update system message
+                current_agent.system_message = updates.get("system_message", updates.get("description", ""))
+                logging.info(f"Updated system message for AutoGen agent {agent_id}")
+            
+            if has_name_update and hasattr(current_agent, "name"):
+                # Update agent name
+                current_agent.name = updates.get("name")
+                logging.info(f"Updated name for AutoGen agent {agent_id}")
+            
+            if has_llm_config_update and hasattr(current_agent, "llm_config"):
+                # Update LLM configuration
+                llm_config = updates.get("llm_config", {})
+                if isinstance(current_agent.llm_config, dict):
+                    current_agent.llm_config.update(llm_config)
+                    logging.info(f"Updated LLM config for AutoGen agent {agent_id}")
+            
+            {% raw %}{% else %}{% endraw %}
+            # Generic update approach for other frameworks
+            # Attempt to update common properties dynamically
+            
+            updated_props = 0
+            
+            # Try to update name
+            if has_name_update and hasattr(current_agent, "name"):
+                try:
+                    current_agent.name = updates.get("name")
+                    updated_props += 1
+                except Exception:
+                    pass
+            
+            # Try to update description/system message
+            if has_system_message_update:
+                system_message = updates.get("system_message", updates.get("description", ""))
+                for attr_name in ["system_message", "description", "instructions", "prompt"]:
+                    if hasattr(current_agent, attr_name):
+                        try:
+                            setattr(current_agent, attr_name, system_message)
+                            updated_props += 1
+                            break
+                        except Exception:
+                            pass
+            
+            # Log the results
+            if updated_props > 0:
+                logging.info(f"Dynamically updated {updated_props} properties for {agent_id}")
+            else:
+                logging.info(f"No properties could be updated dynamically for {agent_id}")
+            {% raw %}{% endif %}{% endraw %}
+            
+            # For major configuration changes, we might need to recreate the agent
+            needs_recreation = has_llm_config_update or (has_tools_update and "tools" in updates)
+            
+            if needs_recreation:
+                logging.info(f"Agent {agent_id} may need recreation for changes to take full effect")
             
             return True
+            
         except Exception as e:
+            # Restore original config on error
+            self.agent_configs[agent_id] = original_config
             logging.error(f"Failed to update agent {agent_id}: {str(e)}")
             return False
     
@@ -343,8 +681,7 @@ class {{ framework.name|capitalize }}Adapter(AgentExecutionAdapter):
         except Exception as e:
             logging.error(f"Failed to create team: {str(e)}")
             raise
-    
-    async def get_framework_capabilities(self) -> Dict[str, Any]:
+      async def get_framework_capabilities(self) -> Dict[str, Any]:
         """
         Get the capabilities of {{ framework.name }}.
         
@@ -354,15 +691,113 @@ class {{ framework.name|capitalize }}Adapter(AgentExecutionAdapter):
         capabilities = {
             "name": "{{ framework.name }}",
             "version": getattr({{ module_name }}, "__version__", "unknown"),
-            "features": {
-                # Framework-specific features
-                # Replace with actual framework capabilities
-            }
+            "features": {}
         }
+        
+        # Dynamically detect framework capabilities
+        try:
+            # Check for multi-agent support
+            capabilities["features"]["multi_agent_support"] = hasattr({{ module_name }}, "Team") or \
+                hasattr({{ module_name }}, "Group") or \
+                any("Team" in cls_name or "Group" in cls_name for cls_name in dir({{ module_name }}))
+            
+            # Check for planning capabilities
+            capabilities["features"]["planning"] = hasattr({{ module_name }}, "Planner") or \
+                hasattr({{ module_name }}, "Plan") or \
+                any("Planner" in cls_name or "Planning" in cls_name for cls_name in dir({{ module_name }}))
+            
+            # Check for tool usage
+            capabilities["features"]["tool_usage"] = hasattr({{ module_name }}, "Tool") or \
+                hasattr({{ module_name }}, "ToolKit") or \
+                any("Tool" in cls_name for cls_name in dir({{ module_name }}))
+            
+            # Check for memory implementations
+            capabilities["features"]["memory"] = hasattr({{ module_name }}, "Memory") or \
+                hasattr({{ module_name }}, "ConversationMemory") or \
+                any("Memory" in cls_name for cls_name in dir({{ module_name }}))
+            
+            # Check for retrieval capabilities
+            capabilities["features"]["retrieval"] = hasattr({{ module_name }}, "Retriever") or \
+                hasattr({{ module_name }}, "VectorStore") or \
+                any("Retriever" in cls_name or "Retrieval" in cls_name for cls_name in dir({{ module_name }}))
+            
+            # Check for human feedback
+            capabilities["features"]["human_feedback"] = hasattr({{ module_name }}, "Human") or \
+                hasattr({{ module_name }}, "HumanFeedback") or \
+                any("Human" in cls_name or "HITL" in cls_name for cls_name in dir({{ module_name }}))
+            
+            # Check for async support
+            async_functions = [name for name in dir({{ module_name }}) 
+                            if callable(getattr({{ module_name }}, name, None)) and 
+                            asyncio.iscoroutinefunction(getattr({{ module_name }}, name, None))]
+            capabilities["features"]["async_support"] = len(async_functions) > 0
+            
+            # Framework-specific capability detection
+            {% raw %}{% if framework.name == "langchain" %}{% endraw %}
+            # LangChain specific capabilities
+            capabilities["features"]["chains"] = True
+            capabilities["features"]["llm_integration"] = True
+            capabilities["features"]["agent_types"] = ["zero-shot-react", "conversational-react", "self-ask"]
+            {% raw %}{% elif framework.name == "autogen" %}{% endraw %}
+            # AutoGen specific capabilities
+            capabilities["features"]["multi_agent_conversation"] = True
+            capabilities["features"]["human_agent_collaboration"] = True
+            {% raw %}{% elif framework.name == "semantic_kernel" %}{% endraw %}
+            # Semantic Kernel specific capabilities
+            capabilities["features"]["plugins"] = True
+            capabilities["features"]["connectors"] = True
+            {% raw %}{% elif framework.name == "crewai" %}{% endraw %}
+            # CrewAI specific capabilities
+            capabilities["features"]["agent_roles"] = True
+            capabilities["features"]["task_workflows"] = True
+            {% raw %}{% endif %}{% endraw %}
+            
+            # Add model support information
+            capabilities["supported_models"] = self._detect_supported_models()
+            
+            # Add information about active agents and teams
+            capabilities["active_agents"] = len(self.agents)
+            capabilities["active_teams"] = len(self.teams)
+            
+        except Exception as e:
+            logging.warning(f"Error detecting framework capabilities: {str(e)}")
         
         return capabilities
     
-    async def shutdown(self) -> bool:
+    def _detect_supported_models(self) -> List[str]:
+        """Detect which models the framework supports natively."""
+        supported_models = []
+        
+        try:
+            # Check for OpenAI support
+            openai_support = hasattr({{ module_name }}, "OpenAI") or \
+                any("OpenAI" in cls_name for cls_name in dir({{ module_name }}))
+            if openai_support:
+                supported_models.extend(["gpt-4", "gpt-4-turbo", "gpt-3.5-turbo"])
+            
+            # Check for Anthropic support
+            anthropic_support = hasattr({{ module_name }}, "Claude") or \
+                any("Anthropic" in cls_name or "Claude" in cls_name for cls_name in dir({{ module_name }}))
+            if anthropic_support:
+                supported_models.extend(["claude-3-opus", "claude-3-sonnet", "claude-3-haiku"])
+            
+            # Check for Google support
+            google_support = hasattr({{ module_name }}, "Gemini") or \
+                any("Gemini" in cls_name or "Palm" in cls_name for cls_name in dir({{ module_name }}))
+            if google_support:
+                supported_models.extend(["gemini-pro", "gemini-ultra"])
+            
+            # Check for local model support
+            local_support = hasattr({{ module_name }}, "Llama") or \
+                any("Llama" in cls_name or "LocalLLM" in cls_name for cls_name in dir({{ module_name }}))
+            if local_support:
+                supported_models.extend(["llama-2", "mistral", "mixtral"])
+        
+        except Exception as e:
+            logging.warning(f"Error detecting supported models: {str(e)}")
+        
+        return supported_models
+      async def shutdown(self) -> bool:
         """
         Shut down the {{ framework.name }} adapter cleanly.
         
@@ -370,8 +805,80 @@ class {{ framework.name|capitalize }}Adapter(AgentExecutionAdapter):
             True if successful, False otherwise
         """
         try:
-            # Framework-specific cleanup
-            # Replace with actual framework cleanup
+            # Log the shutdown operation
+            logging.info(f"Shutting down {{ framework.name }} adapter with {len(self.agents)} active agents")
+            
+            # Framework-specific cleanup operations based on framework capabilities
+            # First, terminate any running tasks
+            active_task_ids = [task_id for task_id, task_info in self.active_tasks.items() 
+                             if task_info.get("status") == "running"]
+            
+            for task_id in active_task_ids:
+                try:
+                    agent_id = self.active_tasks[task_id].get("agent_id")
+                    if agent_id:
+                        logging.info(f"Terminating active task {task_id} for agent {agent_id}")
+                        self.active_tasks[task_id]["status"] = "terminated"
+                        self.active_tasks[task_id]["end_time"] = asyncio.get_event_loop().time()
+                        
+                        if agent_id in self.agent_status:
+                            self.agent_status[agent_id]["status"] = "terminated"
+                            self.agent_status[agent_id]["current_task"] = None
+                except Exception as task_e:
+                    logging.warning(f"Error terminating task {task_id}: {str(task_e)}")
+            
+            # Next, perform framework-specific cleanup for each agent
+            for agent_id, agent in list(self.agents.items()):
+                try:
+                    # Handle different types of agent cleanup
+                    if hasattr(agent, "close") and callable(agent.close):
+                        # Some frameworks use close() for cleanup
+                        if asyncio.iscoroutinefunction(agent.close):
+                            await agent.close()
+                        else:
+                            await asyncio.to_thread(agent.close)
+                    elif hasattr(agent, "terminate") and callable(agent.terminate):
+                        # Some frameworks use terminate()
+                        if asyncio.iscoroutinefunction(agent.terminate):
+                            await agent.terminate()
+                        else:
+                            await asyncio.to_thread(agent.terminate)
+                    elif hasattr(agent, "shutdown") and callable(agent.shutdown):
+                        # Some frameworks use shutdown()
+                        if asyncio.iscoroutinefunction(agent.shutdown):
+                            await agent.shutdown()
+                        else:
+                            await asyncio.to_thread(agent.shutdown)
+                    elif hasattr(agent, "cleanup") and callable(agent.cleanup):
+                        # Some frameworks use cleanup()
+                        if asyncio.iscoroutinefunction(agent.cleanup):
+                            await agent.cleanup()
+                        else:
+                            await asyncio.to_thread(agent.cleanup)
+                            
+                    # Release any resources held by the agent
+                    if hasattr(agent, "release_resources") and callable(agent.release_resources):
+                        if asyncio.iscoroutinefunction(agent.release_resources):
+                            await agent.release_resources()
+                        else:
+                            await asyncio.to_thread(agent.release_resources)
+                except Exception as agent_e:
+                    logging.warning(f"Error shutting down agent {agent_id}: {str(agent_e)}")
+            
+            # Framework-specific global cleanup operations
+            {% raw %}{% if framework.name == "langchain" %}{% endraw %}
+            # LangChain specific cleanup
+            if hasattr({{ module_name }}, "clear_cache") and callable(getattr({{ module_name }}, "clear_cache")):
+                await asyncio.to_thread(getattr({{ module_name }}, "clear_cache"))
+            {% raw %}{% elif framework.name == "autogen" %}{% endraw %}
+            # AutoGen specific cleanup
+            if hasattr({{ module_name }}, "cleanup") and callable(getattr({{ module_name }}, "cleanup")):
+                await asyncio.to_thread(getattr({{ module_name }}, "cleanup"))
+            {% raw %}{% endif %}{% endraw %}
+            
+            # Release any remaining resources
+            for team_id, team_info in self.teams.items():
+                logging.info(f"Shutting down team {team_id} ({team_info.get('name', 'unnamed')})")
             
             # Clear all data structures
             self.agents.clear()
@@ -380,6 +887,7 @@ class {{ framework.name|capitalize }}Adapter(AgentExecutionAdapter):
             self.agent_status.clear()
             self.active_tasks.clear()
             
+            logging.info(f"{{ framework.name }} adapter shutdown complete")
             return True
         except Exception as e:
             logging.error(f"Error shutting down {{ framework.name }} adapter: {str(e)}")

@@ -103,10 +103,30 @@ jobs:
         tags: evogenesis:dev-latest,evogenesis:dev-${{ github.sha }}
         
     - name: Deploy to development environment
-      run: |
-        # This is a placeholder for your deployment script
-        # In a real scenario, you might use kubectl, AWS CLI, Azure CLI, etc.
-        echo "Deploying to development environment"
+      run: |        # This script deploys the application to a Kubernetes development environment
+        # Set up kubectl with service account credentials from secrets
+        echo "${{ secrets.KUBE_CONFIG_DEV }}" > ./kubeconfig
+        export KUBECONFIG=./kubeconfig
+        
+        # Update deployment
+        echo "Deploying version ${{ github.sha }} to development environment"
+        
+        # Apply any database migrations first
+        kubectl apply -f k8s/migrations/
+        
+        # Update the deployment with the new image tag
+        kubectl set image deployment/evogenesis-api evogenesis-api=evogenesis:dev-${{ github.sha }} -n evogenesis-dev
+        
+        # Verify deployment update is rolled out properly
+        kubectl rollout status deployment/evogenesis-api -n evogenesis-dev --timeout=300s
+        
+        # Update any configuration changes
+        kubectl apply -f k8s/dev/configmaps.yaml -n evogenesis-dev
+        
+        # Clean up credentials
+        rm ./kubeconfig
+        
+        echo "Deployment to development environment complete!"
 
   deploy-prod:
     needs: build

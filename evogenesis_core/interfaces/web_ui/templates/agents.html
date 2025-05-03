@@ -265,47 +265,285 @@
     
     <!-- Create Agent Modal -->
     <div class="modal fade" id="createAgentModal" tabindex="-1" aria-labelledby="createAgentModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="createAgentModalLabel">Create New Agent</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="create-agent-form">
-                        <div class="mb-3">
-                            <label for="agent-name-input" class="form-label">Agent Name</label>
-                            <input type="text" class="form-control" id="agent-name-input" required>
+                    <!-- Wizard Navigation -->
+                    <ul class="nav nav-pills nav-justified mb-4" id="agentWizardNav" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="quick-create-tab" data-bs-toggle="pill" data-bs-target="#quick-create" type="button" role="tab" aria-controls="quick-create" aria-selected="true">
+                                <i class='bx bx-rocket'></i> Quick Create
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="custom-create-tab" data-bs-toggle="pill" data-bs-target="#custom-create" type="button" role="tab" aria-controls="custom-create" aria-selected="false">
+                                <i class='bx bx-slider'></i> Advanced
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <!-- Wizard Content -->
+                    <div class="tab-content" id="agentWizardContent">
+                        <!-- Quick Create Tab -->
+                        <div class="tab-pane fade show active" id="quick-create" role="tabpanel" aria-labelledby="quick-create-tab">
+                            <div class="quick-create-section">
+                                <p class="lead">Describe what you want the agent to do and we'll create it for you.</p>
+                                
+                                <div class="mb-4">
+                                    <label for="agent-purpose-input" class="form-label">What should this agent do?</label>
+                                    <textarea class="form-control" id="agent-purpose-input" rows="3" placeholder="Example: Research the latest AI developments and create a summary report"></textarea>
+                                    <div class="form-text">Describe the agent's purpose and tasks in natural language. Be as specific as possible.</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="agent-quick-name" class="form-label">Agent Name (optional)</label>
+                                    <input type="text" class="form-control" id="agent-quick-name" placeholder="We'll generate a name if left blank">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Agent Priority</label>
+                                    <div class="form-text mb-2">How important is this task? This affects resource allocation.</div>
+                                    <div class="btn-group w-100" role="group" aria-label="Agent priority">
+                                        <input type="radio" class="btn-check" name="agent-priority" id="priority-low" value="low" autocomplete="off">
+                                        <label class="btn btn-outline-secondary" for="priority-low">Low</label>
+                                        
+                                        <input type="radio" class="btn-check" name="agent-priority" id="priority-medium" value="medium" autocomplete="off" checked>
+                                        <label class="btn btn-outline-secondary" for="priority-medium">Medium</label>
+                                        
+                                        <input type="radio" class="btn-check" name="agent-priority" id="priority-high" value="high" autocomplete="off">
+                                        <label class="btn btn-outline-secondary" for="priority-high">High</label>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Time Constraint</label>
+                                    <select class="form-select" id="agent-time-constraint">
+                                        <option value="none">No time constraint</option>
+                                        <option value="quick">Quick result (minutes)</option>
+                                        <option value="standard" selected>Standard (up to an hour)</option>
+                                        <option value="thorough">Thorough research (hours or days)</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Task Context & Guidance</label>
+                                    <div class="accordion" id="contextAccordion">
+                                        <div class="accordion-item">
+                                            <h2 class="accordion-header" id="headingDataSources">
+                                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseDataSources" aria-expanded="false" aria-controls="collapseDataSources">
+                                                    Data Sources
+                                                </button>
+                                            </h2>
+                                            <div id="collapseDataSources" class="accordion-collapse collapse" aria-labelledby="headingDataSources" data-bs-parent="#contextAccordion">
+                                                <div class="accordion-body">
+                                                    <div class="mb-2">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox" id="use-web-search" checked>
+                                                            <label class="form-check-label" for="use-web-search">
+                                                                Web Search
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="mb-2">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox" id="use-system-memory" checked>
+                                                            <label class="form-check-label" for="use-system-memory">
+                                                                System Memory
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="mb-2">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox" id="upload-data">
+                                                            <label class="form-check-label" for="upload-data">
+                                                                Upload Custom Data
+                                                            </label>
+                                                        </div>
+                                                        <div id="upload-data-container" class="mt-2 d-none">
+                                                            <input type="file" class="form-control" id="data-file-upload">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="accordion-item">
+                                            <h2 class="accordion-header" id="headingTools">
+                                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTools" aria-expanded="false" aria-controls="collapseTools">
+                                                    Suggested Tools
+                                                </button>
+                                            </h2>
+                                            <div id="collapseTools" class="accordion-collapse collapse" aria-labelledby="headingTools" data-bs-parent="#contextAccordion">
+                                                <div class="accordion-body">
+                                                    <p class="text-muted">Based on your description, we'll automatically select appropriate tools for this agent</p>
+                                                    <div id="suggested-tools-list">
+                                                        <div class="placeholder-glow">
+                                                            <span class="placeholder col-12"></span>
+                                                            <span class="placeholder col-12"></span>
+                                                            <span class="placeholder col-12"></span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="accordion-item">
+                                            <h2 class="accordion-header" id="headingOutput">
+                                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOutput" aria-expanded="false" aria-controls="collapseOutput">
+                                                    Output Preferences
+                                                </button>
+                                            </h2>
+                                            <div id="collapseOutput" class="accordion-collapse collapse" aria-labelledby="headingOutput" data-bs-parent="#contextAccordion">
+                                                <div class="accordion-body">
+                                                    <label class="form-label">Preferred Output Format</label>
+                                                    <select class="form-select mb-3" id="output-format">
+                                                        <option value="auto">Auto-detect best format</option>
+                                                        <option value="text">Plain Text</option>
+                                                        <option value="markdown">Markdown</option>
+                                                        <option value="html">HTML</option>
+                                                        <option value="json">JSON</option>
+                                                        <option value="csv">CSV</option>
+                                                    </select>
+                                                    
+                                                    <label class="form-label">Output Delivery</label>
+                                                    <div class="form-check mb-2">
+                                                        <input class="form-check-input" type="checkbox" id="deliver-dashboard" checked>
+                                                        <label class="form-check-label" for="deliver-dashboard">
+                                                            Display on Dashboard
+                                                        </label>
+                                                    </div>
+                                                    <div class="form-check mb-2">
+                                                        <input class="form-check-input" type="checkbox" id="deliver-email">
+                                                        <label class="form-check-label" for="deliver-email">
+                                                            Send via Email
+                                                        </label>
+                                                    </div>
+                                                    <div id="email-delivery-container" class="mt-2 d-none">
+                                                        <input type="email" class="form-control" id="delivery-email" placeholder="Enter email address">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="quick-team-check" checked>
+                                        <label class="form-check-label" for="quick-team-check">
+                                            Auto-create a team of agents if needed for this task
+                                        </label>
+                                    </div>
+                                    <div class="form-text">For complex tasks, EvoGenesis will automatically create a team of specialized agents working together</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="human-review-check" checked>
+                                        <label class="form-check-label" for="human-review-check">
+                                            Require human approval for key decisions
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div id="agent-quick-result" class="alert alert-info d-none">
+                                    <div class="spinner-border spinner-border-sm" role="status"></div>
+                                    <span class="ms-2">Analyzing your request...</span>
+                                </div>
+                                
+                                <div id="agent-suggestion-container" class="border rounded p-3 mt-3 d-none">
+                                    <h6>Suggested Solution</h6>
+                                    <div id="agent-suggestion-content"></div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label for="agent-type-select" class="form-label">Agent Type</label>
-                            <select class="form-select" id="agent-type-select" required>
-                                <option value="">Select a type</option>
-                                <option value="assistant">Assistant</option>
-                                <option value="user_proxy">User Proxy</option>
-                                <option value="coordinator">Coordinator</option>
-                                <option value="planner">Planner</option>
-                                <option value="critic">Critic</option>
-                            </select>
+                        
+                        <!-- Advanced Create Tab -->
+                        <div class="tab-pane fade" id="custom-create" role="tabpanel" aria-labelledby="custom-create-tab">
+                            <form id="create-agent-form">
+                                <div class="mb-3">
+                                    <label for="agent-name-input" class="form-label">Agent Name</label>
+                                    <input type="text" class="form-control" id="agent-name-input" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="agent-type-select" class="form-label">Agent Type</label>
+                                    <select class="form-select" id="agent-type-select" required>
+                                        <option value="">Select a type</option>
+                                        <option value="assistant">Assistant</option>
+                                        <option value="researcher">Researcher</option>
+                                        <option value="analyst">Analyst</option>
+                                        <option value="developer">Developer</option>
+                                        <option value="coordinator">Coordinator</option>
+                                        <option value="planner">Planner</option>
+                                        <option value="critic">Critic</option>
+                                        <option value="custom">Custom</option>
+                                    </select>
+                                </div>
+                                
+                                <div id="custom-type-div" class="mb-3 d-none">
+                                    <label for="custom-type-input" class="form-label">Custom Type Name</label>
+                                    <input type="text" class="form-control" id="custom-type-input">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="agent-description-input" class="form-label">Description</label>
+                                    <textarea class="form-control" id="agent-description-input" rows="3"></textarea>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="agent-model-select" class="form-label">Base LLM Model</label>
+                                    <select class="form-select" id="agent-model-select">
+                                        <option value="default">System Default</option>
+                                        <option value="gpt-4">GPT-4</option>
+                                        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                                        <option value="llama-2-70b">Llama 2 (70B)</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Capabilities</label>
+                                    <div id="capabilities-container" class="mb-2">
+                                        <!-- Dynamic capabilities selectors will be added here -->
+                                        <div class="capability-item d-flex mb-2">
+                                            <select class="form-select me-2 capability-select">
+                                                <option value="">Select a capability</option>
+                                                <option value="web_research">Web Research</option>
+                                                <option value="data_analysis">Data Analysis</option>
+                                                <option value="code_generation">Code Generation</option>
+                                                <option value="text_summarization">Text Summarization</option>
+                                                <option value="strategic_planning">Strategic Planning</option>
+                                                <option value="creative_writing">Creative Writing</option>
+                                            </select>
+                                            <button type="button" class="btn btn-outline-danger remove-capability">
+                                                <i class='bx bx-x'></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" id="add-capability-btn">
+                                        <i class='bx bx-plus'></i> Add Capability
+                                    </button>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="agent-team-select" class="form-label">Assign to Team</label>
+                                    <select class="form-select" id="agent-team-select">
+                                        <option value="">None (Independent Agent)</option>
+                                        <!-- Teams will be loaded dynamically -->
+                                    </select>
+                                </div>
+                                
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="agent-auto-improve-check" checked>
+                                    <label class="form-check-label" for="agent-auto-improve-check">
+                                        Allow this agent to self-improve over time
+                                    </label>
+                                </div>
+                            </form>
                         </div>
-                        <div class="mb-3">
-                            <label for="agent-description-input" class="form-label">Description</label>
-                            <textarea class="form-control" id="agent-description-input" rows="3"></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label for="agent-capabilities-input" class="form-label">Capabilities (comma-separated)</label>
-                            <input type="text" class="form-control" id="agent-capabilities-input">
-                        </div>
-                        <div class="mb-3">
-                            <label for="agent-team-select" class="form-label">Assign to Team</label>
-                            <select class="form-select" id="agent-team-select">
-                                <option value="">None</option>
-                                <option value="research">Research Team</option>
-                                <option value="development">Development Team</option>
-                                <option value="system">System Core Team</option>
-                            </select>
-                        </div>
-                    </form>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -330,6 +568,9 @@
         document.getElementById('create-agent-btn').addEventListener('click', function() {
             const modal = new bootstrap.Modal(document.getElementById('createAgentModal'));
             modal.show();
+            
+            // Reset the form state
+            resetAgentCreateForm();
         });
         
         document.getElementById('create-agent-submit').addEventListener('click', createAgent);
@@ -357,232 +598,273 @@
                 loadAgents();
             }
         });
+        
+        // Set up dynamic form behavior
+        setupDynamicFormBehavior();
+        
+        // Setup purpose input analyzer
+        setupPurposeAnalyzer();
+        
+        // Setup agent type custom input handler
+        document.getElementById('agent-type-select').addEventListener('change', function() {
+            const customTypeDiv = document.getElementById('custom-type-div');
+            if (this.value === 'custom') {
+                customTypeDiv.classList.remove('d-none');
+            } else {
+                customTypeDiv.classList.add('d-none');
+            }
+        });
+        
+        // Setup capability management
+        document.getElementById('add-capability-btn').addEventListener('click', addCapabilityItem);
+        
+        // Add event delegation for remove capability buttons
+        document.getElementById('capabilities-container').addEventListener('click', function(e) {
+            if (e.target.closest('.remove-capability')) {
+                e.target.closest('.capability-item').remove();
+            }
+        });
     });
     
-    async function loadAgents() {
-        try {
-            const agents = await EvoGenesis.api.fetch('/api/agents');
-            if (!agents) return;
-            
-            updateAgentCounters(agents);
-            renderAgentList(agents);
-        } catch (error) {
-            console.error('Error loading agents:', error);
-            EvoGenesis.ui.showNotification('Failed to load agents', 'error');
-        }
+    function resetAgentCreateForm() {
+        // Reset form fields
+        document.getElementById('agent-purpose-input').value = '';
+        document.getElementById('agent-quick-name').value = '';
+        document.getElementById('output-format').value = 'auto';
+        document.getElementById('use-web-search').checked = true;
+        document.getElementById('use-system-memory').checked = true;
+        document.getElementById('upload-data').checked = false;
+        document.getElementById('upload-data-container').classList.add('d-none');
+        document.getElementById('deliver-dashboard').checked = true;
+        document.getElementById('deliver-email').checked = false;
+        document.getElementById('email-delivery-container').classList.add('d-none');
+        document.getElementById('quick-team-check').checked = true;
+        document.getElementById('human-review-check').checked = true;
+        
+        // Reset radio buttons
+        document.getElementById('priority-medium').checked = true;
+        
+        // Reset select boxes
+        document.getElementById('agent-time-constraint').value = 'standard';
+        
+        // Hide result sections
+        document.getElementById('agent-quick-result').classList.add('d-none');
+        document.getElementById('agent-suggestion-container').classList.add('d-none');
+        
+        // Reset suggested tools
+        document.getElementById('suggested-tools-list').innerHTML = `
+            <div class="placeholder-glow">
+                <span class="placeholder col-12"></span>
+                <span class="placeholder col-12"></span>
+                <span class="placeholder col-12"></span>
+            </div>
+        `;
+        
+        // Reset tab to quick create
+        document.getElementById('quick-create-tab').click();
     }
     
-    function updateAgentCounters(agents) {
-        const totalAgents = agents.length;
-        const activeAgents = agents.filter(a => a.status === 'active').length;
-        const systemAgents = agents.filter(a => a.type === 'coordinator' || a.type === 'planner' || a.type === 'critic').length;
-        const userAgents = totalAgents - systemAgents;
+    function setupDynamicFormBehavior() {
+        // Handle upload data checkbox
+        document.getElementById('upload-data').addEventListener('change', function() {
+            const uploadContainer = document.getElementById('upload-data-container');
+            if (this.checked) {
+                uploadContainer.classList.remove('d-none');
+            } else {
+                uploadContainer.classList.add('d-none');
+            }
+        });
         
-        document.getElementById('total-agents').textContent = totalAgents;
-        document.getElementById('active-agents').textContent = activeAgents;
-        document.getElementById('system-agents').textContent = systemAgents;
-        document.getElementById('user-agents').textContent = userAgents;
+        // Handle email delivery checkbox
+        document.getElementById('deliver-email').addEventListener('change', function() {
+            const emailContainer = document.getElementById('email-delivery-container');
+            if (this.checked) {
+                emailContainer.classList.remove('d-none');
+            } else {
+                emailContainer.classList.add('d-none');
+            }
+        });
+        
+        // Update tools list when purpose changes
+        document.getElementById('agent-purpose-input').addEventListener('input', function() {
+            updateSuggestedTools(this.value);
+        });
     }
     
-    function renderAgentList(agents) {
-        const agentList = document.getElementById('agent-list');
-        agentList.innerHTML = '';
+    async function updateSuggestedTools(purpose) {
+        if (!purpose || purpose.length < 10) return;
         
-        agents.forEach(agent => {
-            const row = document.createElement('tr');
-            
-            // Status class
-            const statusClass = agent.status === 'active' ? 'active' : 
-                              agent.status === 'idle' ? 'warning' : 'error';
-            
-            // Type class
-            const typeClass = agent.type === 'coordinator' || agent.type === 'planner' || agent.type === 'critic' ? 
-                            'info' : 'primary';
-            
-            row.innerHTML = `
-                <td>
-                    <div class="d-flex align-items-center">
-                        <div class="status-indicator ${statusClass} me-2"></div>
-                        <div>${agent.name}</div>
-                    </div>
-                </td>
-                <td><span class="badge bg-${typeClass}">${agent.type}</span></td>
-                <td><span class="badge bg-${agent.status === 'active' ? 'success' : 
-                                         agent.status === 'idle' ? 'warning' : 'secondary'}">${agent.status}</span></td>
-                <td>${agent.team_id ? agent.team_id : '-'}</td>
-                <td>
-                    ${agent.capabilities.map(cap => `<span class="badge bg-secondary">${cap}</span>`).join(' ')}
-                </td>
-                <td>
-                    <div class="btn-group">
-                        <button class="btn btn-sm btn-outline-primary">
-                            <i class='bx bx-info-circle'></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-secondary">
-                            <i class='bx bx-message-square-detail'></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger">
-                            <i class='bx bx-power-off'></i>
-                        </button>
-                    </div>
-                </td>
+        const toolsList = document.getElementById('suggested-tools-list');
+        
+        // Show loading placeholder if not already showing
+        if (!toolsList.querySelector('.placeholder')) {
+            toolsList.innerHTML = `
+                <div class="placeholder-glow">
+                    <span class="placeholder col-12"></span>
+                    <span class="placeholder col-12"></span>
+                    <span class="placeholder col-12"></span>
+                </div>
             `;
-            
-            agentList.appendChild(row);
-        });
-    }
-    
-    function filterAgents(query) {
-        const rows = document.querySelectorAll('#agent-list tr');
-        query = query.toLowerCase();
+        }
         
-        rows.forEach(row => {
-            const name = row.querySelector('td:first-child div div').textContent.toLowerCase();
-            const type = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
-            const capabilities = row.querySelector('td:nth-child(5)').textContent.toLowerCase();
-            
-            if (name.includes(query) || type.includes(query) || capabilities.includes(query)) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
-            }
-        });
-    }
-      async function showAgentDetails(agentName) {
         try {
-            // First, find the agent's ID based on the name
-            const agents = await EvoGenesis.api.fetch('/api/agents');
-            const agent = agents.find(a => a.name === agentName);
+            // Call the API to get suggested tools
+            const result = await EvoGenesis.api.fetch('/api/tools/suggest', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ purpose: purpose })
+            });
             
-            if (!agent) {
-                EvoGenesis.ui.showNotification(`Agent "${agentName}" not found`, 'error');
-                return;
-            }
-            
-            // Show the modal first for better UX
-            const modal = new bootstrap.Modal(document.getElementById('agentDetailsModal'));
-            modal.show();
-            
-            // Fetch detailed agent info by id
-            const agentDetails = await EvoGenesis.api.fetch(`/api/agents/${agent.id}`);
-            
-            // Update the modal with agent details
-            document.getElementById('agent-id').textContent = agentDetails.id;
-            document.getElementById('agent-name').textContent = agentDetails.name;
-            document.getElementById('agent-type').textContent = agentDetails.type;
-            document.getElementById('agent-status').textContent = agentDetails.status;
-            document.getElementById('agent-created').textContent = agentDetails.created_at;
-            
-            // Update capabilities
-            const capabilitiesContainer = document.getElementById('agent-capabilities');
-            capabilitiesContainer.innerHTML = agentDetails.capabilities
-                .map(cap => `<span class="badge bg-secondary">${cap}</span>`)
-                .join(' ');
-            
-            // Update team assignment
-            document.getElementById('agent-team').textContent = agentDetails.team_id || 'Not Assigned';
-            
-            // Update tasks
-            const tasksList = document.getElementById('agent-tasks');
-            tasksList.innerHTML = '';
-            
-            if (agentDetails.tasks && agentDetails.tasks.length > 0) {
-                agentDetails.tasks.forEach(task => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${task.id}</td>
-                        <td>${task.description}</td>
-                        <td><span class="badge bg-${task.status === 'completed' ? 'success' : 
-                                              task.status === 'in progress' ? 'warning' : 'secondary'}">${task.status}</span></td>
-                        <td>
-                            <div class="progress">
-                                <div class="progress-bar" role="progressbar" 
-                                    style="width: ${task.progress}%;" 
-                                    aria-valuenow="${task.progress}" 
-                                    aria-valuemin="0" 
-                                    aria-valuemax="100">${task.progress}%</div>
-                            </div>
-                        </td>
+            if (result && result.suggested_tools) {
+                // Render the suggested tools
+                toolsList.innerHTML = '';
+                
+                if (result.suggested_tools.length === 0) {
+                    toolsList.innerHTML = '<p class="text-muted">No specific tools suggested for this task</p>';
+                    return;
+                }
+                
+                result.suggested_tools.forEach(tool => {
+                    const toolItem = document.createElement('div');
+                    toolItem.className = 'suggested-tool-item d-flex align-items-center mb-2';
+                    
+                    // Determine icon based on tool category
+                    let iconClass = 'bx-wrench';
+                    switch(tool.category) {
+                        case 'data': iconClass = 'bx-table'; break;
+                        case 'web': iconClass = 'bx-globe'; break;
+                        case 'file': iconClass = 'bx-file'; break;
+                        case 'api': iconClass = 'bx-server'; break;
+                        case 'ai': iconClass = 'bx-brain'; break;
+                        case 'utils': iconClass = 'bx-cog'; break;
+                    }
+                    
+                    toolItem.innerHTML = `
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="tool-${tool.id}" checked>
+                            <label class="form-check-label" for="tool-${tool.id}">
+                                <i class='bx ${iconClass} me-1'></i>
+                                <strong>${tool.name}</strong>
+                                <small class="text-muted ms-1">${tool.description}</small>
+                            </label>
+                        </div>
                     `;
-                    tasksList.appendChild(row);
+                    
+                    toolsList.appendChild(toolItem);
                 });
-            } else {
-                tasksList.innerHTML = '<tr><td colspan="4" class="text-center">No active tasks</td></tr>';
-            }
-            
-            // Update activity log
-            const activityLog = document.getElementById('agent-activity-log');
-            activityLog.innerHTML = '';
-            
-            if (agentDetails.activities && agentDetails.activities.length > 0) {
-                agentDetails.activities.forEach(activity => {
-                    const activityItem = document.createElement('div');
-                    activityItem.className = 'activity-item';
-                    activityItem.innerHTML = `
-                        <div class="activity-time">${new Date(activity.timestamp).toLocaleTimeString()}</div>
-                        <div class="activity-content">${activity.description}</div>
-                    `;
-                    activityLog.appendChild(activityItem);
-                });
-            } else {
-                activityLog.innerHTML = '<div class="text-center">No recent activity</div>';
             }
         } catch (error) {
-            console.error('Error loading agent details:', error);
-            EvoGenesis.ui.showNotification('Failed to load agent details', 'error');
+            console.error('Error fetching suggested tools:', error);
+            toolsList.innerHTML = '<p class="text-danger">Error loading suggested tools</p>';
         }
     }
     
-    async function createAgent() {
-        try {
-            const name = document.getElementById('agent-name-input').value;
-            const type = document.getElementById('agent-type-select').value;
-            const description = document.getElementById('agent-description-input').value;
-            const capabilities = document.getElementById('agent-capabilities-input').value
-                              .split(',')
-                              .map(cap => cap.trim())
-                              .filter(cap => cap !== '');
-            const teamId = document.getElementById('agent-team-select').value || null;
-              if (!name || !type) {
-                EvoGenesis.ui.showNotification('Name and type are required', 'warning');
-                return;
-            }
+    function setupPurposeAnalyzer() {
+        const purposeInput = document.getElementById('agent-purpose-input');
+        let analysisTimeout;
+        
+        purposeInput.addEventListener('input', function() {
+            // Clear previous timeout
+            clearTimeout(analysisTimeout);
             
-            try {
-                // Call the API to create agent
-                const result = await EvoGenesis.api.fetch('/api/agents', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ name, type, description, capabilities, team_id: teamId })
-                });
+            // Set new timeout (300ms debounce)
+            analysisTimeout = setTimeout(async () => {
+                const purpose = purposeInput.value;
                 
-                if (result && result.success) {
-                    EvoGenesis.ui.showNotification(`Agent "${name}" created successfully`, 'success');
-                } else {
-                    throw new Error(result?.message || 'Unknown error creating agent');
+                if (purpose.length < 20) return;
+                
+                try {
+                    // Call the API to analyze the purpose
+                    const result = await EvoGenesis.api.fetch('/api/agents/analyze-purpose', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ purpose: purpose })
+                    });
+                    
+                    if (result && result.analysis) {
+                        // Show suggestion container
+                        const suggestionContainer = document.getElementById('agent-suggestion-container');
+                        const suggestionContent = document.getElementById('agent-suggestion-content');
+                        
+                        suggestionContainer.classList.remove('d-none');
+                        
+                        // Create summary of the suggested solution
+                        let suggestionHTML = '<div class="suggested-solution">';
+                        
+                        if (result.analysis.requires_team) {
+                            suggestionHTML += `
+                                <div class="alert alert-info">
+                                    <i class='bx bx-info-circle'></i>
+                                    <strong>Team Recommended:</strong> This task would benefit from a team of multiple specialized agents working together.
+                                </div>
+                            `;
+                            
+                            suggestionHTML += '<h6>Suggested Team Structure:</h6><ul>';
+                            result.analysis.suggested_agents.forEach(agent => {
+                                suggestionHTML += `<li><strong>${agent.name}</strong> - ${agent.purpose}</li>`;
+                            });
+                            suggestionHTML += '</ul>';
+                        } else {
+                            // Single agent recommendation
+                            const agent = result.analysis.suggested_agents[0];
+                            suggestionHTML += `
+                                <p>We recommend creating a <strong>${agent.type}</strong> agent with the following capabilities:</p>
+                                <ul>
+                            `;
+                            agent.capabilities.forEach(capability => {
+                                suggestionHTML += `<li>${capability}</li>`;
+                            });
+                            suggestionHTML += '</ul>';
+                        }
+                        
+                        // Add suggested name if missing
+                        if (!document.getElementById('agent-quick-name').value && result.analysis.suggested_name) {
+                            document.getElementById('agent-quick-name').value = result.analysis.suggested_name;
+                        }
+                        
+                        // Add estimated completion time
+                        if (result.analysis.estimated_time) {
+                            suggestionHTML += `
+                                <p class="mb-0"><strong>Estimated completion time:</strong> ${result.analysis.estimated_time}</p>
+                            `;
+                        }
+                        
+                        suggestionHTML += '</div>';
+                        suggestionContent.innerHTML = suggestionHTML;
+                    }
+                } catch (error) {
+                    console.error('Error analyzing purpose:', error);
                 }
-            } catch (apiError) {
-                console.error('API error creating agent:', apiError);
-                EvoGenesis.ui.showNotification(`Failed to create agent: ${apiError.message}`, 'error');
-                return;
-            }
-            
-            // Close modal and reload agents
-            const modal = bootstrap.Modal.getInstance(document.getElementById('createAgentModal'));
-            modal.hide();
-            
-            // Clear form
-            document.getElementById('create-agent-form').reset();
-            
-            // Reload agents
-            loadAgents();
-            
-        } catch (error) {
-            console.error('Error creating agent:', error);
-            EvoGenesis.ui.showNotification('Failed to create agent', 'error');
-        }
+            }, 500);
+        });
+    }
+    
+    function addCapabilityItem() {
+        const container = document.getElementById('capabilities-container');
+        
+        const newItem = document.createElement('div');
+        newItem.className = 'capability-item d-flex mb-2';
+        
+        newItem.innerHTML = `
+            <select class="form-select me-2 capability-select">
+                <option value="">Select a capability</option>
+                <option value="web_research">Web Research</option>
+                <option value="data_analysis">Data Analysis</option>
+                <option value="code_generation">Code Generation</option>
+                <option value="text_summarization">Text Summarization</option>
+                <option value="strategic_planning">Strategic Planning</option>
+                <option value="creative_writing">Creative Writing</option>
+            </select>
+            <button type="button" class="btn btn-outline-danger remove-capability">
+                <i class='bx bx-x'></i>
+            </button>
+        `;
+        
+        container.appendChild(newItem);
     }
 </script>
 {% endblock %}
