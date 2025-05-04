@@ -7,6 +7,7 @@ import sys
 import logging
 import asyncio
 import traceback
+import time
 from pathlib import Path
 
 # Add the parent directory to the path so we can import evogenesis_core

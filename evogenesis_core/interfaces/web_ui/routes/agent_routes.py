@@ -46,8 +46,8 @@ async def get_agents(request: Request):
     kernel = request.app.state.kernel
     
     try:
-        agent_manager = kernel.get_module("agent_factory")
-        agents = agent_manager.list_agents()
+        agent_factory = kernel.get_module("agent_factory") # Changed from agent_manager
+        agents = agent_factory.list_agents()
         
         # Transform to response format
         agent_responses = []

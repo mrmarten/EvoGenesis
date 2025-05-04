@@ -236,7 +236,7 @@ class RedisStreamsBus(MessageBus):
         """
         if not REDIS_AVAILABLE:
             raise ImportError("Redis package is required for RedisStreamsBus. "
-                             "Install with 'pip install redis'.")
+                             "Install the 'redis' dependency.")
         
         self.redis_client = redis.Redis(**connection_params)
         self.consumer_group = kwargs.get("consumer_group", "evogenesis-swarm")

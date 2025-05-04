@@ -198,7 +198,7 @@ class ShortTermMemoryStore:
             
         elif self.provider == MemoryProvider.REDIS:
             if not REDIS_AVAILABLE:
-                raise ImportError("Redis is not available. Install with 'pip install redis'")
+                raise ImportError("Redis is not available. Install the 'redis' dependency.")
             
             redis_config = self.config.get("redis", {})
             self.redis_client = redis.Redis(
@@ -625,7 +625,7 @@ class LongTermMemoryStore:
             
         elif self.provider == MemoryProvider.PINECONE:
             if not PINECONE_AVAILABLE:
-                raise ImportError("Pinecone is not available. Install with 'pip install pinecone-client'")
+                raise ImportError("Pinecone is not available. Install with 'pip install pinecone'")
             
             pinecone_config = self.config.get("pinecone", {})
             api_key = pinecone_config.get("api_key")
@@ -872,23 +872,71 @@ class LongTermMemoryStore:
         try:
             if self.provider == MemoryProvider.CHROMADB:
                 collection = self._get_chroma_collection(namespace)
+                # Handle metadata-only search for persistent_agents namespace
+                if (not query_embedding or len(query_embedding) == 0) and namespace == 'persistent_agents':
+                    try:
+                        # Retrieve all matching documents by metadata filter
+                        results = collection.get(where=filter_metadata)
+                    except Exception as e:
+                        logging.error(f"Metadata-only ChromaDB get failed for namespace '{namespace}': {e}")
+                        return []
+                    formatted_results = []
+                    ids = results.get('ids', [])
+                    docs = results.get('documents', [])
+                    metadatas = results.get('metadatas', [])
+                    for i, doc_id in enumerate(ids):
+                        formatted_results.append({
+                            "id": doc_id,
+                            "content": docs[i] if i < len(docs) else None,
+                            "metadata": metadatas[i] if i < len(metadatas) else {},
+                            "score": 0.0
+                        })
+                    return formatted_results
+                # Validate the embedding is not empty or None
+                if not query_embedding or len(query_embedding) == 0:
+                    logging.error(f"Invalid or empty query_embedding provided for ChromaDB search in namespace '{namespace}'. Embedding: {query_embedding}")
+                    return []
+                
+                # Verify the collection has documents before querying
+                if collection.count() == 0:
+                    logging.warning(f"Collection '{namespace}' is empty, no search results will be returned")
+                    return []
                 
                 # Search in ChromaDB
-                results = collection.query(
-                    query_embeddings=[query_embedding],
-                    n_results=limit,
-                    where=filter_metadata
-                )
+                try:
+                    # Ensure valid query parameters
+                    safe_limit = max(1, min(limit, 100))  # Keep limit between 1 and 100
+                    results = collection.query(
+                        query_embeddings=[query_embedding], # Chroma expects a list of embeddings
+                        n_results=safe_limit,
+                        where=filter_metadata
+                    )
+                except Exception as e:
+                    logging.error(f"Error during ChromaDB query in namespace '{namespace}': {str(e)}")
+                    return []
                 
                 # Format results
                 formatted_results = []
-                if results['documents'] and len(results['documents'][0]) > 0:
-                    for i in range(len(results['documents'][0])):
+                
+                # Check if we have valid IDs in the results
+                if (results and 
+                    results.get('ids') and 
+                    isinstance(results['ids'], list) and 
+                    len(results['ids']) > 0 and 
+                    isinstance(results['ids'][0], list) and
+                    len(results['ids'][0]) > 0):
+                    
+                    num_results = len(results['ids'][0])
+                    docs = results.get('documents', [[]])[0] if results.get('documents') else []
+                    metadatas = results.get('metadatas', [[]])[0] if results.get('metadatas') else []
+                    distances = results.get('distances', [[]])[0] if results.get('distances') else []
+
+                    for i in range(num_results):
                         formatted_results.append({
                             "id": results['ids'][0][i],
-                            "content": results['documents'][0][i],
-                            "metadata": results['metadatas'][0][i] if results['metadatas'] else {},
-                            "score": results['distances'][0][i] if results['distances'] else 0.0
+                            "content": docs[i] if i < len(docs) else None,
+                            "metadata": metadatas[i] if i < len(metadatas) else {},
+                            "score": distances[i] if i < len(distances) else 0.0
                         })
                 
                 return formatted_results
@@ -1013,10 +1061,15 @@ class LongTermMemoryStore:
             
             return []
             
-        except Exception as e:
-            logging.error(f"Error searching in long-term memory: {str(e)}")
+        except IndexError as ie: # Catch specific index error
+             # Log the full traceback for index errors
+            logging.exception(f"IndexError during long-term memory search in namespace '{namespace}'. This often means results from the vector store were not in the expected format or were empty.")
             return []
-    
+        except Exception as e:
+            # Log the full traceback for other errors
+            logging.exception(f"Unexpected error searching in long-term memory namespace '{namespace}': {str(e)}")
+            return []
+
     def delete(self, namespace: str, doc_id: str) -> bool:
         """
         Delete a document from long-term memory.
@@ -1493,12 +1546,16 @@ class MemoryManager:
             
         if memory_type:
             filter_metadata["memory_type"] = memory_type
-        
-        # Generate embedding for the query
+          # Generate embedding for the query
         query_embedding = self._get_embedding(query)
         
+        # Check if embedding generation failed
         if query_embedding is None:
-            logging.error("Failed to generate embedding for query")
+            logging.error(f"Failed to generate embedding for query in namespace '{namespace}'. Cannot perform search.")
+            # Special case for persistent_agents - return an empty list silently
+            if namespace == 'persistent_agents':
+                logging.info(f"Using fallback empty results for namespace 'persistent_agents'")
+                return []
             return []
         
         # Search in long-term memory
@@ -1718,10 +1775,8 @@ class MemoryManager:
             Dictionary of user preferences
         """
         preferences = {}
-        
-        # Get all keys in the user preferences context
+          # Get all keys in the user preferences context
         keys = self.list_short_term_keys(f"user:{user_id}:preferences")
-        
         # Retrieve each preference
         for key in keys:
             value = self.retrieve_short_term(f"user:{user_id}:preferences", key)
@@ -1740,44 +1795,55 @@ class MemoryManager:
         Returns:
             Vector embedding as a list of floats, or None if generation fails
         """
-        # Use the LLM Orchestrator to generate an embedding if available
-        if hasattr(self.kernel, "llm_orchestrator"):
-            try:
-                response = self.kernel.llm_orchestrator.execute_prompt(
-                    task_type="embedding",
-                    prompt_template="raw_text",
-                    params={"text": text}
-                )
-                
-                if response.get("success", False):
-                    return response.get("result", {}).get("embedding")
-            except Exception as e:
-                logging.error(f"Error generating embedding: {str(e)}")
+        # Get the LLM Orchestrator module
+        llm_orchestrator = self.kernel.get_module("llm_orchestrator")
+
+        if not llm_orchestrator:
+            logging.error("LLM Orchestrator module not found. Cannot generate embeddings.")
+            # Return a simple fallback embedding for testing
+            return [0.0] * 768  # Return a zero vector of dimension 768 as fallback
         
-        # Fallback to a simple hashing-based embedding (not suitable for semantic search)
         try:
-            import numpy as np
-            import hashlib
+            # Check if text is empty or whitespace only
+            if not text or text.isspace():
+                logging.warning("Attempted to generate embedding for empty or whitespace text.")
+                # Return a simple fallback embedding rather than None
+                return [0.0] * 768  # Return a zero vector of dimension 768 as fallback
+
+            response = llm_orchestrator.execute_prompt(
+                task_type="embedding",
+                prompt_template="raw_text", # Assuming this template just passes the text
+                params={"text": text}
+            )
             
-            # Create a simple hash-based embedding (not semantic!)
-            hash_values = []
-            for i in range(128):  # Create a 128-dimensional embedding
-                hash_input = f"{text}:{i}"
-                hash_obj = hashlib.md5(hash_input.encode())
-                hash_values.append(int(hash_obj.hexdigest(), 16) % 1000 / 500.0 - 1.0)
-            
-            # Normalize
-            embedding = np.array(hash_values)
-            norm = np.linalg.norm(embedding)
-            if norm > 0:
-                embedding = embedding / norm
-            
-            return embedding.tolist()
-            
+            if response and response.get("success", False):
+                embedding = response.get("result", {}).get("embedding")
+                
+                # Simplified and robust validation
+                if isinstance(embedding, list) and all(isinstance(x, (float, int)) for x in embedding):
+                    # It's a list of numbers. Check if it's empty.
+                    if not embedding: 
+                        logging.error(f"LLM Orchestrator returned an EMPTY list embedding for text: '{text[:100]}...'")
+                        # Return a simple fallback embedding rather than None
+                        return [0.0] * 768  # Return a zero vector of dimension 768 as fallback
+                    else:
+                        # It's a non-empty list of numbers, return it.
+                        return [float(x) for x in embedding]
+                else:
+                    # It's not a valid list of numbers (could be None, wrong type, etc.)
+                    logging.error(f"LLM Orchestrator returned an invalid or None embedding for text: '{text[:100]}...'. Type: {type(embedding)}, Value: {embedding}")
+                    # Return a simple fallback embedding rather than None
+                    return [0.0] * 768  # Return a zero vector of dimension 768 as fallback
+            else:
+                logging.error(f"LLM Orchestrator failed to generate embedding. Response: {response}")
+                # Return a simple fallback embedding rather than None
+                return [0.0] * 768  # Return a zero vector of dimension 768 as fallback
         except Exception as e:
-            logging.error(f"Error generating fallback embedding: {str(e)}")
-            return None
-    
+            # Log the full traceback for orchestrator errors
+            logging.exception(f"Error generating embedding via LLM Orchestrator: {str(e)}")
+            # Return a simple fallback embedding rather than None
+            return [0.0] * 768  # Return a zero vector of dimension 768 as fallback
+
     def archive_agent(self, agent_id: str, agent_data: Optional[Dict[str, Any]] = None) -> bool:
         """
         Archive data related to an agent being terminated.

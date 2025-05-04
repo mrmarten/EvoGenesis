@@ -364,7 +364,7 @@ class TaskPlanner:
             params={
                 "goal_name": goal.name,
                 "goal_description": goal.description,
-                "available_agent_types": self.kernel.agent_manager.get_agent_types(),
+                "available_agent_types": self.kernel.agent_manager.get_agent_types(), # Reverted to agent_manager
                 "available_tools": self.kernel.tooling_system.get_available_tools()
             }
         )

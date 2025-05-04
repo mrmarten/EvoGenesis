@@ -4,8 +4,8 @@ Memory WebSocket Handler for EvoGenesis Web UI
 This module connects the Memory Manager to the WebSocketManager for real-time updates.
 """
 
-import asyncio
 import logging
+import asyncio
 import time
 from typing import Dict, Any, Optional
 
@@ -35,8 +35,8 @@ class MemoryWebSocketHandler:
         # Register event handlers
         self._register_event_handlers()
         
-        # Start the memory status update task
-        asyncio.create_task(self._memory_status_update_task())
+        # Task handle for the background update task
+        self.update_task = None
     
     def _register_event_handlers(self):
         """Register handlers for memory-related WebSocket events."""
@@ -79,6 +79,22 @@ class MemoryWebSocketHandler:
                     "message": str(e)
                 })
     
+    async def start(self):
+        """Start the background status update task."""
+        if self.update_task is None or self.update_task.done():
+            self.update_task = asyncio.create_task(self._memory_status_update_task())
+            self.logger.info("Memory status update task started.")
+
+    async def stop(self):
+        """Stop the background status update task."""
+        if self.update_task and not self.update_task.done():
+            self.update_task.cancel()
+            try:
+                await self.update_task
+            except asyncio.CancelledError:
+                self.logger.info("Memory status update task cancelled.")
+            self.update_task = None
+
     async def _memory_status_update_task(self):
         """Background task to update memory status and broadcast it."""
         while True:
@@ -97,9 +113,11 @@ class MemoryWebSocketHandler:
                 
                 # Wait before checking again
                 await asyncio.sleep(5)
+            except asyncio.CancelledError:
+                raise
             except Exception as e:
-                self.logger.error(f"Error in memory status update task: {str(e)}")
-                await asyncio.sleep(10)  # Back off on error
+                self.logger.error(f"Error in memory status update task: {e}", exc_info=True)
+                await asyncio.sleep(60)  # Wait longer after error
     
     async def _update_memory_stats(self):
         """Update and broadcast memory usage statistics."""

@@ -66,6 +66,7 @@ class AgentFactory:
         self.agents = {}  # agent_id -> Agent
         self.teams = {}   # team_id -> Team
         self.resource_usage = {}  # agent_id -> resource stats
+        self.logger = kernel.logger # Initialize logger from kernel
         
         # Agent types registry
         self.agent_types = {
@@ -147,64 +148,64 @@ class AgentFactory:
         if self.kernel.config.get("create_system_agents", True):
             self._initialize_system_agents()
     def _restore_persistent_agents(self):
-        """Restore persistent agents from memory manager."""
-        mm = getattr(self.kernel, 'memory_manager', None)
-        ms = getattr(self.kernel, 'mission_scheduler', None)
-
-        if not mm or not hasattr(mm, 'list_persistent_agent_ids') \
-           or not hasattr(mm, 'load_agent_state') \
-           or not ms or not hasattr(ms, 'register_agent'):
-            self.kernel.logger.warning(
-                "Cannot restore persistent agents: required modules not initialized or missing methods"
-            )
+        """Attempt to restore persistent agents from long-term memory."""
+        if not hasattr(self.kernel, 'memory_manager') or not self.kernel.memory_manager.long_term:
+            self.logger.warning("Long-term memory store not available for restoring agents.")
             return
 
+        self.logger.info("Attempting to restore persistent agents...")
         try:
-            persistent_ids = mm.list_persistent_agent_ids()
+            # Assuming persistent agents are stored in a specific namespace, e.g., 'persistent_agents'
+            # And assuming they can be retrieved by searching metadata.
+            # The exact method and parameters depend heavily on the LongTermMemoryStore implementation.
+            # Replacing the non-existent 'list_items' with a plausible 'search' call.
+            # We search with an empty query embedding and filter by metadata.
+            # This might need adjustment based on the actual memory store capabilities.
+            agent_data_list = self.kernel.memory_manager.long_term.search(
+                namespace="persistent_agents",
+                query_embedding=[], # Pass empty or None if the backend allows metadata-only search
+                limit=1000, # Adjust limit as needed
+                filter_metadata={"item_type": "persistent_agent"} # Example filter
+            )
+
+            if not agent_data_list:
+                self.logger.info("No persistent agents found to restore.")
+                return
+
+            restored_count = 0
+            for agent_data in agent_data_list:
+                metadata = agent_data.get('metadata', {})
+                agent_id = agent_data.get('id')
+                # Extract necessary info from metadata to recreate the agent
+                name = metadata.get('name', f"RestoredAgent_{agent_id[:8]}")
+                agent_type = metadata.get('agent_type', 'generic')
+                capabilities = metadata.get('capabilities', [])
+                # Add other relevant attributes from metadata...
+
+                if agent_id and agent_id not in self.agents:
+                    agent = self.create_agent(
+                        agent_type=agent_type,
+                        name=name,
+                        capabilities=capabilities,
+                        agent_id=agent_id, # Use the original ID
+                        persistent_identity=metadata.get('persistent_identity'),
+                        memory_namespace=metadata.get('memory_namespace'),
+                        # Restore other attributes from metadata...
+                        status="restored" # Set status
+                    )
+                    self.logger.info(f"Restored persistent agent: {agent.name} (ID: {agent.agent_id})")
+                    restored_count += 1
+                elif agent_id in self.agents:
+                     self.logger.warning(f"Agent with ID {agent_id} already exists, skipping restoration.")
+
+            self.logger.info(f"Successfully restored {restored_count} persistent agents.")
+
+        except AttributeError as ae:
+             self.logger.error(f"Memory store interface mismatch during agent restoration: {ae}. The 'search' method might not support metadata filtering as expected.")
+             # Log specific error about search if it fails
         except Exception as e:
-            self.kernel.logger.error(f"Failed to list persistent agents: {e}")
-            return
-
-        for agent_id in persistent_ids:
-            try:
-                state = mm.load_agent_state(agent_id)
-                if not state:
-                    self.kernel.logger.info(f"No saved state for agent {agent_id}, skipping")
-                    continue
-
-                # Reconstruct the agent
-                agent = Agent(
-                    agent_id=agent_id,
-                    name=state.get('name', f"RestoredAgent-{agent_id}"),
-                    capabilities=state.get('capabilities', []),
-                    persistent_identity=state.get('persistent_identity', agent_id),
-                    memory_namespace=state.get('memory_namespace'),
-                    persistent_mission=state.get('persistent_mission', False),
-                    **state.get('attributes', {})
-                )
-                # Restore runtime fields
-                agent.status = state.get('status', agent.status)
-                agent.assigned_tasks = state.get('assigned_tasks', [])
-                agent.metrics = state.get('metrics', agent.metrics)
-                agent.last_checkpoint = state.get('last_checkpoint', time.time())
-                agent.creation_time = state.get('creation_time', agent.creation_time)
-                agent.last_active_time = state.get('last_active_time', agent.last_active_time)
-
-                # Register in factory
-                self.agents[agent.agent_id] = agent
-                self.resource_usage[agent.agent_id] = state.get('resource_usage', {
-                    "cpu_usage": 0.0,
-                    "memory_usage": 0.0,
-                    "api_calls": 0,
-                    "tokens_used": 0
-                })
-
-                # Register with the mission scheduler so pending missions resume
-                ms.register_agent(agent)
-
-                self.kernel.logger.info(f"Restored persistent agent {agent.name} ({agent.agent_id})")
-            except Exception as e:
-                self.kernel.logger.error(f"Error restoring agent {agent_id}: {e}")
+            # Log the specific exception 'e'
+            self.logger.error(f"Error during persistent agent restoration: {e}", exc_info=True)
     def stop(self):
         """Stop the Agent Factory module."""
         # Save or checkpoint any persistent agents
@@ -409,30 +410,28 @@ class AgentFactory:
                 f"Failed to checkpoint agent {agent.agent_id}: {e}"
             )
     def create_team(self, name: str, members: Dict[str, str], **kwargs) -> 'Team':
-        """
-        Create a new team of agents.
-        
-        Args:
-            name: Name of the team
-            members: Dictionary of role -> agent_id mappings
-            **kwargs: Additional team attributes
-            
-        Returns:
-            The created Team instance
-        """
-        team_id = kwargs.get("team_id", str(uuid.uuid4()))
-        
-        # Create the team
-        team = Team(
-            team_id=team_id,
-            name=name,
-            members=members,
-            **kwargs
-        )
-        
-        # Store the team
+        """Create a new team of agents."""
+        # Check if Swarm Coordinator is enabled, as teams are related to swarm functionality
+        swarm_coordinator = self.kernel.get_module("swarm_coordinator")
+        if not swarm_coordinator:
+             self.logger.warning("Swarm Coordinator not available or enabled. Team functionality might be limited.")
+             # Decide if team creation should proceed or fail.
+             # For now, let's allow creation but log the warning.
+             # If teams strictly require the coordinator, raise an error:
+             # raise RuntimeError("Swarm Coordinator is required to create teams.")
+
+        team_id = str(uuid.uuid4())
+        team = Team(team_id, name, members, **kwargs)
         self.teams[team_id] = team
-        
+        self.logger.info(f"Created team '{name}' ({team_id}) with members: {members}")
+        # Log activity
+        if hasattr(self.kernel, 'log_activity'):
+            self.kernel.log_activity(
+                activity_type="team.create",
+                title=f"Team Created: {name}",
+                message=f"Team '{name}' ({team_id}) created.",
+                data={"team_id": team_id, "name": name, "members": members}
+            )
         return team
     
     def dissolve_team(self, team_id: str) -> bool:

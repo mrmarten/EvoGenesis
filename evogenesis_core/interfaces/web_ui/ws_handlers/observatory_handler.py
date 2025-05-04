@@ -35,8 +35,8 @@ class ObservatoryWebSocketHandler:
         # Register event handlers
         self._register_event_handlers()
         
-        # Start the status update task
-        asyncio.create_task(self._status_update_task())
+        # Task handle for the background update task
+        self.update_task = None
     
     def _register_event_handlers(self):
         """Register handlers for observatory-related WebSocket events."""
@@ -98,6 +98,22 @@ class ObservatoryWebSocketHandler:
                     "message": str(e)
                 })
     
+    async def start(self):
+        """Start the background status update task."""
+        if self.update_task is None or self.update_task.done():
+            self.update_task = asyncio.create_task(self._status_update_task())
+            self.logger.info("Observatory status update task started.")
+
+    async def stop(self):
+        """Stop the background status update task."""
+        if self.update_task and not self.update_task.done():
+            self.update_task.cancel()
+            try:
+                await self.update_task
+            except asyncio.CancelledError:
+                self.logger.info("Observatory status update task cancelled.")
+            self.update_task = None
+
     async def _status_update_task(self):
         """Background task to update observatory status and broadcast it."""
         while True:
@@ -116,6 +132,8 @@ class ObservatoryWebSocketHandler:
                 
                 # Wait before checking again
                 await asyncio.sleep(10)  # Less frequent updates for observatory
+            except asyncio.CancelledError:
+                raise
             except Exception as e:
                 self.logger.error(f"Error in observatory status update task: {str(e)}")
                 await asyncio.sleep(20)  # Back off on error

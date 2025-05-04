@@ -7,6 +7,7 @@ between them, and ensures the overall system integrity.
 
 import logging
 from typing import Dict, Any, Optional, List
+import os
 
 from evogenesis_core.modules.agent_factory import AgentFactory
 from evogenesis_core.modules.task_planner import TaskPlanner
@@ -18,6 +19,7 @@ from evogenesis_core.modules.self_evolution_engine import SelfEvolutionEngine
 from evogenesis_core.modules.mission_scheduler import MissionScheduler
 from evogenesis_core.modules.strategic_opportunity_observatory import StrategicOpportunityObservatory
 from evogenesis_core.swarm.coordinator import SwarmCoordinator
+from evogenesis_core.swarm.bus import create_message_bus, BusImplementation, MessageBus
 from evogenesis_core.adapters.framework_adapter_manager import FrameworkAdapterManager
 from evogenesis_core.interfaces.web_ui_manager import WebUI
 
@@ -45,35 +47,240 @@ class EvoGenesisKernel:
         self.max_activities = 100  # Maximum number of activities to keep in memory
         
         # Initialize core modules
-        self.memory_manager = MemoryManager(self)
-        self.llm_orchestrator = LLMOrchestrator(self)
-        self.tooling_system = ToolingSystem(self)
+        self._initialize_modules(self.config.get("modules", {}))
+
+    def _initialize_modules(self, module_configs: Dict[str, Any]):
+        """Initialize all core modules based on configuration."""
+        self.logger.info("Initializing EvoGenesis modules...")
         
-        # Initialize the framework adapter manager
-        adapter_config = self.config.get("adapters", {})
-        self.framework_adapter_manager = FrameworkAdapterManager(config=adapter_config)
-        self.agent_factory = AgentFactory(self)
-        self.task_planner = TaskPlanner(self)
-        self.hitl_interface = HiTLInterface(self)
-        self.self_evolution_engine = SelfEvolutionEngine(self)
-        self.mission_scheduler = MissionScheduler(self)
-        self.strategic_observatory = StrategicOpportunityObservatory(self)
-        
-        # Initialize the Web UI (but don't start it yet)
-        self.web_ui = WebUI(self)
-        
-        # Initialize swarm module (but don't start it yet)
-        self.swarm_module = None
-        swarm_config = self.config.get("swarm", {})
-        if swarm_config.get("enabled", False):
+        # --- Message Bus Initialization (Moved earlier) ---
+        bus_config = module_configs.get("message_bus", {})
+        bus_implementation_str = bus_config.get("implementation", "MEMORY").upper() # Default to MEMORY
+        try:
+            bus_implementation = BusImplementation[bus_implementation_str]
+            self.message_bus = create_message_bus(bus_implementation, **bus_config.get("config", {}))
+            self.logger.info(f"Message Bus initialized with implementation: {bus_implementation.value}")
+        except (KeyError, Exception) as e:
+            self.logger.error(f"Failed to initialize Message Bus with implementation '{bus_implementation_str}': {e}. Defaulting to MEMORY.")
+            # Fallback to in-memory bus if configured one fails
+            bus_implementation = BusImplementation.MEMORY # Use the correct enum member
+            self.message_bus = create_message_bus(bus_implementation)
+            self.logger.info("Defaulted to in-memory Message Bus.")
+
+        # --- Module Initializations ---
+        # Agent Factory
+        agent_config = module_configs.get("agent_factory", {})
+        if agent_config.get("enabled", True):
             try:
-                self.swarm_module = SwarmCoordinator(self)
-                self.logger.info("Swarm module initialized")
+                # Pass only the kernel instance, not the config dict directly
+                self.agent_factory = AgentFactory(self)
+                self.logger.info("Agent Factory initialized.")
+                # Attempt to start the agent factory if a start method exists
+                if hasattr(self.agent_factory, 'start') and callable(getattr(self.agent_factory, 'start')):
+                    self.agent_factory.start()
             except Exception as e:
-                self.logger.error(f"Failed to initialize swarm module: {str(e)}")
-        
-        self.logger.info("EvoGenesis Kernel initialized")
-    
+                self.logger.error(f"Failed to initialize Agent Factory: {e}", exc_info=True)
+                self.agent_factory = None
+        else:
+            self.logger.warning("Agent Factory module is disabled in config.")
+            self.agent_factory = None
+
+        # LLM Orchestrator
+        llm_config = module_configs.get("llm_orchestrator", {})
+        if llm_config.get("enabled", True):
+            try:
+                # Pass only the kernel instance
+                self.llm_orchestrator = LLMOrchestrator(self)
+                self.logger.info("LLM Orchestrator initialized.")
+                # Attempt to start if a start method exists
+                if hasattr(self.llm_orchestrator, 'start') and callable(getattr(self.llm_orchestrator, 'start')):
+                    self.llm_orchestrator.start()
+            except Exception as e:
+                self.logger.error(f"Failed to initialize LLM Orchestrator: {e}", exc_info=True)
+                self.llm_orchestrator = None
+        else:
+            self.llm_orchestrator = None
+            self.logger.warning("LLM Orchestrator is disabled.")
+            
+        # Tooling System
+        tooling_config = module_configs.get("tooling_system", {})
+        if tooling_config.get("enabled", True):
+            try:
+                # Pass only the kernel instance
+                self.tooling_system = ToolingSystem(self)
+                self.logger.info("Tooling System initialized.")
+                # Attempt to start if a start method exists
+                if hasattr(self.tooling_system, 'start') and callable(getattr(self.tooling_system, 'start')):
+                    self.tooling_system.start()
+            except Exception as e:
+                self.logger.error(f"Failed to initialize Tooling System: {e}", exc_info=True)
+                self.tooling_system = None
+        else:
+            self.tooling_system = None
+            self.logger.warning("Tooling System is disabled.")
+
+        # Memory Manager
+        memory_config = module_configs.get("memory_manager", {})
+        if memory_config.get("enabled", True):
+            try:
+                # Pass only the kernel instance
+                self.memory_manager = MemoryManager(self)
+                self.logger.info("Memory Manager initialized.")
+                # Attempt to start if a start method exists
+                if hasattr(self.memory_manager, 'start') and callable(getattr(self.memory_manager, 'start')):
+                    self.memory_manager.start()
+            except Exception as e:
+                self.logger.error(f"Failed to initialize Memory Manager: {e}", exc_info=True)
+                self.memory_manager = None
+        else:
+            self.memory_manager = None
+            self.logger.warning("Memory Manager is disabled.")
+
+        # Task Planner
+        task_config = module_configs.get("task_planner", {})
+        if task_config.get("enabled", True):
+            try:
+                # Pass only the kernel instance
+                self.task_planner = TaskPlanner(self)
+                self.logger.info("Task Planner initialized.")
+                # Attempt to start if a start method exists
+                if hasattr(self.task_planner, 'start') and callable(getattr(self.task_planner, 'start')):
+                    self.task_planner.start()
+            except Exception as e:
+                self.logger.error(f"Failed to initialize Task Planner: {e}", exc_info=True)
+                self.task_planner = None
+        else:
+            self.task_planner = None
+            self.logger.warning("Task Planner is disabled.")
+
+        # Swarm Coordinator (Depends on Message Bus)
+        swarm_config = module_configs.get("swarm_coordinator", {})
+        if swarm_config.get("enabled", False): # Default to disabled unless explicitly enabled
+            if self.message_bus:
+                try:
+                    # Pass kernel and message_bus
+                    self.swarm_coordinator = SwarmCoordinator(self, self.message_bus)
+                    self.logger.info("Swarm Coordinator initialized.")
+                    # Attempt to start if a start method exists
+                    if hasattr(self.swarm_coordinator, 'start') and callable(getattr(self.swarm_coordinator, 'start')):
+                        self.swarm_coordinator.start()
+                except Exception as e:
+                    self.logger.error(f"Failed to initialize Swarm Coordinator: {e}", exc_info=True)
+                    self.swarm_coordinator = None
+            else:
+                self.logger.error("Cannot initialize Swarm Coordinator: Message Bus is not available.")
+                self.swarm_coordinator = None
+        else:
+            self.swarm_coordinator = None
+            self.logger.warning("Swarm Coordinator is disabled.")
+            
+        # HiTL Interface
+        hitl_config = module_configs.get("hitl_interface", {})
+        if hitl_config.get("enabled", True):
+            try:
+                # Pass only the kernel instance
+                self.hitl_interface = HiTLInterface(self)
+                self.logger.info("HiTL Interface initialized.")
+                # Attempt to start if a start method exists
+                if hasattr(self.hitl_interface, 'start') and callable(getattr(self.hitl_interface, 'start')):
+                    self.hitl_interface.start()
+            except Exception as e:
+                self.logger.error(f"Failed to initialize HiTL Interface: {e}", exc_info=True)
+                self.hitl_interface = None
+        else:
+            self.hitl_interface = None
+            self.logger.warning("HiTL Interface is disabled.")
+
+        # Self-Evolution Engine
+        evo_config = module_configs.get("self_evolution_engine", {})
+        if evo_config.get("enabled", True):
+            try:
+                # Pass only the kernel instance
+                self.self_evolution_engine = SelfEvolutionEngine(self)
+                self.logger.info("Self-Evolution Engine initialized.")
+                # Attempt to start if a start method exists
+                if hasattr(self.self_evolution_engine, 'start') and callable(getattr(self.self_evolution_engine, 'start')):
+                    self.self_evolution_engine.start()
+            except Exception as e:
+                self.logger.error(f"Failed to initialize Self-Evolution Engine: {e}", exc_info=True)
+                self.self_evolution_engine = None
+        else:
+            self.self_evolution_engine = None
+            self.logger.warning("Self-Evolution Engine is disabled.")
+            
+        # Mission Scheduler
+        mission_config = module_configs.get("mission_scheduler", {})
+        if mission_config.get("enabled", True):
+            try:
+                # Pass only the kernel instance
+                self.mission_scheduler = MissionScheduler(self)
+                self.logger.info("Mission Scheduler initialized.")
+                # Attempt to start if a start method exists
+                if hasattr(self.mission_scheduler, 'start') and callable(getattr(self.mission_scheduler, 'start')):
+                    self.mission_scheduler.start()
+            except Exception as e:
+                self.logger.error(f"Failed to initialize Mission Scheduler: {e}", exc_info=True)
+                self.mission_scheduler = None
+        else:
+            self.mission_scheduler = None
+            self.logger.warning("Mission Scheduler is disabled.")
+
+        # Strategic Opportunity Observatory
+        observatory_config = module_configs.get("strategic_observatory", {})
+        if observatory_config.get("enabled", True):
+            try:
+                # Pass only the kernel instance
+                self.strategic_observatory = StrategicOpportunityObservatory(self)
+                self.logger.info("Strategic Opportunity Observatory initialized.")
+                # Attempt to start if a start method exists
+                if hasattr(self.strategic_observatory, 'start') and callable(getattr(self.strategic_observatory, 'start')):
+                    self.strategic_observatory.start()
+            except Exception as e:
+                self.logger.error(f"Failed to initialize Strategic Opportunity Observatory: {e}", exc_info=True)
+                self.strategic_observatory = None
+        else:
+            self.strategic_observatory = None
+            self.logger.warning("Strategic Opportunity Observatory is disabled.")
+
+        # Framework Adapter Manager
+        framework_adapter_config = module_configs.get("framework_adapter_manager", {})
+        if framework_adapter_config.get("enabled", True):
+            try:
+                # Determine the adapters directory path (relative to this file)
+                adapters_dir_path = os.path.join(os.path.dirname(__file__), 'adapters')
+                # Pass the adapters directory path and the specific config
+                self.framework_adapter_manager = FrameworkAdapterManager(
+                    adapters_dir=adapters_dir_path, 
+                    config=framework_adapter_config
+                )
+                self.logger.info("Framework Adapter Manager initialized.")
+                # Attempt to start if a start method exists
+                if hasattr(self.framework_adapter_manager, 'start') and callable(getattr(self.framework_adapter_manager, 'start')):
+                    self.framework_adapter_manager.start()
+            except Exception as e:
+                self.logger.error(f"Failed to initialize Framework Adapter Manager: {e}", exc_info=True)
+                self.framework_adapter_manager = None
+        else:
+            self.framework_adapter_manager = None
+            self.logger.warning("Framework Adapter Manager is disabled.")
+            
+        # --- Web UI Initialization (Moved to the end) ---
+        webui_config = module_configs.get("web_ui_manager", {})
+        if webui_config.get("enabled", True):
+            try:
+                # Pass only the kernel instance
+                self.web_ui_manager = WebUI(self) # Assuming WebUI is the correct class name
+                self.logger.info("Web UI Manager initialized.")
+                # Note: Web UI is typically started explicitly via start_web_ui, not automatically here.
+            except Exception as e:
+                self.logger.error(f"Failed to initialize Web UI Manager: {e}", exc_info=True)
+                self.web_ui_manager = None
+        else:
+            self.web_ui_manager = None
+            self.logger.warning("Web UI Manager is disabled.")
+
+        self.logger.info("All enabled modules initialized.")
+
     def start(self) -> None:
         """
         Start the EvoGenesis Kernel and all its modules.
@@ -93,9 +300,9 @@ class EvoGenesisKernel:
         self.strategic_observatory.start()
         
         # Start swarm module if initialized
-        if self.swarm_module is not None:
+        if self.swarm_coordinator is not None:
             try:
-                self.swarm_module.start()
+                self.swarm_coordinator.start()
                 self.logger.info("Swarm module started")
             except Exception as e:
                 self.logger.error(f"Failed to start swarm module: {str(e)}")
@@ -119,9 +326,9 @@ class EvoGenesisKernel:
         self.agent_factory.stop()
         
         # Stop swarm module if initialized
-        if hasattr(self, 'swarm_module') and self.swarm_module is not None:
+        if hasattr(self, 'swarm_coordinator') and self.swarm_coordinator is not None:
             try:
-                self.swarm_module.stop()
+                self.swarm_coordinator.stop()
                 self.logger.info("Swarm module stopped")
             except Exception as e:
                 self.logger.error(f"Failed to stop swarm module: {str(e)}")
@@ -132,8 +339,8 @@ class EvoGenesisKernel:
         self.memory_manager.stop()
         
         # Stop the Web UI if it's running
-        if hasattr(self, 'web_ui') and self.web_ui.is_running:
-            self.web_ui.stop()
+        if hasattr(self, 'web_ui_manager') and self.web_ui_manager.is_running:
+            self.web_ui_manager.stop()
         
         self.logger.info("EvoGenesis Kernel stopped")
     
@@ -164,11 +371,11 @@ class EvoGenesisKernel:
                     "schedules": len(self.mission_scheduler.schedules),
                     "persistent_agents": len(self.mission_scheduler.persistent_agents)
                 },
-                "swarm_module": "active" if self.swarm_module is not None else "inactive"
+                "swarm_module": "active" if self.swarm_coordinator is not None else "inactive"
             },
             "web_ui": {
-                "running": self.web_ui.is_running if hasattr(self, 'web_ui') else False,
-                "url": self.web_ui.get_url() if hasattr(self, 'web_ui') and self.web_ui.is_running else None
+                "running": self.web_ui_manager.is_running if hasattr(self, 'web_ui_manager') else False,
+                "url": self.web_ui_manager.get_url() if hasattr(self, 'web_ui_manager') and self.web_ui_manager.is_running else None
             }
         }
     
@@ -184,7 +391,7 @@ class EvoGenesisKernel:
         Returns:
             True if started successfully, False otherwise
         """
-        if not hasattr(self, 'web_ui'):
+        if not hasattr(self, 'web_ui_manager'):
             self.logger.error("Web UI not initialized")
             return False
             
@@ -200,7 +407,7 @@ class EvoGenesisKernel:
             web_ui_config["debug"] = True
             
         self.logger.info(f"Starting Web UI on http://{host}:{port}")
-        return self.web_ui.start(host=host, port=port)
+        return self.web_ui_manager.start(host=host, port=port)
         
     def stop_web_ui(self) -> bool:
         """
@@ -209,11 +416,11 @@ class EvoGenesisKernel:
         Returns:
             True if stopped successfully, False otherwise
         """
-        if not hasattr(self, 'web_ui'):
+        if not hasattr(self, 'web_ui_manager'):
             self.logger.error("Web UI not initialized")
             return False
             
-        return self.web_ui.stop()
+        return self.web_ui_manager.stop()
         
     def get_web_ui_url(self) -> Optional[str]:
         """
@@ -222,10 +429,10 @@ class EvoGenesisKernel:
         Returns:
             URL string for the Web UI if running, None otherwise
         """
-        if not hasattr(self, 'web_ui') or not self.web_ui.is_running:
+        if not hasattr(self, 'web_ui_manager') or not self.web_ui_manager.is_running:
             return None
             
-        return self.web_ui.get_url()
+        return self.web_ui_manager.get_url()
     
     def log_activity(self, activity_type: str, title: str, message: str, data: Optional[Dict[str, Any]] = None) -> None:
         """
@@ -327,8 +534,6 @@ class EvoGenesisKernel:
             return self.strategic_observatory
         elif module_name == "swarm_coordinator" and hasattr(self, "swarm_coordinator"):
             return self.swarm_coordinator
-        elif module_name == "agent_manager":  # Add compatibility with agent_manager
-            return self.agent_factory  # Agent factory serves as agent manager
         
         return None
 

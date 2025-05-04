@@ -31,7 +31,7 @@ class TestKernel(unittest.TestCase):
         # This is a basic test to ensure the framework initializes core components
         self.assertIsNotNone(getattr(self.kernel, "tooling_system", None))
         self.assertIsNotNone(getattr(self.kernel, "llm_orchestrator", None))
-        self.assertIsNotNone(getattr(self.kernel, "agent_manager", None))
+        self.assertIsNotNone(getattr(self.kernel, "agent_factory", None)) # Changed from agent_manager
 
 if __name__ == '__main__':
     unittest.main()

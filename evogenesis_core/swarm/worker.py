@@ -331,8 +331,8 @@ class TaskExecutor:
         if not agent_id:
             raise ValueError("No agent ID specified for agent execution task")
         
-        # Get the agent from the agent manager
-        agent = self.kernel.agent_manager.get_agent(agent_id)
+        # Get the agent from the agent factory
+        agent = self.kernel.agent_factory.get_agent(agent_id) # Changed from agent_manager
         if not agent:
             raise ValueError(f"Agent {agent_id} not found")
         
@@ -344,7 +344,7 @@ class TaskExecutor:
         }
         
         # Execute the task using the agent
-        result = await self.kernel.agent_manager.execute_agent_task(
+        result = await self.kernel.agent_manager.execute_agent_task( # Reverted to agent_manager
             agent_id=agent_id,
             task=agent_task
         )
@@ -486,7 +486,6 @@ class WorkerRunner:
         self.running = False
         self.executor_task = None
         self.heartbeat_task = None
-    
     def start(self) -> None:
         """Start the worker."""
         if self.running:
@@ -794,11 +793,11 @@ class WorkerRunner:
             
             # Get memory usage
             memory = psutil.virtual_memory()
-            memory_percent = memory.percent
+            memory_percent = memory.percent;
             
             # Get disk usage
             disk = psutil.disk_usage('/')
-            disk_percent = disk.percent
+            disk_percent = disk.percent;
             
             return {
                 "cpu": cpu_percent / 100.0,

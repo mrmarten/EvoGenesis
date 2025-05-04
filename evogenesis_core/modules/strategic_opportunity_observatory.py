@@ -793,13 +793,15 @@ class StrategicOpportunityObservatory:
     
     def _initialize_teams(self):
         """Initialize the component teams for the Strategic Opportunity Observatory."""
-        if not hasattr(self.kernel, "agent_manager"):
-            logging.warning("Agent Manager not available, teams will not be created")
+        # Check for agent_factory instead of agent_manager
+        if not self.kernel.agent_factory:
+            logging.warning("Agent Factory not available, cannot initialize teams for Strategic Observatory.")
             return
 
         # Create Opportunity Miner Team if it doesn't exist
         if not self.miner_team_id:
-            miner_team = self.kernel.agent_manager.create_team(
+            # Use agent_factory to create team
+            miner_team = self.kernel.agent_factory.create_team(
                 name="Opportunity Miner Swarm",
                 members={},  # Required empty dict, will add members later
                 goal="Discover potential strategic opportunities from diverse signal sources",
@@ -809,7 +811,8 @@ class StrategicOpportunityObservatory:
 
         # Create Strategic Reasoner Team if it doesn't exist
         if not self.reasoning_team_id:
-            reasoner_team = self.kernel.agent_manager.create_team(
+            # Use agent_factory to create team
+            reasoner_team = self.kernel.agent_factory.create_team(
                 name="Strategic Reasoning Team",
                 members={},  # Required empty dict, will add members later
                 goal="Evaluate, refine, and synthesize opportunity candidates into actionable recommendations",
@@ -832,7 +835,8 @@ class StrategicOpportunityObservatory:
 
         # Create Scenario Simulation Team if it doesn't exist
         if not self.simulation_team_id:
-            simulation_team = self.kernel.agent_manager.create_team(
+            # Use agent_factory to create team
+            simulation_team = self.kernel.agent_factory.create_team(
                 name="Scenario Simulation Team",
                 members={},  # Required empty dict, will add members later
                 goal="Simulate various scenarios to stress-test opportunity hypotheses",
@@ -855,7 +859,8 @@ class StrategicOpportunityObservatory:
 
         # Create Valuation Team if it doesn't exist
         if not self.valuation_team_id:
-            valuation_team = self.kernel.agent_manager.create_team(
+            # Use agent_factory to create team
+            valuation_team = self.kernel.agent_factory.create_team(
                 name="Valuation and Feasibility Team",
                 members={},  # Required empty dict, will add members later
                 goal="Evaluate financial value and implementation feasibility of opportunities",

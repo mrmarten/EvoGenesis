@@ -18,6 +18,12 @@
         "debug": false,
         "theme": "light"
     },
+    "swarm": {
+        "enabled": true,
+        "coordination_strategy": "CENTRALIZED",
+        "conflict_resolution": "CONFIDENCE",
+        "monitoring_interval": 15
+    },
     "agent_manager": {
         "max_agents": 20,
         "max_teams": 5,

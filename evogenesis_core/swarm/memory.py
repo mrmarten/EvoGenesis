@@ -497,7 +497,7 @@ class VectorMemorySwarm(VectorMemoryBase):
     def _initialize_weaviate(self) -> None:
         """Initialize Weaviate connection."""
         if not WEAVIATE_AVAILABLE:
-            raise ImportError("Weaviate is not installed. Run 'pip install weaviate-client'")
+            raise ImportError("Weaviate is not installed. Install the 'weaviate-client' dependency.")
         
         try:
             # Get connection details from config
@@ -557,7 +557,8 @@ class VectorMemorySwarm(VectorMemoryBase):
     def _initialize_pinecone(self) -> None:
         """Initialize Pinecone connection."""
         if not PINECONE_AVAILABLE:
-            raise ImportError("Pinecone is not installed. Run 'pip install pinecone-client'")
+            # Suggest installing the correct package
+            raise ImportError("Pinecone is not installed. Run 'pip install pinecone'")
         
         try:
             # Get connection details from config

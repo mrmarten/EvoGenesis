@@ -42,7 +42,7 @@ async def get_system_status(request: Request):
             status["uptime"] = kernel_status.get("uptime", 0)
         
         # Get agent status
-        agent_factory = kernel.get_module("agent_factory")
+        agent_factory = kernel.get_module("agent_factory") # Changed from agent_manager
         if agent_factory:
             agents = agent_factory.list_agents()
             status["active_agents"] = sum(1 for a in agents.values() 

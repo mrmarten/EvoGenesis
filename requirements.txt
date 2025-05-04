@@ -7,22 +7,29 @@ loguru>=0.6.0
 openai>=1.0.0
 anthropic>=0.5.0
 google-generativeai>=0.3.0
-llama-cpp-python>=0.2.0
+# llama-cpp-python>=0.2.0 # Requires C++ build tools (Visual Studio/Xcode/build-essential) and CMake
 semantic-kernel>=0.3.0
-pyautogen
-semantic-kernel
+pyautogen>=0.2.0 # Added from comments
+langchain>=0.0.15 # Added from comments
 
 # Memory and Storage
 chromadb>=0.4.0
 langchain-community>=0.0.10  # For vector store integrations
+redis>=4.0.0 # Added previously
+pinecone>=2.0.0 # Changed from pinecone-client
+weaviate-client>=3.0.0 # Added previously
+pymilvus>=2.0.0 # Added previously
 
 # Tool Management
 docker>=6.1.0  # For sandboxed tool execution
 gitpython>=3.1.30  # For version management
+e2b>=0.10.0 # Added previously
+modal-client>=0.50.0 # Added previously
 
 # Utility
 numpy>=1.24.0
 rich>=13.0.0  # For better console output
+sentence-transformers>=2.0.0 # Added previously
 
 # Web UI
 fastapi>=0.104.0
@@ -41,8 +48,11 @@ dash>=2.13.0    # For dashboard components
 pytest>=7.3.1
 pytest-asyncio>=0.21.0
 
-# Optional integrations
-# uncomment as needed
-# autogen>=0.2.0
+# Cloud/Other
+azure-identity>=1.10.0 # Added previously
+
+# Frameworks (ensure active if used)
+langchain>=0.1.0 # Added previously
+# autogen>=0.2.0 # Already added above as pyautogen
 # crewai>=0.1.0
-# langgraph>=0.0.15
+# langgraph>=0.0.15 # Already added above as langchain

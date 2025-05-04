@@ -17,7 +17,7 @@ from pydantic import BaseModel
 class SettingCategory(BaseModel):
     general: Dict[str, Any] = {}
     llm_orchestrator: Dict[str, Any] = {}
-    agent_manager: Dict[str, Any] = {}
+    agent_factory: Dict[str, Any] = {}  # Changed from agent_manager
     memory_manager: Dict[str, Any] = {}
     tooling_system: Dict[str, Any] = {}
     hitl_interface: Dict[str, Any] = {}
@@ -50,7 +50,7 @@ async def get_settings(request: Request):
                 "enable_telemetry": True
             },
             "llm_orchestrator": {},
-            "agent_manager": {},
+            "agent_factory": {},  # Changed from agent_manager
             "memory_manager": {},
             "tooling_system": {},
             "hitl_interface": {},
@@ -79,11 +79,11 @@ async def get_settings(request: Request):
                 if "api_key" in provider_info:
                     settings["api_keys"][provider] = True  # Just indicate presence, don't expose key
         
-        # Get agent manager settings
-        agent_factory = kernel.get_module("agent_factory")
+        # Get agent factory settings (changed from agent manager)
+        agent_factory = kernel.get_module("agent_factory") # Changed from agent_manager
         if agent_factory:
             agent_settings = agent_factory.get_settings()
-            settings["agent_manager"] = {
+            settings["agent_factory"] = { # Changed from agent_manager
                 "max_concurrent_agents": agent_settings.get("max_concurrent_agents", 10),
                 "agent_timeout_seconds": agent_settings.get("agent_timeout_seconds", 300),
                 "default_prompt_template": agent_settings.get("default_prompt_template", "standard"),
@@ -192,11 +192,11 @@ async def update_settings(settings: SettingCategory, request: Request):
             if llm_orchestrator:
                 llm_orchestrator.update_settings(settings.llm_orchestrator)
         
-        # Update agent manager settings
-        if settings.agent_manager:
+        # Update agent factory settings
+        if settings.agent_factory:
             agent_factory = kernel.get_module("agent_factory")
             if agent_factory:
-                agent_factory.update_settings(settings.agent_manager)
+                agent_factory.update_settings(settings.agent_factory)
         
         # Update memory manager settings
         if settings.memory_manager:

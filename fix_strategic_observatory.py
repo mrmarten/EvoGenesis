@@ -25,26 +25,26 @@ def fix_initialize_teams_method():
     
     # Fix miner team creation
     content = content.replace(
-        'miner_team = self.kernel.agent_manager.create_team(\n                name="Opportunity Miner Swarm",\n                goal=',
-        'miner_team = self.kernel.agent_manager.create_team(\n                name="Opportunity Miner Swarm",\n                members={},  # Required empty dict\n                goal='
+        'miner_team = self.kernel.agent_factory.create_team(\n                name="Opportunity Miner Swarm",\n                members={},  # Required empty dict\n                goal=',
+        'miner_team = self.kernel.agent_factory.create_team(\n                name="Opportunity Miner Swarm",\n                goal=' # Changed from agent_manager
     )
     
     # Fix reasoner team creation
     content = content.replace(
-        'reasoner_team = self.kernel.agent_manager.create_team(\n                name="Strategic Reasoning Team",\n                goal=',
-        'reasoner_team = self.kernel.agent_manager.create_team(\n                name="Strategic Reasoning Team",\n                members={},  # Required empty dict\n                goal='
+        'reasoner_team = self.kernel.agent_factory.create_team(\n                name="Strategic Reasoning Team",\n                members={},  # Required empty dict\n                goal=',
+        'reasoner_team = self.kernel.agent_factory.create_team(\n                name="Strategic Reasoning Team",\n                goal=' # Changed from agent_manager
     )
     
     # Fix simulation team creation
     content = content.replace(
-        'simulation_team = self.kernel.agent_manager.create_team(\n                name="Scenario Simulation Team",\n                goal=',
-        'simulation_team = self.kernel.agent_manager.create_team(\n                name="Scenario Simulation Team",\n                members={},  # Required empty dict\n                goal='
+        'simulation_team = self.kernel.agent_factory.create_team(\n                name="Scenario Simulation Team",\n                members={},  # Required empty dict\n                goal=',
+        'simulation_team = self.kernel.agent_factory.create_team(\n                name="Scenario Simulation Team",\n                goal=' # Changed from agent_manager
     )
     
     # Fix valuation team creation
     content = content.replace(
-        'valuation_team = self.kernel.agent_manager.create_team(\n                name="Valuation and Feasibility Team",\n                goal=',
-        'valuation_team = self.kernel.agent_manager.create_team(\n                name="Valuation and Feasibility Team",\n                members={},  # Required empty dict\n                goal='
+        'valuation_team = self.kernel.agent_factory.create_team(\n                name="Valuation and Feasibility Team",\n                members={},  # Required empty dict\n                goal=',
+        'valuation_team = self.kernel.agent_factory.create_team(\n                name="Valuation and Feasibility Team",\n                goal=' # Changed from agent_manager
     )
     
     with open(filepath, 'w', encoding='utf-8') as file:

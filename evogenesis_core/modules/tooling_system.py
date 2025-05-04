@@ -1280,24 +1280,15 @@ else:
         try:
             # Dynamic import to avoid hard dependency
             try:
-                import e2b
-                from e2b import Sandbox # Use Sandbox directly
+                from e2b import Sandbox
+                E2B_AVAILABLE = True
             except ImportError:
-                 logging.error("E2B SDK not installed. Install with: pip install e2b")
-                 return ExecutionResult(
-                     success=False,
-                     error="E2B SDK not installed",
-                     logs="Error: E2B SDK not installed. Install with: pip install e2b",
-                     execution_time=time.time() - start_time
-                 )
+                 logging.error("E2B SDK not installed. Install the 'e2b' dependency.")
+                 return ExecutionResult(status=ExecutionStatus.FAILED, error="E2B SDK not installed")
 
-            # Configure E2B client with API key
-            e2b_api_key = self.config.get("e2b", {}).get("api_key") or os.environ.get("E2B_API_KEY")
-            if not e2b_api_key:
-                raise ValueError("E2B API key not provided in config or environment variables (E2B_API_KEY)")
-
-            # E2B initialization might be handled globally, but creating Sandbox often needs the key
-            # e2b.configure(api_key=e2b_api_key) # Or pass directly to Sandbox
+            if not E2B_AVAILABLE:
+                logging.warning("E2B SDK not available, falling back to Docker")
+                return await self._execute_docker(tool, args, timeout, limits)
 
             # Create a new sandbox instance
             template = tool.metadata.get("e2b_template", "base") # Get template from tool metadata
@@ -1950,6 +1941,7 @@ class RemoteDiscoveryService:
 
         for task in completed:
             port = int(task.get_name().split('_')[1])
+
             adapter_type = ports_to_check[port]
             try:
                 is_open = task.result()
@@ -3203,42 +3195,53 @@ class ToolingSystem:
         # Walk the directory recursively
         for root, _, files in os.walk(directory):
             for file in files:
-                if file.endswith(".py") and not file.endswith("_test.py"):
+                # Skip __init__.py and test files
+                if file.endswith(".py") and not file.startswith("__init__") and not file.endswith("_test.py"):
                     try:
                         file_path = os.path.join(root, file)
                         
                         # Read the file to look for a Tool header
-                        with open(file_path, "r") as f:
+                        with open(file_path, "r", encoding='utf-8') as f: # Added encoding
                             content = f.read()
                             
-                        # Extract the function name
-                        func_match = re.search(r'def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(', content)
+                        # Extract the function name (Improved regex to handle async def)
+                        func_match = re.search(r'async def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(|def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(', content)
                         if not func_match:
-                            logging.warning(f"No function found in {file_path}, skipping")
+                            logging.warning(f"No function definition found in {file_path}, skipping")
                             continue
                             
-                        function_name = func_match.group(1)
-                        
-                        # Extract description from docstring
-                        doc_match = re.search(r'"""(.*?)"""', content, re.DOTALL)
-                        description = doc_match.group(1).strip() if doc_match else f"Tool in {file}"
-                        
+                        # Get the first non-None group (either async or regular function name)
+                        function_name = next(group for group in func_match.groups() if group is not None)
+
+                        # Extract description from docstring (More robust regex)
+                        doc_match = re.search(r'def\s+' + function_name + r'\s*\(.*?\):\s*"""(.*?)"""', content, re.DOTALL | re.MULTILINE)
+                        description = doc_match.group(1).strip() if doc_match else f"Tool defined in {file}"
+
                         # Create a basic tool
-                        tool_name = os.path.splitext(file)[0]
+                        # Use relative path from tools directory for name consistency
+                        rel_path = os.path.relpath(file_path, os.path.dirname(directory))
+                        tool_name = os.path.splitext(rel_path.replace(os.sep, '.'))[0]
+
+                        # TODO: Consider parsing parameters and returns from docstring or type hints
+                        # For now, using the file content as the 'function' might be incorrect.
+                        # This assumes the entire file content is the tool function, which needs refinement.
+                        # A better approach would be to import the function dynamically.
+
                         tool = Tool(
                             name=tool_name,
                             description=description,
-                            function=content,
+                            # function=content, # Storing raw content might not be ideal
+                            function=function_name, # Store function name, actual import/exec happens later
                             file_path=file_path,
                             scope=ToolScope.REMOTE if is_remote else ToolScope.CONTAINER,
-                            sandbox_type=SandboxType.NONE if is_remote else SandboxType.DOCKER,
-                            auto_generated=True
+                            sandbox_type=SandboxType.NONE if is_remote else SandboxType.DOCKER, # Consider security implications
+                            auto_generated=True # Assuming all tools in these dirs are auto-generated
                         )
                         
                         self.register_tool(tool)
                         loaded_count += 1
                         
                     except Exception as e:
-                        logging.error(f"Error loading tool from {file}: {str(e)}")
+                        logging.error(f"Error loading tool from {file_path}: {str(e)}", exc_info=True) # Added exc_info
         
         return loaded_count

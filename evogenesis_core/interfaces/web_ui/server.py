@@ -9,7 +9,9 @@ import json
 import logging
 import asyncio
 import uuid
+import time
 import traceback
+import psutil
 from datetime import datetime
 from typing import Dict, List, Any, Optional, Set
 
@@ -245,7 +247,7 @@ async def get_system_status():
             "active_agents": agent_factory_status.get("active_agents", 0),
             "running_tasks": task_planner_status.get("pending_tasks", 0),
             "components": {
-                "agent_manager": agent_factory_status,
+                "agent_factory": agent_factory_status, # Changed from agent_manager
                 "task_planner": task_planner_status,
                 "memory_manager": memory_manager_status,
                 "tooling_system": tooling_system_status
@@ -810,7 +812,7 @@ async def metrics_update_task():
             if kernel:
                 # Gather system metrics
                 metrics = {}
-                  # 1. Get agent metrics
+                # 1. Get agent metrics
                 agent_factory = kernel.get_module("agent_factory")
                 if agent_factory:
                     agents = agent_factory.list_agents() if hasattr(agent_factory, "list_agents") else {}
@@ -882,11 +884,6 @@ def start_server(kernel_instance, host="0.0.0.0", port=5000):
     global kernel
     kernel = kernel_instance
     
-    # Initialize swarm coordinator if available
-    if hasattr(kernel, "swarm_module") and kernel.swarm_module is not None:
-        from evogenesis_core.swarm.coordinator import SwarmCoordinator
-        kernel.swarm_coordinator = SwarmCoordinator(kernel)
-    
     # Initialize WebSocket handlers for all components
     ws_handlers = init_ws_handlers(kernel, ws_manager)
     
@@ -918,7 +915,21 @@ def start_server(kernel_instance, host="0.0.0.0", port=5000):
     app.state.kernel = kernel_instance
     app.state.ws_manager = ws_manager
     app.state.ws_handlers = ws_handlers
-    
-    # Run the server
+      # Run the server
     # Setting log_level to prevent duplicate logs
-    uvicorn.run(app, host=host, port=port, log_level="info")
+    # Check for port conflicts and try alternative ports if needed
+    max_port_attempts = 10
+    current_port = port
+    
+    for attempt in range(max_port_attempts):
+        try:
+            logging.info(f"Starting FastAPI server on port {current_port}")
+            uvicorn.run(app, host=host, port=current_port, log_level="info")
+            break
+        except OSError as e:
+            if "address already in use" in str(e).lower() and attempt < max_port_attempts - 1:
+                logging.warning(f"Port {current_port} already in use, trying {current_port + 1}")
+                current_port += 1
+            else:
+                logging.error(f"Failed to start FastAPI server after {attempt + 1} attempts: {e}")
+                raise

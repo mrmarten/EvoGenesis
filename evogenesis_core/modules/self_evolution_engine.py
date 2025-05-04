@@ -415,11 +415,12 @@ class SelfEvolutionEngine:
         """
         self.logger.info(f"Optimizing prompts for agent: {agent_id}")
         
-        agent = self.kernel.agent_manager.get_agent(agent_id)
+        agent = self.kernel.agent_factory.get_agent(agent_id) # Use agent_factory
         if not agent:
             self.logger.warning(f"Agent not found: {agent_id}")
             return {"success": False, "error": "Agent not found"}
-          # Analyze agent performance
+        
+        # Analyze agent performance
         performance = agent.performance_metrics
         
         # Use the LLM orchestrator to generate improved prompts based on the agent's performance data

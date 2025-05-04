@@ -523,22 +523,35 @@ class HiTLInterface:
     
     def start_websocket_server(self, host="0.0.0.0", port=8765):
         """Start the websocket server for real-time updates."""
-        async def _run_server():
-            server = await websockets.serve(self._ws_handler, host, port)
-            self.ws_server = server
-            logging.info(f"HiTL websocket server started on {host}:{port}")
-            return server
+        async def _run_server(port_to_try=port):
+            try:
+                server = await websockets.serve(self._ws_handler, host, port_to_try)
+                self.ws_server = server
+                logging.info(f"HiTL websocket server started on {host}:{port_to_try}")
+                return server
+            except OSError as e:
+                # Port already in use
+                if e.errno == 10048 and port_to_try < port + 10:  # Try up to 10 additional ports
+                    new_port = port_to_try + 1
+                    logging.warning(f"Port {port_to_try} already in use, trying {new_port}")
+                    return await _run_server(new_port)
+                else:
+                    # Re-raise if we've exhausted our retry attempts or it's a different error
+                    raise
          
         # Run in a separate thread
         def run_loop():
             self.ws_loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self.ws_loop)
-            server = self.ws_loop.run_until_complete(_run_server())
             try:
+                server = self.ws_loop.run_until_complete(_run_server())
                 self.ws_loop.run_forever()
+            except Exception as e:
+                logging.error(f"Error in WebSocket server: {str(e)}")
             finally:
                 # Clean up server and loop on stop
-                server.close()
+                if hasattr(self, 'ws_server') and self.ws_server:
+                    self.ws_server.close()
                 self.ws_loop.run_until_complete(server.wait_closed())
                 self.ws_loop.close()
          
@@ -665,7 +678,7 @@ class HiTLInterface:
                     request = self.permission_requests[request_id]
                     logging.warning(f"Permission request {request_id} from agent {request.agent_id} expired")
                     # Notify the agent
-                    if hasattr(self.kernel, "agent_manager"):
+                    if hasattr(self.kernel, "agent_factory"): # Changed from agent_manager
                         agent = self.kernel.agent_factory.get_agent(request.agent_id)
                         if agent:
                             # Notify agent that request expired

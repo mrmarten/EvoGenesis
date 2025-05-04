@@ -460,7 +460,7 @@ class MissionScheduler:
                 agent_id = self._get_or_create_persistent_agent(agent_spec)
             else:
                 # Create a normal agent
-                agent = self.kernel.agent_manager.create_agent(
+                agent = self.kernel.agent_factory.create_agent( # Changed from agent_manager
                     agent_type=agent_spec.get("agent_type", "generic"),
                     name=agent_spec.get("name", name),
                     capabilities=agent_spec.get("capabilities", []),

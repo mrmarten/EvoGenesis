@@ -24,9 +24,9 @@ import anthropic
 import google.generativeai as genai
 
 # Try to import llama-cpp, but don't fail if it's not available
-# Note: To enable local models, install llama-cpp-python: pip install llama-cpp-python
+# Note: To enable local models, install the 'llama-cpp-python' dependency
 try:
-    from llama_cpp import Llama  # For local models
+    from llama_cpp import Llama
     LLAMA_CPP_AVAILABLE = True
 except ImportError:
     LLAMA_CPP_AVAILABLE = False
